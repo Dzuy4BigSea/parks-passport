@@ -1,0 +1,38 @@
+name: Deploy to aster
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+concurrency:
+  group: deploy-parks-passport
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s' "${{ secrets.ASTER_SSH_KEY }}" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.ASTER_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+      - name: Sync code to server
+        run: |
+          rsync -az --delete \
+            --exclude='.git' --exclude='node_modules' --exclude='dist' \
+            --exclude='.env' --exclude='data' \
+            -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" \
+            ./ "${{ secrets.ASTER_USER }}@${{ secrets.ASTER_HOST }}:/opt/claude-sync/parks-passport/"
+      - name: Build & restart
+        run: |
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+            "${{ secrets.ASTER_USER }}@${{ secrets.ASTER_HOST }}" \
+            'cd /opt/claude-sync/parks-passport && docker compose -f docker-compose.aster.yml up -d --build && docker image prune -f'
+      - name: Verify health
+        run: |
+          for i in 1 2 3 4 5 6; do
+            curl -fsS https://parkspassport.dzuynguyen.com/healthz && exit 0
+            sleep 5
+          done
+          exit 1

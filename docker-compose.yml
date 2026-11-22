@@ -1,0 +1,10 @@
+# Local dev: http://localhost:8080
+services:
+  parks-passport:
+    build: .
+    environment:
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
