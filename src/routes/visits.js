@@ -75,6 +75,8 @@ export default async function visitRoutes(app) {
     const visit = deleteVisit(db, { user: req.user, visitId: Number(req.params.id) }, { now: app.now() });
     if (!visit) return reply.callNotFound();
     revokeUnmetBadges(db, req.user.id);
+    // Pals who stamped here that day may have earned Better Together from this visit.
+    for (const palId of palsAtParkOnDay(db, req.user.id, visit.park_id, visit.visited_on)) revokeUnmetBadges(db, palId);
     const back = typeof req.body.back === 'string' && /^\/[a-z0-9/-]*$/.test(req.body.back) ? req.body.back : '/passport';
     return reply.redirect(back, 303);
   });

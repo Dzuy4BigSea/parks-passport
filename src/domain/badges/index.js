@@ -23,8 +23,11 @@ export function buildContext(db, userId, { trigger = null, random = Math.random,
 }
 
 // Whether a Park Pal stamped the same park on the same day as one of this user's stamps.
+// Only pals who share their passport (pals or public) count: otherwise the badge would reveal
+// a private pal's visits (stamp a park and date, see if the badge appears, delete, repeat).
 const hasPalSameDay = (db, userId) => Boolean(db.prepare(`SELECT 1 FROM visits mine
   JOIN visits theirs ON theirs.park_id = mine.park_id AND theirs.visited_on = mine.visited_on
+  JOIN users pal ON pal.id = theirs.user_id AND pal.default_visibility IN ('pals', 'public')
   WHERE mine.user_id = ? AND theirs.user_id IN
     (SELECT user_b FROM pal_links WHERE user_a = ? UNION SELECT user_a FROM pal_links WHERE user_b = ?)
   LIMIT 1`).get(userId, userId, userId));

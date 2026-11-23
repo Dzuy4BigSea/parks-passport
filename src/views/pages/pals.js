@@ -66,7 +66,7 @@ ${user.default_visibility === 'private' ? html`<p class="notice">Your passport i
   <h2 id="list-h">Your pals (${pals.length})</h2>
   ${pals.length ? html`<ul class="pal-list">
     ${pals.map((p) => html`<li>
-      <span><a href="/u/${p.handle}">${p.display_name}</a> <span class="muted">@${p.handle}</span></span>
+      <span>${p.visible ? html`<a href="/u/${p.handle}">${p.display_name}</a>` : p.display_name} <span class="muted">@${p.handle}</span></span>
       <form method="post" action="/pals/${p.handle}/remove">
         ${csrfField(csrf)}
         <button type="submit" class="btn btn-quiet btn-small" aria-label="Remove ${p.display_name} as a pal">Remove</button>

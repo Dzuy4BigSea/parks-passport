@@ -40,10 +40,14 @@ export function acceptInvite(db, inviter, accepter, { now = new Date(), random =
   return { ok: true };
 }
 
-export function removePal(db, userId, palId) {
+// Removes a pal. The remover's invite link is renewed so the removed pal can't simply re-accept it.
+export function removePal(db, userId, palId, { now = new Date() } = {}) {
   const [a, b] = pair(userId, palId);
   const { changes } = db.prepare('DELETE FROM pal_links WHERE user_a = ? AND user_b = ?').run(a, b);
-  if (changes) for (const id of [userId, palId]) revokeUnmetBadges(db, id);
+  if (changes) {
+    regenerateInvite(db, userId, { now });
+    for (const id of [userId, palId]) revokeUnmetBadges(db, id);
+  }
   return changes > 0;
 }
 

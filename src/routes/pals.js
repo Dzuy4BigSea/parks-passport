@@ -17,11 +17,11 @@ export default async function palRoutes(app) {
   app.get('/pals', { preHandler: requireUser }, async (req, reply) => {
     const user = req.user;
     const page = Math.max(1, Math.min(1000, Number.parseInt(req.query.page, 10) || 1));
-    const notice = { accepted: "You're now Park Pals!", regenerated: 'New invite link made. The old one no longer works.', removed: 'Pal removed.' }[req.query.done];
+    const notice = { accepted: "You're now Park Pals!", regenerated: 'New invite link made. The old one no longer works.', removed: 'Pal removed. Your invite link was renewed, so the old one no longer works.' }[req.query.done];
     return reply.page(palsPage({
       user, csrf: req.csrfToken(), page, notice,
       inviteUrl: `${app.config.baseUrl}/pals/invite/${inviteTokenFor(db, user.id, { now: now() })}`,
-      pals: palsOf(db, user.id), board: leaderboard(db, user.id), feed: palsFeed(db, user.id, { page }),
+      pals: palsOf(db, user.id).map((p) => ({ ...p, visible: canViewOwner(db, user.id, p.id, p.default_visibility) })), board: leaderboard(db, user.id), feed: palsFeed(db, user.id, { page }),
     }));
   });
 
@@ -56,7 +56,7 @@ export default async function palRoutes(app) {
 
   app.post('/pals/:handle/remove', { preHandler: requireUser }, async (req, reply) => {
     const pal = db.prepare('SELECT id FROM users WHERE handle = ?').get(String(req.params.handle));
-    if (!pal || !removePal(db, req.user.id, pal.id)) return reply.callNotFound();
+    if (!pal || !removePal(db, req.user.id, pal.id, { now: now() })) return reply.callNotFound();
     return reply.redirect('/pals?done=removed', 303);
   });
 

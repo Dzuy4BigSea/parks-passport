@@ -86,8 +86,8 @@ test('invite link: accept makes pals both ways; self and repeat are handled; reg
   assert.equal((await people.ben.c.post(`${link}/accept`)).statusCode, 303);
   assert.match((await people.ben.c.get(link)).body, /already Park Pals/);
   assert.equal(db.prepare('SELECT COUNT(*) FROM pal_links').pluck().get(), 1);
-  assert.match((await people.ana.c.get('/pals')).body, /href="\/u\/ben"/);
-  assert.match((await people.ben.c.get('/pals')).body, /href="\/u\/ana"/);
+  assert.match((await people.ana.c.get('/pals')).body, /@ben</);
+  assert.match((await people.ben.c.get('/pals')).body, /@ana</);
 
   await people.ana.c.post('/pals/invite/regenerate');
   assert.equal((await people.cat.c.get(link)).statusCode, 404);
@@ -108,8 +108,10 @@ test('signed-out invitees are sent to sign up and come back to the invite', asyn
 });
 
 test('removing a pal unlinks both and revokes Better Together', async () => {
-  const { db, people, befriend, now } = await world();
+  const { db, people, befriend, now, setVis } = await world();
   await befriend('ana', 'ben');
+  await setVis('ana', 'pals');
+  await setVis('ben', 'pals');
   await people.ana.c.post('/parks/a-park/stamp', {});
   now.advanceMinutes(30);
   await people.ben.c.post('/parks/a-park/stamp', {});
@@ -125,7 +127,9 @@ test('removing a pal unlinks both and revokes Better Together', async () => {
 });
 
 test('accepting an invite after stamping together awards Better Together', async () => {
-  const { db, people, befriend } = await world();
+  const { db, people, befriend, setVis } = await world();
+  await setVis('ana', 'pals');
+  await setVis('ben', 'public');
   await people.ana.c.post('/parks/b-park/stamp', {});
   await people.ben.c.post('/parks/b-park/stamp', {});
   await befriend('ana', 'ben');
@@ -199,4 +203,56 @@ test('new accounts are private; deleting an account removes its pal links and it
   assert.equal(db.prepare('SELECT COUNT(*) FROM pal_links').pluck().get(), 0);
   assert.equal(db.prepare('SELECT COUNT(*) FROM pal_invites WHERE user_id = ?').pluck().get(people.ana.id), 0);
   assert.equal((await people.cat.c.get('/u/ana')).statusCode, 404);
+});
+
+test("Better Together never reveals a private pal's visits", async () => {
+  const { db, people, befriend, setVis } = await world();
+  await befriend('ana', 'ben'); // ana stays private
+  await people.ana.c.post('/parks/b-park/stamp', { visited_on: '2026-05-10' });
+  const benHasIt = () => db.prepare(`SELECT COUNT(*) FROM user_badges ub JOIN badges b ON b.id = ub.badge_id
+    WHERE b.slug = 'together' AND ub.user_id = ?`).pluck().get(people.ben.id);
+  // Ben probes Ana's real park and day: no badge, because Ana's passport is private.
+  const res = await people.ben.c.post('/parks/b-park/stamp', { visited_on: '2026-05-10' });
+  assert.ok(!(await people.ben.c.get(res.headers.location)).body.includes('Better Together'));
+  assert.equal(benHasIt(), 0);
+  // Once Ana shares with pals, the same shared day earns it on the next check.
+  await setVis('ana', 'pals');
+  await people.ben.c.post('/parks/a-park/stamp', {});
+  assert.equal(benHasIt(), 1);
+});
+
+test('deleting the shared visit revokes Better Together for the pal too', async () => {
+  const { db, people, befriend, setVis } = await world();
+  await befriend('ana', 'ben');
+  await setVis('ana', 'pals');
+  await setVis('ben', 'pals');
+  await people.ana.c.post('/parks/a-park/stamp', {});
+  await people.ben.c.post('/parks/a-park/stamp', {});
+  const count = () => db.prepare("SELECT COUNT(*) FROM user_badges ub JOIN badges b ON b.id = ub.badge_id WHERE b.slug = 'together'").pluck().get();
+  assert.equal(count(), 2);
+  const benVisit = db.prepare('SELECT id FROM visits WHERE user_id = ?').pluck().get(people.ben.id);
+  await people.ben.c.post(`/visits/${benVisit}/delete`, {});
+  assert.equal(count(), 0);
+});
+
+test("a removed pal can't re-accept the old invite link", async () => {
+  const { db, people, inviteLink } = await world();
+  const link = await inviteLink('ana');
+  await people.ben.c.post(`${link}/accept`);
+  await people.ana.c.post('/pals/ben/remove');
+  assert.equal((await people.ben.c.post(`${link}/accept`)).statusCode, 404);
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_links').pluck().get(), 0);
+  assert.match((await people.ana.c.get('/pals?done=removed')).body, /invite link was renewed/);
+});
+
+test('the pals list links only to passports you can see', async () => {
+  const { people, befriend, setVis } = await world();
+  await befriend('ana', 'ben');
+  await befriend('ana', 'cat');
+  await setVis('ben', 'pals');
+  const body = (await people.ana.c.get('/pals')).body;
+  const list = body.slice(body.indexOf('class="pal-list"'));
+  assert.match(list, /<a href="\/u\/ben">ben<\/a>/);
+  assert.ok(!list.includes('href="/u/cat"'));
+  assert.match(list, /cat <span class="muted">@cat<\/span>/);
 });
