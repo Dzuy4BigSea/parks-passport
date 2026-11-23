@@ -1,12 +1,14 @@
 import { requireUser } from '../lib/auth.js';
 import { getParkBySlug } from '../domain/parks.js';
 import { parsePosition } from '../domain/checkin.js';
-import { stampVisit, deleteVisit, visitsAtPark } from '../domain/visits.js';
+import { stampVisit, deleteVisit } from '../domain/visits.js';
 import { awardBadges, revokeUnmetBadges } from '../domain/badges/index.js';
 import { palsAtParkOnDay } from '../domain/pals.js';
 import { formatMiles } from '../domain/geo.js';
 import { formatDate, localDate } from '../domain/time.js';
-import { parkPage } from '../views/pages/park.js';
+import { storePhoto, removePhotoFiles } from '../lib/images.js';
+import { addPhoto } from '../domain/photos.js';
+import { renderParkPage } from './park-view.js';
 
 const MESSAGES = {
   no_position: "We couldn't read your location. You can stamp on the honor system instead.",
@@ -19,14 +21,8 @@ const MESSAGES = {
 export default async function visitRoutes(app) {
   const { db } = app;
 
-  // Renders the park page for the signed-in user with a stamp problem message.
-  function parkWithProblem(req, reply, park, problem) {
-    reply.code(422);
-    return reply.page(parkPage({
-      park, user: req.user, csrf: req.csrfToken(), today: localDate(app.now()),
-      myVisits: visitsAtPark(db, req.user.id, park.id), problem,
-    }));
-  }
+  const parkWithProblem = (req, reply, park, problem) =>
+    renderParkPage(app, req, reply, park, { problem: { area: 'stamp', ...problem } });
 
   // Badges for the stamper, and "Better Together" for pals who stamped here the same day.
   function afterStamp(user, visit) {
@@ -65,8 +61,20 @@ export default async function visitRoutes(app) {
     const park = getParkBySlug(db, req.params.slug);
     if (!park) return reply.callNotFound();
     const visitedOn = typeof req.body.visited_on === 'string' && req.body.visited_on ? req.body.visited_on : null;
-    const result = stampVisit(db, { user: req.user, park, method: 'honor', visitedOn }, { now: app.now() });
-    if (result.error) return parkWithProblem(req, reply, park, problemFor(result));
+    // An optional photo makes this a photo stamp; a bad photo stops the stamp.
+    const file = Buffer.isBuffer(req.body.photo) && req.body.photo.length ? req.body.photo : null;
+    const stored = file ? await storePhoto(file, app.config.uploadsDir) : null;
+    if (stored?.error) return parkWithProblem(req, reply, park, { text: stored.error, offerHonor: true });
+    const method = stored ? 'photo' : 'honor';
+    const result = stampVisit(db, { user: req.user, park, method, visitedOn }, { now: app.now() });
+    if (result.error) {
+      if (stored) await removePhotoFiles(app.config.uploadsDir, stored.fileKey);
+      return parkWithProblem(req, reply, park, problemFor(result));
+    }
+    if (stored) {
+      addPhoto(db, { user: req.user, park, visitId: result.visit.id, stored,
+        caption: typeof req.body.caption === 'string' ? req.body.caption : '' }, { now: app.now() });
+    }
     afterStamp(req.user, result.visit);
     return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
   });

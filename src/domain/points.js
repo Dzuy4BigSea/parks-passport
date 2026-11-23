@@ -25,10 +25,10 @@ export function visitPoints(visits) {
  * rows. Called after any visit is added or removed, so "first stamp" moves if the first is deleted.
  */
 export function rebuildParkVisitPoints(db, userId, parkId, { now = new Date() } = {}) {
-  const visits = db.prepare(`SELECT id, method FROM visits
-    WHERE user_id = ? AND park_id = ? ORDER BY visited_on, id`).all(userId, parkId);
-  // The photo bonus (hasPhoto) is added with photos in M7.
-  const computed = visitPoints(visits.map((v) => ({ ...v, hasPhoto: false })));
+  const visits = db.prepare(`SELECT v.id, v.method,
+      EXISTS (SELECT 1 FROM photos ph WHERE ph.visit_id = v.id) AS has_photo
+    FROM visits v WHERE v.user_id = ? AND v.park_id = ? ORDER BY v.visited_on, v.id`).all(userId, parkId);
+  const computed = visitPoints(visits.map((v) => ({ ...v, hasPhoto: v.has_photo === 1 })));
 
   const del = db.prepare("DELETE FROM point_events WHERE source_type = 'visit' AND source_id = ?");
   const ins = db.prepare(`INSERT INTO point_events (user_id, source_type, source_id, points, reason, created_at)

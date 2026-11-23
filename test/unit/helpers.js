@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { openDb } from '../../src/db/index.js';
 import { buildApp } from '../../src/app.js';
 
@@ -24,8 +27,9 @@ export function testClock(start = '2026-06-01T12:00:00Z') {
 }
 
 export function makeApp({ db = openDb(':memory:'), mailer = memoryMailer(), now = testClock(), random = () => 0.99, secureCookies = false } = {}) {
-  const app = buildApp({ db, mailer, now, random, config: { baseUrl: 'http://test.local', secureCookies } });
-  return { app, db, mailer, now };
+  const uploadsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-uploads-'));
+  const app = buildApp({ db, mailer, now, random, config: { baseUrl: 'http://test.local', secureCookies, uploadsDir } });
+  return { app, db, mailer, now, uploadsDir };
 }
 
 // Minimal cookie jar + form poster for app.inject.
@@ -51,6 +55,20 @@ export function client(app) {
       return store(await app.inject({
         method: 'POST', url, payload: body,
         headers: { cookie: cookieHeader(), 'content-type': 'application/x-www-form-urlencoded' },
+      }));
+    },
+    // Multipart POST; files: { field: { buffer, filename, type } }.
+    async postMultipart(url, fields = {}, files = {}) {
+      if (!csrfValue()) await api.get('/');
+      const fd = new FormData();
+      fd.append('_csrf', csrfValue());
+      for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+      for (const [k, f] of Object.entries(files)) fd.append(k, new Blob([f.buffer], { type: f.type || 'application/octet-stream' }), f.filename || 'upload.bin');
+      const req = new Request('http://test.local/', { method: 'POST', body: fd });
+      const payload = Buffer.from(await req.arrayBuffer());
+      return store(await app.inject({
+        method: 'POST', url, payload,
+        headers: { cookie: cookieHeader(), 'content-type': req.headers.get('content-type') },
       }));
     },
   };

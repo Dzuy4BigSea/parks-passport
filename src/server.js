@@ -10,7 +10,7 @@ const db = openDb(path.join(config.dataDir, 'app.db'));
 const mailer = createMailer(config.mail);
 const app = buildApp({
   db, mailer, logger: config.nodeEnv !== 'test',
-  config: { baseUrl: config.baseUrl, secureCookies: config.secureCookies },
+  config: { baseUrl: config.baseUrl, secureCookies: config.secureCookies, uploadsDir: path.join(config.dataDir, 'uploads') },
 });
 
 const seeded = seedParksIfEmpty(db);

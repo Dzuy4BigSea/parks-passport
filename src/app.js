@@ -2,6 +2,9 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import formbody from '@fastify/formbody';
 import cookie from '@fastify/cookie';
+import multipart from '@fastify/multipart';
+import { MAX_UPLOAD_BYTES, removePhotoFiles } from './lib/images.js';
+import { fileKeysForUser } from './domain/photos.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { html } from './views/html.js';
@@ -17,17 +20,18 @@ import authRoutes from './routes/auth.js';
 import visitRoutes from './routes/visits.js';
 import passportRoutes from './routes/passport.js';
 import palRoutes from './routes/pals.js';
+import photoRoutes from './routes/photos.js';
 import { shareNudge } from './views/pages/pals.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
  * Builds the app with injected dependencies so tests can supply a temp DB, mailer, clock, etc.
- * config: { baseUrl, secureCookies }
+ * config: { baseUrl, secureCookies, uploadsDir }
  */
 export function buildApp({
   db, mailer, now = () => new Date(), random = Math.random, logger = false,
-  config = { baseUrl: 'http://localhost:8080', secureCookies: false },
+  config = { baseUrl: 'http://localhost:8080', secureCookies: false, uploadsDir: './data/uploads' },
 } = {}) {
   if (!db) throw new Error('buildApp needs a db');
   if (!mailer) throw new Error('buildApp needs a mailer');
@@ -38,8 +42,10 @@ export function buildApp({
   app.decorate('now', now);
   app.decorate('random', random); // injectable for lucky badges in tests
   app.decorate('config', config);
-  // Hook for removing a user's stored files before their rows are deleted (photos, M7).
-  app.decorate('beforeUserDelete', async () => {});
+  // Removes a user's photo files before their rows are deleted (rows cascade).
+  app.decorate('beforeUserDelete', async (userId) => {
+    for (const key of fileKeysForUser(db, userId)) await removePhotoFiles(config.uploadsDir, key);
+  });
 
   // Fire-and-forget email; errors are logged. Tests await app.mailIdle().
   const inflight = new Set();
@@ -54,6 +60,13 @@ export function buildApp({
   app.addHook('onClose', async () => db.close());
 
   app.register(formbody);
+  // Multipart fields land in req.body as strings and files as Buffers, so the CSRF check and the
+  // routes treat both kinds of form the same. The slightly higher limit lets storePhoto give a
+  // friendly "over 10 MB" message instead of a bare 413.
+  app.register(multipart, {
+    attachFieldsToBody: 'keyValues',
+    limits: { fileSize: MAX_UPLOAD_BYTES + 1024 * 1024, files: 1, fields: 20, fieldSize: 64 * 1024 },
+  });
   app.register(cookie);
   app.register(authPlugin, { db, now, secureCookies: config.secureCookies });
   app.register(fastifyStatic, {
@@ -105,6 +118,7 @@ export function buildApp({
   app.register(visitRoutes);
   app.register(passportRoutes);
   app.register(palRoutes);
+  app.register(photoRoutes);
 
   app.setNotFoundHandler((req, reply) => {
     reply.code(404);
