@@ -13,6 +13,7 @@ import {
   activeThemeRow, listMotifs, saveThemeSettings, cleanMotif, addAdminMotif, updateMotif, setMotifStatus, deleteMotif,
 } from '../domain/city.js';
 import { themeJob, startThemeJob } from '../domain/theme-job.js';
+import { testEmail } from '../views/email.js';
 import {
   adminCity, adminEmail, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
 } from '../views/pages/admin.js';
@@ -199,8 +200,7 @@ export default async function adminRoutes(app) {
       try {
         await app.mailer.send({
           to: req.user.email,
-          subject: `${s.mail_from_name}: test email`,
-          text: `This is a test from Parks Passport's admin. If you're reading it, email sending works.\n\nSender: ${s.mail_from_name} <${s.mail_from_address}>\n`,
+          ...testEmail({ baseUrl: app.config.baseUrl, tagline: app.theme().tagline, fromName: s.mail_from_name, fromAddress: s.mail_from_address }),
         });
         return reply.page(emailPage(req, { notice: `Test email sent to ${req.user.email}. Check the inbox (and spam).` }));
       } catch (err) {
