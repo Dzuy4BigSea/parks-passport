@@ -143,11 +143,17 @@ that sets `_ga` only after Accept: none before, one after; Reject; no-JS forms; 
 
 ### M10 — Ops and end-to-end verification
 Outcome: SPEC "End-to-end verification" and the Ops NFRs.
-- `scripts/backup.sh` (SQLite `.backup` plus uploads tar, 14-day rotation) and the cron line
-  for Dzuy to approve. Lighthouse CI (`lighthouserc.json`, mobile Performance ≥ 90 on `/`,
-  `/parks`, `/parks/:slug`, `/passport`). Container memory checked under load at 512 MB or
-  less.
+- `scripts/backup.sh` + `scripts/db-backup.js`: SQLite online backup (integrity-checked) and a
+  tar of `uploads/` + `settings.key`, 14-day rotation, to `/root/backups/parks-passport/`.
+  Install and restore steps in `docs/backup-restore.md` (a local session with `ssh aster` adds
+  the cron line).
+- `npm run lighthouse` (`scripts/lighthouse.js`): Lighthouse's default mobile audit of `/`,
+  `/parks`, `/parks/:slug` and `/passport` (signed in), with GTM on and consent denied; fails
+  under 90 or if a page redirects.
+- `npm run check:memory` (`scripts/load-check.js`): concurrent page views, stamps and 2000 px
+  photo uploads; fails if the server's peak memory is over 400 MB (container limit 512 MB).
+- `test/e2e/pages.spec.js`: axe and no sideways scroll at 375 px on every page.
 
-Checks: `npm test` and `npx lhci autorun` pass in CI. A reviewer subagent finds no SPEC gaps.
-After merge to `main`, `curl -fsS https://parkspassport.dzuynguyen.com/healthz` returns `ok`,
-and Dzuy's phone test passes.
+Checks: `npm test`, `npm run lighthouse` and `npm run check:memory` pass in CI (the `budgets`
+job). A reviewer finds no SPEC gaps. After merge to `main`,
+`curl -fsS https://parkspassport.dzuynguyen.com/healthz` returns `ok`, and Dzuy's phone test passes.

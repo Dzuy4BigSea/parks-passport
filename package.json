@@ -10,7 +10,9 @@
     "test:e2e": "playwright test",
     "test": "npm run lint && npm run test:unit && npm run test:e2e -- --trace off",
     "seed:scrape": "node scripts/seed-scrape.js",
-    "make-admin": "node scripts/make-admin.js"
+    "make-admin": "node scripts/make-admin.js",
+    "lighthouse": "node scripts/lighthouse.js",
+    "check:memory": "node scripts/load-check.js"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.5",
@@ -28,7 +30,9 @@
     "@eslint/js": "^10.0.1",
     "@playwright/test": "1.63.0",
     "eslint": "^10.15.0",
-    "globals": "^17.14.0"
+    "globals": "^17.14.0",
+    "lighthouse": "^12.8.2",
+    "puppeteer-core": "^24.43.1"
   },
   "type": "module",
   "main": "src/server.js",
