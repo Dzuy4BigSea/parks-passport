@@ -37,7 +37,7 @@ test('signed-in pages, including admin', async ({ page }) => {
   db.close();
   for (const url of ['/', '/stamp', '/passport', '/pals', '/account', `/u/${handle}?preview=1`, '/parks?unvisited=1',
     '/admin', '/admin/parks', '/admin/parks/new', '/admin/import', '/admin/badges', '/admin/badges/new',
-    '/admin/moderation', '/admin/users', '/admin/email', '/admin/city']) {
+    '/admin/moderation', '/admin/users', '/admin/email', '/admin/email/messages/magic_link', '/admin/city']) {
     await check(page, url);
   }
 });

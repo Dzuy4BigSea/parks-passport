@@ -13,9 +13,10 @@ import {
   activeThemeRow, listMotifs, saveThemeSettings, cleanMotif, addAdminMotif, updateMotif, setMotifStatus, deleteMotif,
 } from '../domain/city.js';
 import { themeJob, startThemeJob } from '../domain/theme-job.js';
-import { testEmail } from '../views/email.js';
+import { testEmail, memberEmail } from '../views/email.js';
+import { EMAIL_KINDS, COPY_FIELDS, emailCopy, saveEmailCopy, resetEmailCopy, isCustomized } from '../domain/email-copy.js';
 import {
-  adminCity, adminEmail, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
+  adminCity, adminEmail, adminEmailMessage, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
 } from '../views/pages/admin.js';
 
 const MAX_CSV_BYTES = 1024 * 1024;
@@ -178,7 +179,55 @@ export default async function adminRoutes(app) {
     // Email: sender, subjects, SendGrid key, test send.
     const emailPage = (req, extra = {}) => adminEmail({
       csrf: req.csrfToken(), settings: app.emailSettings(), transport: app.config.mailTransport,
-      key: sendgridKey(db, app.secretBox, { envKey: app.config.sendgridEnvKey || '' }), me: req.user, ...extra,
+      key: sendgridKey(db, app.secretBox, { envKey: app.config.sendgridEnvKey || '' }), me: req.user,
+      messages: Object.entries(EMAIL_KINDS).map(([kind, def]) => ({
+        kind, label: def.label, subject: app.emailSettings()[def.subjectKey], customized: isCustomized(db, kind),
+      })), ...extra,
+    });
+
+    // Admin › Email › Messages: the wording of each member email, with a preview.
+    const copyOf = (kind) => ({ ...emailCopy(db, kind), subject: app.emailSettings()[EMAIL_KINDS[kind].subjectKey] });
+    const sample = (req, kind, copy) => memberEmail({
+      kind, copy, baseUrl: app.config.baseUrl, tagline: app.theme().tagline, name: req.user.display_name, url: `${app.config.baseUrl}/`,
+    });
+    const messagePage = (req, kind, extra = {}) => {
+      const copy = copyOf(kind);
+      return adminEmailMessage({
+        csrf: req.csrfToken(), kind, def: EMAIL_KINDS[kind], fields: COPY_FIELDS, values: copy, me: req.user,
+        previewHtml: sample(req, kind, copy).html, customized: isCustomized(db, kind), ...extra,
+      });
+    };
+    const kindOf = (req) => (Object.hasOwn(EMAIL_KINDS, req.params.kind) ? req.params.kind : null);
+    r.get('/email/messages/:kind', async (req, reply) => {
+      const kind = kindOf(req);
+      if (!kind) return reply.callNotFound();
+      const notice = { saved: 'Saved. New emails use this wording.', reset: 'Back to the default wording.' }[req.query.done] || null;
+      return reply.page(messagePage(req, kind, { notice }));
+    });
+    r.post('/email/messages/:kind', async (req, reply) => {
+      const kind = kindOf(req);
+      if (!kind) return reply.callNotFound();
+      const result = saveEmailCopy(db, kind, req.body, { now: now() });
+      if (result.errors) return reply.code(422).page(messagePage(req, kind, { errors: result.errors, values: result.values }));
+      return reply.redirect(`/admin/email/messages/${kind}?done=saved`, 303);
+    });
+    r.post('/email/messages/:kind/reset', async (req, reply) => {
+      const kind = kindOf(req);
+      if (!kind) return reply.callNotFound();
+      resetEmailCopy(db, kind);
+      return reply.redirect(`/admin/email/messages/${kind}?done=reset`, 303);
+    });
+    r.post('/email/messages/:kind/send', async (req, reply) => {
+      const kind = kindOf(req);
+      if (!kind) return reply.callNotFound();
+      const msg = sample(req, kind, copyOf(kind));
+      try {
+        await app.mailer.send({ to: req.user.email, ...msg, subject: `[Preview] ${msg.subject}` });
+        return reply.page(messagePage(req, kind, { notice: `Preview sent to ${req.user.email}.` }));
+      } catch (err) {
+        req.log.warn({ err: err.message }, 'preview email failed');
+        return reply.code(502).page(messagePage(req, kind, { sendError: `Sending failed: ${err.message}` }));
+      }
     });
     r.get('/email', async (req, reply) => reply.page(emailPage(req, { notice: { saved: 'Email settings saved.', key: 'SendGrid key saved.', removed: 'Saved key removed.' }[req.query.done] })));
     r.post('/email', async (req, reply) => {

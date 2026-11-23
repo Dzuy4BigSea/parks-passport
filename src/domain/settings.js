@@ -35,6 +35,7 @@ export function saveEmailSettings(db, form, { now = new Date() } = {}) {
   if (!EMAIL_RE.test(values.mail_from_address)) errors.mail_from_address = 'Enter the sender address verified in SendGrid.';
   if (values.mail_reply_to && !EMAIL_RE.test(values.mail_reply_to)) errors.mail_reply_to = 'Enter a valid email address, or leave it empty.';
   for (const k of ['subject_magic_link', 'subject_password_reset', 'subject_delete_account']) {
+    if (!(k in form)) { delete values[k]; continue; } // edited in Admin › Email › Messages
     if (!values[k]) errors[k] = 'Enter a subject line.';
     else if (values[k].length > 120) errors[k] = 'Use 120 characters or fewer.';
   }
