@@ -1,9 +1,17 @@
 import { html } from '../html.js';
 import { csrfField } from '../forms.js';
 import { categoryLabel } from '../../domain/categories.js';
+import { motifForPark } from '../../domain/city.js';
 import { METHOD_LABELS } from '../../domain/visits.js';
 import { formatDate, localDate } from '../../domain/time.js';
 import { VISIBILITY, VISIBILITY_LABELS } from '../../domain/visibility.js';
+import { ICONS } from '../icons.js';
+import { motifIcon } from '../motif.js';
+import { nextLine } from '../nextup.js';
+
+// Confetti particles for the celebration: angles and distances, decorative only.
+const BURST = [[0, 95], [30, 70], [60, 105], [95, 80], [125, 100], [160, 75], [195, 95], [225, 70], [260, 105], [290, 85], [320, 100], [345, 72]];
+const burst = () => html`<span class="burst" aria-hidden="true">${BURST.map(([a, r], i) => html`<i style="--a:${a};--r:${r};--d:${(i % 4) * 40}ms"></i>`)}</span>`;
 
 const ACCEPT = 'image/jpeg,image/png,image/webp';
 
@@ -18,14 +26,17 @@ const areaProblem = (problem, area) => (problem && problem.area === area
 const telHref = (phone) => `tel:${phone.replace(/[^\d+]/g, '')}`;
 
 // Stamp result shown after a successful stamp (?stamped=<visit id>).
-function stampResult(result) {
+function stampResult(result, celebrate) {
   if (!result) return '';
   return html`<div class="stamp-result" role="status" tabindex="-1" data-announce>
-  <p class="stamp-mark" aria-hidden="true">${result.visit.method === 'gps' ? 'GPS ✓' : 'Stamped'}</p>
+  ${burst()}
+  <p class="points-pop" aria-hidden="true">+<span class="count-up" data-count-to="${result.visit.points}">${result.visit.points}</span></p>
+  <p class="stamp-mark" aria-hidden="true">${celebrate?.motif ? motifIcon(celebrate.motif) : ''}${result.visit.method === 'gps' ? 'GPS ✓' : 'Stamped'}</p>
   <div>
     <h2>Stamped! +${result.visit.points} points</h2>
     <ul class="points-breakdown">${result.parts.map((p) => html`<li>${p.reason}: +${p.points}</li>`)}</ul>
   </div>
+  ${celebrate?.next ? nextLine(celebrate.next) : ''}
 </div>`;
 }
 
@@ -41,13 +52,16 @@ function stampPanel({ park, user, csrf, today, myVisits, problem: allProblems })
   const hasPin = park.lat != null;
   return html`<section class="stamp-panel" aria-labelledby="stamp-h">
   <h2 id="stamp-h">Stamp this park</h2>
+  ${stampedToday ? '' : html`<p class="reward">${myVisits.length
+    ? html`Repeat visit: <strong>+2 points</strong>, +5 more with GPS.`
+    : html`First stamp here: <strong>+10 points</strong>, +5 more with GPS.`}</p>`}
   ${problem ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${problem.text}</p>` : ''}
   ${stampedToday
     ? html`<p class="stamped-today">✓ Stamped today.</p>`
     : html`${hasPin ? html`<form method="post" action="/parks/${park.slug}/checkin" id="checkin-form" hidden>
     ${csrfField(csrf)}
     <input type="hidden" name="lat"><input type="hidden" name="lng"><input type="hidden" name="accuracy">
-    <button type="submit" class="btn btn-primary btn-big">Check in here</button>
+    <button type="submit" class="btn btn-pop btn-big">${ICONS.stamp}Check in here</button>
     <p class="hint">Uses your location once to confirm you're at the park. Your exact location is never shown to anyone.</p>
   </form>
   <p id="checkin-status" class="notice" role="status" aria-live="polite"></p>` : ''}
@@ -81,12 +95,14 @@ function stampPanel({ park, user, csrf, today, myVisits, problem: allProblems })
 }
 
 export function parkPage({ park, user = null, csrf = '', today = '', myVisits = [], problem = null, stamped = null,
-  photos = [], summary = { count: 0, average: null }, reviews = [], mine = null, flash = null }) {
+  photos = [], summary = { count: 0, average: null }, reviews = [], mine = null, flash = null, theme = { motifs: [], areas: [] }, area = null,
+  celebrate = null }) {
   const hasPin = park.lat != null && park.lng != null;
   const scripts = [];
   if (hasPin) scripts.push('/js/park-map.js');
   if (user && hasPin) scripts.push('/js/checkin.js');
   if (user) scripts.push('/js/upload-check.js');
+  if (stamped) scripts.push('/js/celebrate.js');
   return {
     title: park.name,
     current: 'parks',
@@ -97,14 +113,26 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
 <p class="breadcrumb"><a href="/parks">All parks</a></p>
 <article class="park">
   <header class="park-header">
+    ${motifForPark(theme, park.slug) ? html`<span class="park-motif">${motifIcon(motifForPark(theme, park.slug))}</span>` : ''}
+    ${area ? html`<p class="eyebrow">${area.name}</p>` : ''}
     <h1>${park.name}</h1>
     ${park.address ? html`<p class="address">${park.address}</p>` : ''}
     ${park.phone ? html`<p><a href="${telHref(park.phone)}">${park.phone}</a></p>` : ''}
+    <div class="park-pills">
+      ${user ? (myVisits.length
+        ? html`<span class="pill pill-stamped">✓ Stamped ${myVisits.length === 1 ? 'once' : `${myVisits.length} times`}</span>`
+        : html`<span class="pill pill-points">New for you · +10 pts</span>`) : ''}
+      ${summary.count ? html`<span class="pill"><span class="stars" aria-hidden="true">★</span> ${summary.average.toFixed(1)}<span class="visually-hidden"> out of 5 average rating</span></span>` : ''}
+    </div>
   </header>
 
   ${flash ? html`<p class="notice" role="status">${flash}</p>` : ''}
-  ${stampResult(stamped)}
+  <div class="park-layout">
+  <div class="park-aside">
+  ${stampResult(stamped, celebrate)}
   ${stampPanel({ park, user, csrf, today, myVisits, problem })}
+  </div>
+  <div class="park-main">
 
   <section class="park-map-section" aria-labelledby="map-h">
     <h2 id="map-h">Location</h2>
@@ -125,6 +153,8 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
   ${photosSection({ park, user, csrf, photos, problem })}
 
   ${park.city_url ? html`<p><a href="${park.city_url}" rel="noopener">More about ${park.name} on the City's website</a></p>` : ''}
+  </div>
+  </div>
 </article>`,
   };
 }
@@ -143,7 +173,7 @@ function ratingsSection({ park, user, csrf, summary, reviews, mine, problem }) {
     ${areaProblem(problem, 'rating')}
     <fieldset class="star-picker">
       <legend>${mine ? 'Your rating' : 'Rate this park'}</legend>
-      ${[1, 2, 3, 4, 5].map((n) => html`<label class="check"><input type="radio" name="stars" value="${n}"${mine?.stars === n ? html` checked` : ''} required> ${n} ${n === 1 ? 'star' : 'stars'}</label>`)}
+      ${[1, 2, 3, 4, 5].map((n) => html`<label class="star"><input type="radio" name="stars" value="${n}"${mine?.stars === n ? html` checked` : ''} required><span class="star-glyph" aria-hidden="true"></span><span class="visually-hidden">${n} ${n === 1 ? 'star' : 'stars'}</span></label>`)}
     </fieldset>
     <div class="field">
       <label for="comment">Comment (optional)</label>

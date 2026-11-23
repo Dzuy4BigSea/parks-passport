@@ -10,7 +10,10 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/stats/script.js', (route) => route.fulfill({ status: 200, contentType: 'text/javascript', body: FAKE_UMAMI }));
 });
 
-const events = (page) => page.evaluate(() => window.dataLayer.filter((e) => e && e.event && !e.event.startsWith('gtm.')));
+const events = async (page) => {
+  await page.waitForFunction(() => Array.isArray(window.dataLayer));
+  return page.evaluate(() => window.dataLayer.filter((e) => e && e.event && !e.event.startsWith('gtm.')));
+};
 const umamiCalls = (page) => page.evaluate(() => window.__umamiCalls || []);
 
 async function honorStamp(page, slug, date) {

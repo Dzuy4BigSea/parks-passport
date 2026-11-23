@@ -26,6 +26,7 @@ test('banner on first visit; no _ga cookie until Accept, then one; choice rememb
   await banner.getByRole('button', { name: 'Accept' }).click();
   await expect(banner).toHaveCount(0);
   await expect.poll(() => gaCookie(context)).toBeTruthy();
+  await page.waitForFunction(() => Array.isArray(window.dataLayer));
   const pushed = await page.evaluate(() => window.dataLayer.filter((e) => e.event === 'consent_update'));
   expect(pushed).toEqual([{ event: 'consent_update', analytics: true, ads: false }]);
 
@@ -81,7 +82,10 @@ test('the banner does not cover the main action at 375px', async ({ page }) => {
 });
 
 test('dataLayer gets the spec events with exact keys and no personal data', async ({ page }) => {
-  const events = async () => page.evaluate(() => window.dataLayer.filter((e) => e && e.event && !e.event.startsWith('gtm.')));
+  const events = async () => {
+    await page.waitForFunction(() => Array.isArray(window.dataLayer));
+    return page.evaluate(() => window.dataLayer.filter((e) => e && e.event && !e.event.startsWith('gtm.')));
+  };
   await page.goto('/parks?q=lake&cat=dog-park');
   expect(await events()).toEqual([{ event: 'park_search', has_query: true, filter_count: 1 }]);
   await page.getByRole('button', { name: 'Reject' }).click();

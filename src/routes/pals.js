@@ -86,7 +86,7 @@ export default async function palRoutes(app) {
     const points = totalPoints(db, owner.id);
     return reply.page(passportPage({
       ...passportData(db, owner.id), user: owner, csrf: req.csrfToken(), points, level: levelFor(points),
-      badges: badgeBoard(db, owner.id).filter((b) => b.state === 'earned'), readOnly: true,
+      badges: badgeBoard(db, owner.id).filter((b) => b.state === 'earned'), readOnly: true, theme: app.theme(),
     }));
   });
 }

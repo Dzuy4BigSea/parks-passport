@@ -1,6 +1,8 @@
 import { requireUser } from '../lib/auth.js';
 import { getParkBySlug } from '../domain/parks.js';
-import { parsePosition } from '../domain/checkin.js';
+import { parsePosition, evaluateCheckin } from '../domain/checkin.js';
+import { distanceMeters } from '../domain/geo.js';
+import { stampFinderPage } from '../views/pages/stamp.js';
 import { stampVisit, deleteVisit, getVisit } from '../domain/visits.js';
 import { withUploads } from '../lib/uploads.js';
 import { awardBadges, revokeUnmetBadges } from '../domain/badges/index.js';
@@ -57,6 +59,32 @@ export default async function visitRoutes(app) {
     if (!park) return reply.callNotFound();
     const result = stampVisit(db, { user: req.user, park, method: 'gps', position: parsePosition(req.body) }, { now: app.now() });
     if (result.error) return parkWithProblem(req, reply, park, problemFor(result));
+    afterStamp(req.user, result.visit, park);
+    return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
+  });
+
+  // One-tap stamp (the tab bar's Stamp button): GPS position -> the nearest park -> a GPS stamp.
+  app.get('/stamp', { preHandler: requireUser }, async (req, reply) => reply.page(stampFinderPage({ csrf: req.csrfToken() })));
+
+  app.post('/stamp', { preHandler: requireUser }, async (req, reply) => {
+    const finder = (problem) => reply.code(422).page(stampFinderPage({ csrf: req.csrfToken(), problem }));
+    const position = parsePosition(req.body);
+    if (!position) return finder({ text: "We couldn't read your location. Allow location and try again, or pick your park from the list." });
+    const nearby = db.prepare('SELECT * FROM parks WHERE active = 1 AND lat IS NOT NULL AND lng IS NOT NULL').all()
+      .map((p) => ({ park: p, distance_m: distanceMeters(position, p) }))
+      .sort((a, b) => a.distance_m - b.distance_m);
+    const closest = nearby[0];
+    const list = nearby.slice(0, 3).map(({ park: p, distance_m }) => ({ slug: p.slug, name: p.name, distance_m }));
+    if (!closest) return finder({ text: 'No parks have a location yet.', nearby: [] });
+    // Radii differ per park, so the park to stamp is the nearest one whose check-in area holds the
+    // member, not just the nearest center.
+    const inside = nearby.find(({ park: p }) => evaluateCheckin(p, position).ok);
+    if (!inside) {
+      return finder({ text: `You're ${formatMiles(closest.distance_m)} from the closest park, ${closest.park.name}. Get a little closer, or stamp it on the honor system.`, nearby: list });
+    }
+    const park = getParkBySlug(db, inside.park.slug);
+    const result = stampVisit(db, { user: req.user, park, method: 'gps', position }, { now: app.now() });
+    if (result.error) return finder({ ...problemFor(result), text: `${park.name}: ${problemFor(result).text}`, nearby: list });
     afterStamp(req.user, result.visit, park);
     return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
   });

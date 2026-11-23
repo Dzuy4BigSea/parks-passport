@@ -4,6 +4,8 @@ import { CATEGORIES, categoryLabel } from '../../domain/categories.js';
 import { RULES } from '../../domain/badges/rules.js';
 import { formatDate, localDate } from '../../domain/time.js';
 import { badgeArt } from '../badge-art.js';
+import { raw } from '../html.js';
+import { sanitizeSvg } from '../../lib/svg-sanitize.js';
 
 const page = (title, body, extra = {}) => ({ title: `Admin · ${title}`, current: 'admin', ...extra, body });
 const crumb = html`<p class="breadcrumb"><a href="/admin">Admin</a></p>`;
@@ -25,6 +27,7 @@ export function adminHome({ counts }) {
   <li><a href="/admin/moderation"><strong>Moderation</strong><span>${counts.shared} shared photos and reviews</span></a></li>
   <li><a href="/admin/users"><strong>Members</strong><span>${counts.users} members · ${counts.admins} admins</span></a></li>
   <li><a href="/admin/email"><strong>Email</strong><span>Sender, subject lines, SendGrid key</span></a></li>
+  <li><a href="/admin/city"><strong>City theme</strong><span>Landmark icons, history and colors</span></a></li>
 </ul>`);
 }
 
@@ -268,4 +271,96 @@ ${testError ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${
   <button type="submit" class="btn">Send test email</button>
 </form>
 </section>`);
+}
+
+const textarea = (name, label, value, { rows = 3, hint, error } = {}) => html`<div class="field${error ? ' field-error' : ''}">
+  <label for="${name}">${label}</label>
+  ${hint ? html`<p class="hint" id="${name}-hint">${hint}</p>` : ''}
+  ${error ? html`<p class="error-text" id="${name}-error">${error}</p>` : ''}
+  <textarea id="${name}" name="${name}" rows="${rows}"${hint || error ? html` aria-describedby="${[hint ? `${name}-hint` : '', error ? `${name}-error` : ''].filter(Boolean).join(' ')}"` : ''}${error ? html` aria-invalid="true"` : ''}>${value ?? ''}</textarea>
+</div>`;
+
+function jobPanel(job, aiAvailable, csrf) {
+  const running = job?.status === 'running';
+  return html`<section class="card" aria-labelledby="ai-h">
+  <h2 id="ai-h">Generate with AI</h2>
+  <p>Claude searches the web for this city's best-known landmarks, history and nature, then drafts a line icon and a short blurb for each.
+  Drafts show below with a dashed border. Nothing appears on the site until you approve it.</p>
+  ${!aiAvailable ? html`<p class="notice">Set <code>ANTHROPIC_API_KEY</code> in the server's <code>.env</code> to turn this on.</p>` : ''}
+  ${running ? html`<p class="notice" role="status">Researching… this takes a few minutes. This page refreshes on its own.</p>` : ''}
+  ${job?.status === 'error' ? html`<p class="notice" role="alert">${job.error}</p>` : ''}
+  ${job?.status === 'done' ? html`<p class="notice" role="status">Added ${job.added} draft${job.added === 1 ? '' : 's'}${job.rejected ? ` (${job.rejected} skipped: duplicate or an icon that didn't pass the safety check)` : ''}.
+    ${job.suggestion?.accent ? html`Suggested colors: <span class="swatch" style="background:${job.suggestion.accent}"></span> ${job.suggestion.accent}${job.suggestion.accent_2 ? html` and <span class="swatch" style="background:${job.suggestion.accent_2}"></span> ${job.suggestion.accent_2}` : ''}${job.suggestion.tagline ? `, tagline "${job.suggestion.tagline}"` : ''}. Use them in the settings below if you like.` : ''}</p>` : ''}
+  <form method="post" action="/admin/city/generate">${csrfField(csrf)}
+    <button type="submit" class="btn btn-pop"${!aiAvailable || running ? html` disabled` : ''}>${running ? 'Generating…' : 'Generate landmark drafts'}</button>
+  </form>
+</section>`;
+}
+
+function motifCard(m, csrf, editing = null) {
+  const draft = m.status === 'draft';
+  const ed = editing?.id === m.id ? editing : null;
+  const val = ed ? ed.values : m;
+  const err = ed?.errors || {};
+  const action = (path, label, cls = 'btn btn-small') => html`<form method="post" action="/admin/city/motifs/${m.id}/${path}">${csrfField(csrf)}<button type="submit" class="${cls}">${label}</button></form>`;
+  return html`<li class="${draft ? 'is-draft' : ''}">
+  <div class="motif-row">
+    <span class="tile"><span class="motif" aria-hidden="true">${raw(sanitizeSvg(m.svg) || '')}</span></span>
+    <div><h3>${m.name}</h3>
+      <span class="status-pill${draft ? '' : ' ok'}">${draft ? 'Draft' : 'Live'}</span> <span class="muted">${{ seed: 'Hand-drawn', ai: 'AI draft', admin: 'Added by an admin' }[m.source]}</span></div>
+  </div>
+  ${m.blurb ? html`<p>${m.blurb}</p>` : ''}
+  <div class="actions">
+    ${draft ? action('approve', `Approve ${m.name}`, 'btn btn-small btn-primary') : action('unpublish', `Unpublish ${m.name}`)}
+    ${action('delete', `Delete ${m.name}`, 'btn btn-small btn-quiet')}
+  </div>
+  <details${ed ? html` open` : ''}><summary>Edit</summary>
+    <form method="post" action="/admin/city/motifs/${m.id}">${csrfField(csrf)}
+      ${ed ? html`<p class="error-text" role="alert" tabindex="-1" data-announce>Not saved. Fix the problems below.</p>` : ''}
+      ${input(`name-${m.id}`, 'Name', val.name, { error: err.name })}
+      ${textarea(`blurb-${m.id}`, 'Blurb', val.blurb, { error: err.blurb })}
+      ${textarea(`svg-${m.id}`, 'Icon SVG', val.svg, { rows: 5, error: err.svg, hint: '48×48 line drawing: path, circle, ellipse, line, polyline, polygon or rect only.' })}
+      <button type="submit" class="btn btn-small">Save ${m.name}</button>
+    </form>
+  </details>
+</li>`;
+}
+
+export function adminCity({ csrf, theme, motifs, job, aiAvailable, errors = {}, values = null, notice = null, motifErrors = {}, motifValues = null, editing = null }) {
+  const v = values || theme;
+  const drafts = motifs.filter((m) => m.status === 'draft').length;
+  return page('City theme', html`${crumb}<h1>City theme</h1>
+<p class="lede">${theme.name}'s landmark icons, history and colors appear on stamps, the home page, passports and the footer.</p>
+${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
+${jobPanel(job, aiAvailable, csrf)}
+
+<section aria-labelledby="motifs-h">
+  <h2 id="motifs-h">Motifs <span class="count">(${motifs.length - drafts} live${drafts ? `, ${drafts} to review` : ''})</span></h2>
+  <ul class="motif-admin">${motifs.map((m) => motifCard(m, csrf, editing))}</ul>
+</section>
+
+<section aria-labelledby="add-h">
+  <h2 id="add-h">Add a motif by hand</h2>
+  <form method="post" action="/admin/city/motifs/new" class="card-form admin-form">${csrfField(csrf)}
+    ${errorSummary(motifErrors)}
+    ${input('name', 'Name', motifValues?.name, { error: motifErrors.name, required: true })}
+    ${textarea('blurb', 'Blurb (optional)', motifValues?.blurb, { error: motifErrors.blurb })}
+    ${textarea('svg', 'Icon SVG', motifValues?.svg, { rows: 5, error: motifErrors.svg, hint: '<svg viewBox="0 0 48 48"> with path, circle, ellipse, line, polyline, polygon or rect shapes. The app adds the stroke.' })}
+    <button type="submit" class="btn btn-primary">Add motif</button>
+  </form>
+</section>
+
+<section aria-labelledby="settings-h">
+  <h2 id="settings-h">Settings</h2>
+  <form method="post" action="/admin/city/settings" class="card-form admin-form">${csrfField(csrf)}
+    ${errorSummary(Object.fromEntries(Object.entries(errors).map(([k, msg]) => [k === 'name' ? 'city_name' : k, msg])))}
+    ${input('city_name', 'City name', v.name, { error: errors.name, required: true })}
+    ${input('tagline', 'Nickname', v.tagline, { error: errors.tagline, hint: 'Shown on the home page and in the footer, e.g. "Sunshine City".' })}
+    <div class="two-col">
+      ${input('accent', 'Accent color', v.accent, { error: errors.accent, hint: 'Decorative only, e.g. #FF7A59.' })}
+      ${input('accent_2', 'Second accent color', v.accent_2, { error: errors.accent_2, hint: 'Decorative only.' })}
+    </div>
+    <button type="submit" class="btn btn-primary">Save settings</button>
+  </form>
+</section>`, job?.status === 'running' ? { head: html`<meta http-equiv="refresh" content="10">` } : {});
 }

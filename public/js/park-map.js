@@ -29,7 +29,7 @@ async function init() {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map);
-  L.circleMarker([lat, lng], { radius: 10, color: '#1d4a35', weight: 3, fillColor: '#f2c14e', fillOpacity: 1 })
+  L.circleMarker([lat, lng], { radius: 10, color: '#0e2a33', weight: 3, fillColor: '#ff4d88', fillOpacity: 1 })
     .addTo(map)
     .bindTooltip(document.createTextNode(el.dataset.name)); // text, never HTML
 }

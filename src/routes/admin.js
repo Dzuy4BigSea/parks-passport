@@ -10,7 +10,11 @@ import {
 } from '../domain/admin.js';
 import { saveEmailSettings, saveSendgridKey, clearSendgridKey, sendgridKey } from '../domain/settings.js';
 import {
-  adminEmail, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
+  activeThemeRow, listMotifs, saveThemeSettings, cleanMotif, addAdminMotif, updateMotif, setMotifStatus, deleteMotif,
+} from '../domain/city.js';
+import { themeJob, startThemeJob } from '../domain/theme-job.js';
+import {
+  adminCity, adminEmail, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
 } from '../views/pages/admin.js';
 
 const MAX_CSV_BYTES = 1024 * 1024;
@@ -38,7 +42,69 @@ export default async function adminRoutes(app) {
       .send(fs.createReadStream(file));
   });
 
+  function cityRoutes(r) {
+    const theme = () => activeThemeRow(db);
+    const show = (req, reply, extra = {}) => {
+      const t = theme();
+      if (!t) return reply.callNotFound();
+      return reply.page(adminCity({
+        csrf: req.csrfToken(), theme: t, motifs: listMotifs(db, t.id), job: themeJob(db, { now: now() }),
+        aiAvailable: Boolean(app.themeAi?.available), ...extra,
+      }));
+    };
+    const motifId = (req) => (/^\d+$/.test(req.params.id) ? Number(req.params.id) : null);
+
+    r.get('/city', async (req, reply) => show(req, reply, {
+      notice: { saved: 'Saved.', added: 'Motif added.', approved: 'Approved. It now appears on the site.', unpublished: 'Unpublished.', deleted: 'Deleted.', started: 'Started. Drafts appear here when it finishes.' }[req.query.done] || null,
+    }));
+    r.post('/city/settings', async (req, reply) => {
+      const t = theme();
+      if (!t) return reply.callNotFound();
+      const result = saveThemeSettings(db, t.id, { ...req.body, name: req.body.city_name }, { now: now() });
+      if (result.errors) return show(req, reply.code(422), { errors: result.errors, values: result.values });
+      return reply.redirect('/admin/city?done=saved', 303);
+    });
+    r.post('/city/generate', async (req, reply) => {
+      const job = startThemeJob(db, app.themeAi, { now, log: req.log });
+      if (job) app.trackJob(job);
+      return reply.redirect(`/admin/city${job ? '?done=started' : ''}`, 303);
+    });
+    r.post('/city/motifs/new', async (req, reply) => {
+      const t = theme();
+      if (!t) return reply.callNotFound();
+      const { motif, errors } = cleanMotif(req.body);
+      if (errors) return show(req, reply.code(422), { motifErrors: errors, motifValues: req.body });
+      addAdminMotif(db, t.id, motif, { now: now() });
+      return reply.redirect('/admin/city?done=added', 303);
+    });
+    r.post('/city/motifs/:id', async (req, reply) => {
+      const t = theme();
+      const id = motifId(req);
+      if (!t || !id) return reply.callNotFound();
+      const field = (k) => req.body[`${k}-${id}`];
+      const { motif, errors } = cleanMotif({ name: field('name'), blurb: field('blurb'), svg: field('svg') });
+      if (errors) {
+        return show(req, reply.code(422), { editing: { id, errors, values: { name: field('name') ?? '', blurb: field('blurb') ?? '', svg: field('svg') ?? '' } } });
+      }
+      if (!updateMotif(db, t.id, id, motif)) return reply.callNotFound();
+      return reply.redirect('/admin/city?done=saved', 303);
+    });
+    for (const [action, fn, done] of [
+      ['approve', (t, id) => setMotifStatus(db, t.id, id, 'approved'), 'approved'],
+      ['unpublish', (t, id) => setMotifStatus(db, t.id, id, 'draft'), 'unpublished'],
+      ['delete', (t, id) => deleteMotif(db, t.id, id), 'deleted'],
+    ]) {
+      r.post(`/city/motifs/:id/${action}`, async (req, reply) => {
+        const t = theme();
+        const id = motifId(req);
+        if (!t || !id || !fn(t, id)) return reply.callNotFound();
+        return reply.redirect(`/admin/city?done=${done}`, 303);
+      });
+    }
+  }
+
   function routes(r) {
+    cityRoutes(r);
     r.get('/', async (req, reply) => {
       const one = (sql) => db.prepare(sql).pluck().get();
       return reply.page(adminHome({ counts: {

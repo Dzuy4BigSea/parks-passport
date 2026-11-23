@@ -20,6 +20,8 @@ export function loadConfig(env = process.env) {
       umamiScriptUrl: env.UMAMI_SCRIPT_URL || '/stats/script.js',
       umamiHostUrl: (env.UMAMI_HOST_URL || `${(env.BASE_URL || 'http://localhost:8080').replace(/\/$/, '')}/stats`).replace(/\/$/, ''),
     },
+    // Admin › City theme: AI research and icon drafts (Claude). Empty = the Generate button is off.
+    anthropicApiKey: env.ANTHROPIC_API_KEY || '',
     mail: {
       transport: env.MAIL_TRANSPORT || (production ? 'sendgrid' : 'outbox'),
       outboxDir: path.join(dataDir, 'outbox'),
