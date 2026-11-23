@@ -101,9 +101,9 @@ rejected, no coordinates in other users' HTML or JSON).
 Outcome: every Flow 7 and Flow 6 criterion. Points rules, levels config, badge rule types,
 known/hidden/lucky, seed badges, recalculation on delete, passport page, map, history,
 `role="status"` announcements.
-Checks: `test/unit/points.test.js`, `test/unit/levels.test.js`,
-`test/unit/badges/*.test.js` (one per rule type, fixture visits, seeded RNG),
-`test/e2e/passport.spec.js`.
+Checks: `test/unit/badges.test.js` (one test per rule type with fixture visits, seeded RNG,
+levels, award once / revoke / lucky kept, announcements once), `test/unit/visits.test.js`
+(points rules), `test/e2e/passport.spec.js`.
 
 ### M6 — Privacy and Park Pals (Flow 8)
 Outcome: every Flow 8 criterion. Visibility levels, account default, share nudge, invite

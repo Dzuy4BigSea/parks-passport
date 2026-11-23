@@ -9,7 +9,7 @@ const telHref = (phone) => `tel:${phone.replace(/[^\d+]/g, '')}`;
 // Stamp result shown after a successful stamp (?stamped=<visit id>).
 function stampResult(result) {
   if (!result) return '';
-  return html`<div class="stamp-result" role="status">
+  return html`<div class="stamp-result" role="status" tabindex="-1" data-announce>
   <p class="stamp-mark" aria-hidden="true">${result.visit.method === 'gps' ? 'GPS ✓' : 'Stamped'}</p>
   <div>
     <h2>Stamped! +${result.visit.points} points</h2>

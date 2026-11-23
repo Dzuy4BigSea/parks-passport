@@ -6,12 +6,12 @@ const parseParams = (b) => {
 
 // Everything the rules need about one user, loaded once per evaluation.
 export function buildContext(db, userId, { trigger = null, random = Math.random, palSameDay = null } = {}) {
-  const visits = db.prepare(`SELECT v.id, v.park_id, v.visited_on, v.visited_at, v.created_at, v.method
-    FROM visits v JOIN parks p ON p.id = v.park_id WHERE v.user_id = ? AND p.active = 1
-    ORDER BY v.visited_on, v.id`).all(userId);
+  // All of the user's visits, including to parks an admin later deactivated, so deactivating a
+  // park never takes badges away. Only all_parks is limited to active parks (activeParkIds).
+  const visits = db.prepare(`SELECT id, park_id, visited_on, visited_at, created_at, method
+    FROM visits WHERE user_id = ? ORDER BY visited_on, id`).all(userId);
   const parkCategories = new Map();
-  for (const r of db.prepare(`SELECT pc.park_id, pc.category FROM park_categories pc
-      JOIN parks p ON p.id = pc.park_id WHERE p.active = 1`).all()) {
+  for (const r of db.prepare('SELECT park_id, category FROM park_categories').all()) {
     if (!parkCategories.has(r.park_id)) parkCategories.set(r.park_id, new Set());
     parkCategories.get(r.park_id).add(r.category);
   }

@@ -15,7 +15,7 @@ async function init() {
   }).addTo(map);
   L.circleMarker([lat, lng], { radius: 10, color: '#1d4a35', weight: 3, fillColor: '#f2c14e', fillOpacity: 1 })
     .addTo(map)
-    .bindTooltip(el.dataset.name);
+    .bindTooltip(document.createTextNode(el.dataset.name)); // text, never HTML
 }
 
 if (el) init().catch(() => { el.textContent = 'Map unavailable.'; });

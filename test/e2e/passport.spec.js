@@ -92,3 +92,35 @@ for (const width of [375, 1440]) {
     await page.screenshot({ path: info.outputPath(`passport-${width}.png`), fullPage: true });
   });
 }
+
+test('park names are shown as text in map tooltips, never run as HTML', async ({ page }) => {
+  const Database = (await import('better-sqlite3')).default;
+  const path = (await import('node:path')).default;
+  const db = new Database(path.join(process.env.PP_E2E_DATA_DIR, 'app.db'));
+  const evil = '<img src=x onerror="window.__xss=1">Allendale Park';
+  db.prepare("UPDATE parks SET name = ? WHERE slug = 'allendale-park'").run(evil);
+  try {
+    await signUp(page);
+    await page.goto('/passport');
+    const marker = page.getByTitle(`${evil}: not yet`, { exact: true });
+    await marker.hover();
+    await expect(page.locator('.leaflet-tooltip')).toHaveText(`${evil}: not yet`);
+    expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+    await page.goto('/parks/allendale-park');
+    await page.locator('.leaflet-interactive').hover();
+    await expect(page.locator('.leaflet-tooltip')).toHaveText(evil);
+    expect(await page.evaluate(() => window.__xss)).toBeUndefined();
+  } finally {
+    db.prepare("UPDATE parks SET name = 'Allendale Park' WHERE slug = 'allendale-park'").run();
+    db.close();
+  }
+});
+
+test('announcements and stamp results get focus so screen readers read them', async ({ page }) => {
+  await signUp(page);
+  await honorStamp(page, 'abercrombie-park');
+  // The badge announcement comes first in the page, so it gets focus.
+  await expect(page.locator('.announcements')).toBeFocused();
+  await page.reload(); // announcement shown once; the stamp result (?stamped=) remains
+  await expect(page.locator('.stamp-result')).toBeFocused();
+});

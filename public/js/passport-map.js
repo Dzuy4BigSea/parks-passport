@@ -19,8 +19,10 @@ async function init() {
       html: p.stamped ? '✓' : '○',
       iconSize: [26, 26],
     });
-    return L.marker([p.lat, p.lng], { icon, title: label, alt: label, keyboard: true })
-      .bindTooltip(label)
+    // keyboard: false: every park is already a link in the stamp grid, so markers aren't extra Tab stops.
+    // Tooltip gets a text node: Leaflet would treat a string as HTML.
+    return L.marker([p.lat, p.lng], { icon, title: label, alt: label, keyboard: false })
+      .bindTooltip(document.createTextNode(label))
       .on('click', () => { window.location.href = `/parks/${p.slug}`; })
       .addTo(map);
   });

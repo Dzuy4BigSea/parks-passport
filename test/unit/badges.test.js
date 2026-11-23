@@ -198,3 +198,20 @@ test('badge earned dates use the St. Pete date, not UTC', async () => {
   });
   assert.match(String(view.body), /Earned June 1, 2026/);
 });
+
+test('deactivating a park never takes badges away; only all_parks uses active parks', async () => {
+  const { db, user, parks } = await dbSetup();
+  const now = new Date('2026-06-01T16:00:00Z');
+  const a = stampVisit(db, { user, park: parks[0], method: 'honor' }, { now }).visit;
+  const b = stampVisit(db, { user, park: parks[1], method: 'honor' }, { now }).visit;
+  awardBadges(db, user.id, { type: 'visit', id: b.id }, { now, random: () => 0.9 });
+  assert.equal(db.prepare('SELECT COUNT(*) FROM user_badges').pluck().get(), 2); // one, two-dogs
+  db.prepare('UPDATE parks SET active = 0 WHERE id = ?').run(parks[0].id);
+  deleteVisit(db, { user, visitId: b.id }, { now });
+  // two-dogs is now unmet (only park 0 has a dog park visit) and is revoked; "one" is still met
+  // by the visit to the deactivated park.
+  assert.deepEqual(revokeUnmetBadges(db, user.id).map((x) => x.slug), ['two-dogs']);
+  assert.ok(a);
+  const ctx = (await import('../../src/domain/badges/index.js')).buildContext(db, user.id);
+  assert.equal(RULES.all_parks.evaluate({}, ctx).target, 1);
+});

@@ -6,7 +6,7 @@ import { html } from './html.js';
  */
 function announcementsBlock(a) {
   if (!a) return '';
-  return html`<div class="announcements" role="status">
+  return html`<div class="announcements" role="status" tabindex="-1" data-announce>
   ${a.levelUp ? html`<div class="announce announce-level"><span class="announce-art" aria-hidden="true">⬆️</span>
     <p><strong>Level up! You're now ${/^[AEIOU]/.test(a.levelUp.name) ? 'an' : 'a'} ${a.levelUp.name}.</strong></p></div>` : ''}
   ${a.badges.map((b) => html`<div class="announce"><span class="announce-art" aria-hidden="true">${b.art}</span>
@@ -33,6 +33,7 @@ export function layout({ title, body, head = null, scripts = [], current = '', u
 <link rel="stylesheet" href="/css/app.css">
 ${head}
 ${scripts.map((src) => html`<script type="module" src="${src}"></script>`)}
+<script type="module" src="/js/announce.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
