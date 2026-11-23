@@ -14,6 +14,9 @@ services:
     env_file: .env
     environment:
       PORT: 8080
+      # Public address for links in emails and invites (sign-in, reset, Park Pals) and the email
+      # logo. Set here, not only in .env, so production can never fall back to localhost.
+      BASE_URL: https://parkspassport.dzuynguyen.com
     volumes:
       - parks-passport-data:/data
     expose:
