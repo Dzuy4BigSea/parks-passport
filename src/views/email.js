@@ -1,4 +1,5 @@
 import { html } from './html.js';
+import { EMAIL_KINDS } from '../domain/email-copy.js';
 
 // Branded transactional emails (Gulf Pop). Email clients ignore most modern CSS, so this is a
 // table layout with inline styles, web-safe fonts, solid colors (no gradients) and a PNG logo
@@ -79,50 +80,34 @@ export function emailLayout({ baseUrl, preheader, heading, paragraphs = [], butt
 </html>`);
 }
 
-const EXPIRES = 'This link works once and expires in 15 minutes.';
+// Member emails: wording from Admin › Email › Messages (domain/email-copy.js), defaults otherwise.
+const fill = (text, name) => String(text).split('{name}').join(name);
+// Blank lines split paragraphs; single line breaks stay as <br>. Everything is escaped.
+const paragraphsOf = (body, name) => fill(body, name).split(/\n{2,}/).map((para) => {
+  const lines = para.split('\n');
+  return html`${lines.map((l, i) => (i ? html`<br>${l}` : l))}`;
+});
 
-// Each builder returns { subject, text, html }. The text versions keep the link as the first URL.
-export function magicLinkEmail({ baseUrl, subject, name, url, tagline }) {
+/** { subject, text, html } for one member email. copy = { subject, preheader, heading, body, button, note }. */
+export function memberEmail({ kind, copy, baseUrl, tagline, name, url }) {
+  const def = EMAIL_KINDS[kind];
+  const c = { ...def.defaults, ...copy };
+  const note = fill(c.note, name);
   return {
-    subject,
-    text: `Hi ${name},\n\nSign in to Parks Passport:\n${url}\n\n${EXPIRES} If you didn't ask for it, ignore this email.\n`,
+    subject: fill(c.subject, name),
+    // Plain text: the link is the first URL, so text-only mail apps and tests find it.
+    text: `${fill(c.body, name)}\n\n${c.button}:\n${url}\n${note ? `\n${note}\n` : ''}`,
     html: emailLayout({
-      baseUrl, tagline, preheader: 'Your one-tap sign-in link. It expires in 15 minutes.',
-      heading: 'Your sign-in link',
-      paragraphs: [`Hi ${name},`, 'Tap the button to sign in to your passport. No password needed.'],
-      button: { label: 'Sign in to Parks Passport', url },
-      note: `${EXPIRES} If you didn't ask for it, you can ignore this email.`,
+      baseUrl, tagline, preheader: fill(c.preheader, name), heading: fill(c.heading, name),
+      paragraphs: paragraphsOf(c.body, name), button: { label: c.button, url, danger: def.danger }, note,
     }),
   };
 }
 
-export function passwordResetEmail({ baseUrl, subject, name, url, tagline }) {
-  return {
-    subject,
-    text: `Hi ${name},\n\nChoose a new password:\n${url}\n\n${EXPIRES} If you didn't ask for it, ignore this email; your password hasn't changed.\n`,
-    html: emailLayout({
-      baseUrl, tagline, preheader: 'Choose a new password. The link expires in 15 minutes.',
-      heading: 'Reset your password',
-      paragraphs: [`Hi ${name},`, 'Tap the button to choose a new password for your passport.'],
-      button: { label: 'Choose a new password', url },
-      note: `${EXPIRES} If you didn't ask for it, ignore this email; your password hasn't changed.`,
-    }),
-  };
-}
-
-export function deleteAccountEmail({ baseUrl, subject, name, url, tagline }) {
-  return {
-    subject,
-    text: `Hi ${name},\n\nTo permanently delete your account and everything in it, open:\n${url}\n\n${EXPIRES} If you didn't ask for this, ignore this email.\n`,
-    html: emailLayout({
-      baseUrl, tagline, preheader: 'Confirm deleting your Parks Passport account.',
-      heading: 'Confirm deleting your account',
-      paragraphs: [`Hi ${name},`, 'This permanently deletes your account and everything in it: stamps, photos, ratings, badges and Park Pals. It can\'t be undone.'],
-      button: { label: 'Yes, delete my account', url, danger: true },
-      note: `${EXPIRES} If you didn't ask for this, ignore this email and your account stays as it is.`,
-    }),
-  };
-}
+// Shortcuts used by the auth routes and tests; `copy` defaults to the shipped wording.
+export const magicLinkEmail = ({ subject, copy = {}, ...o }) => memberEmail({ ...o, kind: 'magic_link', copy: { subject, ...copy } });
+export const passwordResetEmail = ({ subject, copy = {}, ...o }) => memberEmail({ ...o, kind: 'password_reset', copy: { subject, ...copy } });
+export const deleteAccountEmail = ({ subject, copy = {}, ...o }) => memberEmail({ ...o, kind: 'delete_account', copy: { subject, ...copy } });
 
 export function testEmail({ baseUrl, fromName, fromAddress, tagline }) {
   return {

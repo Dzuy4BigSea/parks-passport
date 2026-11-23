@@ -1,5 +1,6 @@
 import { requireUser, safeNext } from '../lib/auth.js';
 import { magicLinkEmail, passwordResetEmail, deleteAccountEmail } from '../views/email.js';
+import { emailCopy } from '../domain/email-copy.js';
 import { verifyPassword, burnPasswordCheck } from '../lib/crypto.js';
 import {
   createUser, findUserByEmail, findUserById, createSession, deleteSession, deleteAllSessions,
@@ -104,7 +105,7 @@ export default async function authRoutes(app) {
     if (user) {
       emailLink(user, 'magic_link', (token) => ({
         to: user.email,
-        ...magicLinkEmail({ ...brand(), subject: app.emailSettings().subject_magic_link, name: user.display_name,
+        ...magicLinkEmail({ ...brand(), subject: app.emailSettings().subject_magic_link, copy: emailCopy(db, 'magic_link'), name: user.display_name,
           url: `${link('/auth/magic', token)}${next ? `&next=${encodeURIComponent(next)}` : ''}` }),
       }));
     }
@@ -133,7 +134,7 @@ export default async function authRoutes(app) {
     if (user) {
       emailLink(user, 'password_reset', (token) => ({
         to: user.email,
-        ...passwordResetEmail({ ...brand(), subject: app.emailSettings().subject_password_reset, name: user.display_name, url: link('/reset', token) }),
+        ...passwordResetEmail({ ...brand(), subject: app.emailSettings().subject_password_reset, copy: emailCopy(db, 'password_reset'), name: user.display_name, url: link('/reset', token) }),
       }));
     }
     return reply.page(checkEmailPage({ what: 'a password reset link' }));
@@ -205,7 +206,7 @@ export default async function authRoutes(app) {
     const token = createAuthToken(db, req.user.id, 'delete_account', { now: now() });
     return sendOrFail(reply, {
       to: req.user.email,
-      ...deleteAccountEmail({ ...brand(), subject: app.emailSettings().subject_delete_account, name: req.user.display_name, url: link('/account/delete/confirm', token) }),
+      ...deleteAccountEmail({ ...brand(), subject: app.emailSettings().subject_delete_account, copy: emailCopy(db, 'delete_account'), name: req.user.display_name, url: link('/account/delete/confirm', token) }),
     }, page);
   });
 

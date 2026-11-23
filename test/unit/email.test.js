@@ -68,3 +68,65 @@ test('production pins the public address, so email links and the logo never poin
   const compose = fs.readFileSync(new URL('../../docker-compose.aster.yml', import.meta.url), 'utf8');
   assert.match(compose, /^\s+BASE_URL: https:\/\/parkspassport\.dzuynguyen\.com$/m);
 });
+
+// ---- Admin › Email › Messages ----
+
+async function adminClient(app, db) {
+  const c = client(app);
+  await c.post('/signup', { display_name: 'Dee', email: 'dee@example.com', password: 'correct horse battery' });
+  db.prepare("UPDATE users SET is_admin = 1 WHERE email = 'dee@example.com'").run();
+  return c;
+}
+
+test('admin edits an email\'s wording; members get it, with {name} filled in and escaped', async () => {
+  const { app, db, mailer } = makeApp();
+  const sam = client(app);
+  await sam.post('/signup', { display_name: '<b>Sam</b>', email: 'sam@example.com', password: 'correct horse battery' });
+  assert.equal((await sam.get('/admin/email/messages/magic_link')).statusCode, 404);
+
+  const dee = await adminClient(app, db);
+  assert.equal((await dee.get('/admin/email/messages/nope')).statusCode, 404);
+  const page = await dee.get('/admin/email/messages/magic_link');
+  assert.equal(page.statusCode, 200);
+  assert.match(page.body, /<iframe title="Preview of the sign-in link email" srcdoc="/);
+
+  const bad = await dee.post('/admin/email/messages/magic_link', { subject: '', heading: 'x'.repeat(81), body: 'b', button: 'Go' });
+  assert.equal(bad.statusCode, 422);
+  assert.match(bad.body, /Enter the subject line/);
+
+  const ok = await dee.post('/admin/email/messages/magic_link', {
+    subject: 'Your key to the parks, {name}', preheader: 'Tap to get back in', heading: 'Welcome back, {name}!',
+    body: 'Hey {name},\n\nOne tap and you\'re in.\nSee you outside.', button: 'Open my passport', note: '',
+  });
+  assert.equal(ok.statusCode, 303);
+  await client(app).post('/login/magic', { magic_email: 'sam@example.com' });
+  await app.mailIdle();
+  const msg = mailer.sent.at(-1);
+  assert.equal(msg.subject, 'Your key to the parks, <b>Sam</b>');
+  assert.match(msg.html, /Welcome back, &lt;b&gt;Sam&lt;\/b&gt;!/);
+  assert.match(msg.html, /One tap and you&#39;re in\.<br>See you outside\./);
+  assert.match(msg.html, /Open my passport/);
+  assert.doesNotMatch(msg.html, /<b>Sam<\/b>/);
+  assert.match(mailer.linkIn(msg), /\/auth\/magic\?token=/);
+  assert.match((await dee.get('/admin/email')).body, /Custom wording/);
+
+  // Reset puts the wording back (the subject stays as saved).
+  assert.equal((await dee.post('/admin/email/messages/magic_link/reset')).statusCode, 303);
+  await client(app).post('/login/magic', { magic_email: 'sam@example.com' });
+  await app.mailIdle();
+  assert.match(mailer.sent.at(-1).html, /Your sign-in link/);
+});
+
+test('admin can send themselves a preview; the sender form no longer needs subjects', async () => {
+  const { app, db, mailer } = makeApp();
+  const dee = await adminClient(app, db);
+  const res = await dee.post('/admin/email/messages/delete_account/send');
+  assert.equal(res.statusCode, 200);
+  assert.match(res.body, /Preview sent to dee@example\.com/);
+  const msg = mailer.sent.at(-1);
+  assert.equal(msg.to, 'dee@example.com');
+  assert.match(msg.subject, /^\[Preview\] /);
+  assert.match(msg.html, /Yes, delete my account/);
+  const saved = await dee.post('/admin/email', { mail_from_name: 'Parks Passport', mail_from_address: 'hi@example.com', mail_reply_to: '' });
+  assert.equal(saved.statusCode, 303);
+});

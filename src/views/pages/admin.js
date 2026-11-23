@@ -220,7 +220,7 @@ ${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${no
 </table></div>`);
 }
 
-export function adminEmail({ csrf, settings, values = null, errors = {}, key, transport, me, notice, keyError, testError }) {
+export function adminEmail({ csrf, settings, values = null, errors = {}, key, transport, me, notice, keyError, testError, messages = [] }) {
   const v = values || settings;
   const keyStatus = {
     admin: html`A key ending in <strong>…${key.hint}</strong> is saved here (encrypted). It's used instead of any key in <code>.env</code>.`,
@@ -232,18 +232,22 @@ ${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${no
 ${transport !== 'sendgrid' ? html`<p class="notice">This server writes emails to its outbox folder (<code>MAIL_TRANSPORT=${transport}</code>), so nothing is actually sent.</p>` : ''}
 
 <section aria-labelledby="sender-h">
-<h2 id="sender-h">Sender and subject lines</h2>
+<h2 id="sender-h">Sender</h2>
 ${errorSummary(errors)}
 <form method="post" action="/admin/email" class="card-form admin-form">
   ${csrfField(csrf)}
   ${input('mail_from_name', 'From name', v.mail_from_name, { required: true, error: errors.mail_from_name })}
   ${input('mail_from_address', 'From address', v.mail_from_address, { type: 'email', required: true, error: errors.mail_from_address, hint: 'Must be a sender (or domain) verified in SendGrid.' })}
   ${input('mail_reply_to', 'Reply-to address (optional)', v.mail_reply_to, { type: 'email', error: errors.mail_reply_to })}
-  ${input('subject_magic_link', 'Subject: sign-in link', v.subject_magic_link, { required: true, error: errors.subject_magic_link })}
-  ${input('subject_password_reset', 'Subject: password reset', v.subject_password_reset, { required: true, error: errors.subject_password_reset })}
-  ${input('subject_delete_account', 'Subject: confirm account deletion', v.subject_delete_account, { required: true, error: errors.subject_delete_account })}
   <button type="submit" class="btn btn-primary">Save email settings</button>
 </form>
+</section>
+
+<section aria-labelledby="messages-h">
+<h2 id="messages-h">Messages</h2>
+<p>Change the wording of each email members get. Every email uses the Parks Passport design.</p>
+<ul class="admin-cards">${messages.map((m) => html`<li><a href="/admin/email/messages/${m.kind}"><strong>${m.label}</strong>
+  <span>${m.subject}</span><span>${m.customized ? 'Custom wording' : 'Default wording'}</span></a></li>`)}</ul>
 </section>
 
 <section aria-labelledby="key-h">
@@ -363,4 +367,40 @@ ${jobPanel(job, aiAvailable, csrf)}
     <button type="submit" class="btn btn-primary">Save settings</button>
   </form>
 </section>`, job?.status === 'running' ? { head: html`<meta http-equiv="refresh" content="10">` } : {});
+}
+
+// Admin › Email › Messages › one email: edit its wording, preview it, send a preview, reset.
+export function adminEmailMessage({ csrf, kind, def, fields, values, errors = {}, previewHtml, customized, notice, sendError, me }) {
+  const field = (name) => {
+    const spec = fields[name];
+    const common = { error: errors[name], hint: spec.hint, required: spec.required };
+    return spec.oneLine
+      ? input(name, spec.label, values[name], { ...common, attrs: html`maxlength="${spec.max}"` })
+      : textarea(name, spec.label, values[name], { ...common, rows: name === 'body' ? 6 : 3 });
+  };
+  return page(def.label, html`<p class="breadcrumb"><a href="/admin">Admin</a> › <a href="/admin/email">Email</a></p>
+<h1>${def.label}</h1>
+<p class="lede">${def.when}</p>
+${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${notice}</p>` : ''}
+${sendError ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${sendError}</p>` : ''}
+<div class="email-editor">
+  <form method="post" action="/admin/email/messages/${kind}" class="card-form admin-form">
+    ${csrfField(csrf)}
+    ${errorSummary(errors)}
+    ${['subject', 'preheader', 'heading', 'body', 'button', 'note'].map(field)}
+    <p class="hint">The link, the logo, the colors and the footer are added for you.</p>
+    <button type="submit" class="btn btn-primary">Save wording</button>
+  </form>
+  <section aria-labelledby="preview-h" class="email-preview">
+    <h2 id="preview-h">Preview</h2>
+    <iframe title="Preview of the ${def.label.toLowerCase()} email" srcdoc="${previewHtml}" loading="lazy"></iframe>
+    <div class="actions">
+      <form method="post" action="/admin/email/messages/${kind}/send">${csrfField(csrf)}
+        <button type="submit" class="btn">Send me a preview</button></form>
+      ${customized ? html`<form method="post" action="/admin/email/messages/${kind}/reset">${csrfField(csrf)}
+        <button type="submit" class="btn btn-quiet">Reset to default wording</button></form>` : ''}
+    </div>
+    <p class="hint">The preview goes to ${me.email}. Its button opens the home page, not a real sign-in link.</p>
+  </section>
+</div>`);
 }
