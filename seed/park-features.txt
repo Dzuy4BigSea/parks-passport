@@ -1,0 +1,108 @@
+# Raw "Park Features" values from the City site, count, and the categories they map to.
+# Edit seed/categories.js to change the mapping, then re-run npm run seed:scrape.
+ 42  Playground  ->  playground
+  8  Scenic View  ->  scenic-view
+  8  Restrooms  ->  restrooms
+  7  Picnic Shelters  ->  picnic-shelter
+  7  Shelters  ->  picnic-shelter
+  7  Recreation Trails  ->  trails
+  6  Recreation Trail  ->  trails
+  5  Picnic Shelter  ->  picnic-shelter
+  5  Dog Park  ->  dog-park
+  4  Shelter  ->  picnic-shelter
+  4  Pickleball Courts  ->  pickleball
+  4  Tennis Courts  ->  tennis
+  4  Lake  ->  lake
+  3  Sports Complex  ->  ball-fields
+  3  Basketball Court  ->  basketball
+  3  Boat Ramps  ->  water-access
+  3  2 Tennis Courts  ->  tennis
+  3  6 Pickleball Courts  ->  pickleball
+  3  Baseball Fields  ->  ball-fields
+  2  Exercise Zone  ->  fitness
+  2  Recreation Center  ->  recreation-center
+  2  Gazebo  ->  picnic-shelter
+  2  2 Boat Ramps  ->  water-access
+  2  Outdoor Exercise Zone  ->  fitness
+  2  Lighted Basketball Court  ->  basketball
+  2  Skatepark  ->  skatepark
+  2  Beach  ->  beach
+  2  Non-Lighted Outdoor Basketball Half-Court  ->  basketball
+  2  Scenic Views  ->  scenic-view
+  2  Walter Fuller Pool  ->  pool
+  1  Picnic Tables  ->  picnic-shelter
+  1  Restroom  ->  restrooms
+  1  Azalea Recreation Center  ->  recreation-center
+  1  Azalea Sports Complex  ->  ball-fields
+  1  Pickleball Courts (6)  ->  pickleball
+  1  Shuffleboard  ->  (none)
+  1  St. Petersburg Tennis Center  ->  tennis
+  1  Cricket Field  ->  ball-fields
+  1  Lighted Pickleball Court  ->  pickleball
+  1  Baseball Complex  ->  ball-fields
+  1  Blue Ways Trail System  ->  trails, water-access
+  1  Clam Bayou Estuary  ->  history-nature
+  1  Kayak Launch  ->  water-access
+  1  Paddling Destination  ->  water-access
+  1  Greenspace  ->  (none)
+  1  Cooking Grill  ->  picnic-shelter
+  1  Coquina Key Sports Complex  ->  ball-fields
+  1  Huggins-Stengel Sports Complex  ->  ball-fields
+  1  TASCO Center for Teen Technology  ->  recreation-center
+  1  Crisp Park Exercise Zone  ->  fitness
+  1  9 Shelters with Grills  ->  picnic-shelter
+  1  Climbing Boulders  ->  fitness
+  1  Fishing Pier  ->  water-access
+  1  Golf Driving Range & Putting Green  ->  (none)
+  1  Kayak/Canoe Launch  ->  water-access
+  1  Shade-covered Areas  ->  picnic-shelter
+  1  Splash Pad  ->  pool
+  1  Non-lighted Baseketball Half Court  ->  basketball
+  1  Non-lighted Softball Field  ->  ball-fields
+  1  Adjacent to St. Petersburg Community Library  ->  (none)
+  1  Next to St. Petersburg College - Gibbs Campus  ->  (none)
+  1  Scenic Lake  ->  lake, scenic-view
+  1  Gizella Kopsick Arboretum  ->  history-nature
+  1  Sundial  ->  history-nature
+  1  4 Tennis Courts  ->  tennis
+  1  Fossil Park Pool  ->  pool
+  1  Fossil Park Sports Complex  ->  ball-fields
+  1  Willis S. Johns Recreation Center  ->  recreation-center
+  1  Historic Landmark  ->  history-nature
+  1  Arbor  ->  picnic-shelter
+  1  Historic Indian Midden  ->  history-nature
+  1  Jack Puryear Sports Complex  ->  ball-fields
+  1  Jorgensen Lake Exercise Zone  ->  lake, fitness
+  1  lake  ->  lake
+  1  Basketball Courts  ->  basketball
+  1  Fitness Trail  ->  trails, fitness
+  1  Lighted Outdoor Basketball Courts  ->  basketball
+  1  Lighted Regulation Size Baseball Fields  ->  ball-fields
+  1  We-Go ADA Accessible Swing  ->  playground
+  1  Educational Trail  ->  trails
+  1  North Shore Aquatic Complex  ->  pool
+  1  North Shore Sports Complex  ->  ball-fields
+  1  Concrete Stage  ->  (none)
+  1  Boat Ramp  ->  water-access
+  1  Kayak Rack  ->  water-access
+  1  2 Lighted Youth Size Baseball Fields  ->  ball-fields
+  1  Lighted Regulation Size Baseball Field  ->  ball-fields
+  1  J.W. Cate Recreation Center  ->  recreation-center
+  1  Northwest Pool  ->  pool
+  1  Northwest Sports Complex  ->  ball-fields
+  1  Volleyball Court  ->  ball-fields
+  1  Non-Lighted Outdoor Basketball Court  ->  basketball
+  1  Sculpture  ->  history-nature
+  1  3 Shelters  ->  picnic-shelter
+  1  Bat Box  ->  history-nature
+  1  Community Garden  ->  history-nature
+  1  Large Pavillion  ->  picnic-shelter
+  1  2 Lighted Outdoor Basketball Courts  ->  basketball
+  1  2 Shelters  ->  picnic-shelter
+  1  Historic Statues  ->  history-nature
+  1  Water Fountain  ->  (none)
+  1  Recreation trails  ->  trails
+  1  Soccer Fields  ->  ball-fields
+  1  Walter Fuller Recreation Center  ->  recreation-center
+  1  Performance Stage  ->  (none)
+  1  Adult Athletic Leagues  ->  (none)

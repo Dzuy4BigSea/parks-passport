@@ -62,7 +62,7 @@ the DB.
   and invalid counts. Runs at startup when the parks table is empty.
 
 Checks: `test/unit/csv-import.test.js` (valid, invalid and idempotent re-import);
-`seed/parks.csv` has 103 rows, all inside the St. Pete bounding box or flagged `needs_pin`.
+`seed/parks.csv` has 102 rows, all inside the St. Pete bounding box or flagged `needs_pin`.
 Dzuy reviews the category list and the flagged rows.
 
 ### M2 — Browse and search parks (Flow 2) + visual foundation

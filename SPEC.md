@@ -308,7 +308,7 @@ aster behind the shared nginx at `https://parkspassport.dzuynguyen.com`, with da
 
 ## Open questions
 - **Park coordinates:** the City directory
-  (https://www.stpeteparksrec.org/parks___facilities/_parks.php) lists **103 parks** with name,
+  (https://www.stpeteparksrec.org/parks___facilities/_parks.php) lists **102 parks** with name,
   address (often an intersection such as "Park St. and 38th Ave. N."), phone, and a link to an
   info page. The info page has "Park Features" (e.g. Scenic View, Picnic Tables), hours and a
   description. **It has no coordinates.** `npm run seed:scrape` builds `seed/parks.csv`
