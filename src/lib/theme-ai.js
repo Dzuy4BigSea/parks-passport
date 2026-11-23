@@ -5,6 +5,11 @@
 
 const MODEL = 'claude-opus-5-5';
 const MAX_CONTINUATIONS = 5;
+// The whole run must end before the job counts as dead (theme-job.js STALE_MS = 15 minutes).
+export const RUN_DEADLINE_MS = 12 * 60 * 1000;
+
+/** An error whose message is written for the admin and safe to show on the page. */
+export class UserFacingError extends Error {}
 
 const SAVE_TOOL = {
   name: 'save_city_theme',
@@ -68,11 +73,21 @@ export function createThemeGenerator({ apiKey = '', clientFactory = null } = {})
   async function client() {
     if (clientFactory) return clientFactory();
     const { default: Anthropic } = await import('@anthropic-ai/sdk');
-    return new Anthropic({ apiKey, timeout: 9 * 60 * 1000, maxRetries: 2 });
+    return new Anthropic({ apiKey, timeout: 5 * 60 * 1000, maxRetries: 1 });
   }
 
-  async function generate({ city, existing = [] }) {
-    if (!available) throw new Error('No ANTHROPIC_API_KEY is set on the server.');
+  async function generate(args, { deadlineMs = RUN_DEADLINE_MS } = {}) {
+    if (!available) throw new UserFacingError('No ANTHROPIC_API_KEY is set on the server.');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(new DOMException('The theme run took too long.', 'TimeoutError')), deadlineMs);
+    try {
+      return await run(args, controller.signal);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function run({ city, existing = [] }, signal) {
     const anthropic = await client();
     const tools = [{ type: 'web_search_20260209', name: 'web_search', max_uses: 8 }, SAVE_TOOL];
     const messages = [{ role: 'user', content: userPrompt({ city, existing }) }];
@@ -89,8 +104,8 @@ export function createThemeGenerator({ apiKey = '', clientFactory = null } = {})
         betas: ['server-side-fallback-2026-07-01'],
         fallbacks: 'default',
         messages,
-      });
-      if (response.stop_reason === 'refusal') throw new Error('The model declined this request. Try a different city name.');
+      }, { signal });
+      if (response.stop_reason === 'refusal') throw new UserFacingError('The model declined this request. Try a different city name.');
       const call = response.content.find((b) => b.type === 'tool_use' && b.name === SAVE_TOOL.name);
       if (call) return call.input;
       if (response.stop_reason === 'pause_turn') {
@@ -98,13 +113,13 @@ export function createThemeGenerator({ apiKey = '', clientFactory = null } = {})
         messages.push({ role: 'assistant', content: response.content });
         continue;
       }
-      if (response.stop_reason === 'max_tokens') throw new Error('The response ran out of room before it finished. Try again.');
+      if (response.stop_reason === 'max_tokens') throw new UserFacingError('The response ran out of room before it finished. Try again.');
       if (reminded) break;
       reminded = true;
       messages.push({ role: 'assistant', content: response.content });
       messages.push({ role: 'user', content: 'Please call save_city_theme now with your motifs.' });
     }
-    throw new Error("The model didn't return a theme. Try again.");
+    throw new UserFacingError("The model didn't return a theme. Try again.");
   }
 
   return { available, generate };

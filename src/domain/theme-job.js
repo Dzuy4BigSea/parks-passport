@@ -1,4 +1,5 @@
 import { activeThemeRow, addDraftMotifs, cleanMotif } from './city.js';
+import { UserFacingError } from '../lib/theme-ai.js';
 
 // The "Generate with AI" job for the city theme. It runs in the background (a web-search turn can
 // take a few minutes, longer than the proxy waits), and its state lives in the settings table so
@@ -69,12 +70,15 @@ export function startThemeJob(db, generator, { now = () => new Date(), log = nul
     })
     .catch((err) => {
       log?.error({ err: err.message }, 'city theme generation failed');
-      // Only our own messages reach the page; API errors are summarized, never echoed raw.
+      // Only our own messages reach the page; anything else gets a fixed summary.
       const status = err?.status;
-      const message = status === 401 ? 'The Anthropic API key was rejected. Check ANTHROPIC_API_KEY on the server.'
-        : status === 429 ? 'The Anthropic API is rate limiting requests. Try again in a few minutes.'
-          : status >= 500 ? 'The Anthropic API had a problem. Try again in a few minutes.'
-            : err instanceof Error && !status && err.message.length < 200 ? err.message : 'Generation failed. Check the server log.';
+      const message = err instanceof UserFacingError ? err.message
+        : status === 401 ? 'The Anthropic API key was rejected. Check ANTHROPIC_API_KEY on the server.'
+          : status === 429 ? 'The Anthropic API is rate limiting requests. Try again in a few minutes.'
+            : status >= 500 ? 'The Anthropic API had a problem. Try again in a few minutes.'
+              : err?.name === 'AbortError' || err?.name === 'TimeoutError' || /abort/i.test(err?.constructor?.name || '')
+                ? 'Generation took too long and was stopped. Try again.'
+                : 'Generation failed. Check the server log.';
       write(db, { status: 'error', started_at: startedAt, finished_at: now().toISOString(), error: message }, now());
     });
 }

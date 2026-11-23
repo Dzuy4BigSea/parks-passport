@@ -5,6 +5,7 @@ import { RULES } from '../../domain/badges/rules.js';
 import { formatDate, localDate } from '../../domain/time.js';
 import { badgeArt } from '../badge-art.js';
 import { raw } from '../html.js';
+import { sanitizeSvg } from '../../lib/svg-sanitize.js';
 
 const page = (title, body, extra = {}) => ({ title: `Admin · ${title}`, current: 'admin', ...extra, body });
 const crumb = html`<p class="breadcrumb"><a href="/admin">Admin</a></p>`;
@@ -296,12 +297,15 @@ function jobPanel(job, aiAvailable, csrf) {
 </section>`;
 }
 
-function motifCard(m, csrf) {
+function motifCard(m, csrf, editing = null) {
   const draft = m.status === 'draft';
+  const ed = editing?.id === m.id ? editing : null;
+  const val = ed ? ed.values : m;
+  const err = ed?.errors || {};
   const action = (path, label, cls = 'btn btn-small') => html`<form method="post" action="/admin/city/motifs/${m.id}/${path}">${csrfField(csrf)}<button type="submit" class="${cls}">${label}</button></form>`;
   return html`<li class="${draft ? 'is-draft' : ''}">
   <div class="motif-row">
-    <span class="tile"><span class="motif" aria-hidden="true">${raw(m.svg)}</span></span>
+    <span class="tile"><span class="motif" aria-hidden="true">${raw(sanitizeSvg(m.svg) || '')}</span></span>
     <div><h3>${m.name}</h3>
       <span class="status-pill${draft ? '' : ' ok'}">${draft ? 'Draft' : 'Live'}</span> <span class="muted">${{ seed: 'Hand-drawn', ai: 'AI draft', admin: 'Added by an admin' }[m.source]}</span></div>
   </div>
@@ -310,18 +314,19 @@ function motifCard(m, csrf) {
     ${draft ? action('approve', `Approve ${m.name}`, 'btn btn-small btn-primary') : action('unpublish', `Unpublish ${m.name}`)}
     ${action('delete', `Delete ${m.name}`, 'btn btn-small btn-quiet')}
   </div>
-  <details><summary>Edit</summary>
+  <details${ed ? html` open` : ''}><summary>Edit</summary>
     <form method="post" action="/admin/city/motifs/${m.id}">${csrfField(csrf)}
-      ${input(`name-${m.id}`, 'Name', m.name)}
-      ${textarea(`blurb-${m.id}`, 'Blurb', m.blurb)}
-      ${textarea(`svg-${m.id}`, 'Icon SVG', m.svg, { rows: 5, hint: '48×48 line drawing: path, circle, ellipse, line, polyline, polygon or rect only.' })}
+      ${ed ? html`<p class="error-text" role="alert" tabindex="-1" data-announce>Not saved. Fix the problems below.</p>` : ''}
+      ${input(`name-${m.id}`, 'Name', val.name, { error: err.name })}
+      ${textarea(`blurb-${m.id}`, 'Blurb', val.blurb, { error: err.blurb })}
+      ${textarea(`svg-${m.id}`, 'Icon SVG', val.svg, { rows: 5, error: err.svg, hint: '48×48 line drawing: path, circle, ellipse, line, polyline, polygon or rect only.' })}
       <button type="submit" class="btn btn-small">Save ${m.name}</button>
     </form>
   </details>
 </li>`;
 }
 
-export function adminCity({ csrf, theme, motifs, job, aiAvailable, errors = {}, values = null, notice = null, motifErrors = {}, motifValues = null }) {
+export function adminCity({ csrf, theme, motifs, job, aiAvailable, errors = {}, values = null, notice = null, motifErrors = {}, motifValues = null, editing = null }) {
   const v = values || theme;
   const drafts = motifs.filter((m) => m.status === 'draft').length;
   return page('City theme', html`${crumb}<h1>City theme</h1>
@@ -331,7 +336,7 @@ ${jobPanel(job, aiAvailable, csrf)}
 
 <section aria-labelledby="motifs-h">
   <h2 id="motifs-h">Motifs <span class="count">(${motifs.length - drafts} live${drafts ? `, ${drafts} to review` : ''})</span></h2>
-  <ul class="motif-admin">${motifs.map((m) => motifCard(m, csrf))}</ul>
+  <ul class="motif-admin">${motifs.map((m) => motifCard(m, csrf, editing))}</ul>
 </section>
 
 <section aria-labelledby="add-h">

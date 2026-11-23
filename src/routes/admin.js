@@ -83,7 +83,9 @@ export default async function adminRoutes(app) {
       if (!t || !id) return reply.callNotFound();
       const field = (k) => req.body[`${k}-${id}`];
       const { motif, errors } = cleanMotif({ name: field('name'), blurb: field('blurb'), svg: field('svg') });
-      if (errors) return show(req, reply.code(422), { notice: `Not saved: ${Object.values(errors).join(' ')}` });
+      if (errors) {
+        return show(req, reply.code(422), { editing: { id, errors, values: { name: field('name') ?? '', blurb: field('blurb') ?? '', svg: field('svg') ?? '' } } });
+      }
       if (!updateMotif(db, t.id, id, motif)) return reply.callNotFound();
       return reply.redirect('/admin/city?done=saved', 303);
     });

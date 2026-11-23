@@ -76,10 +76,13 @@ export default async function visitRoutes(app) {
     const closest = nearby[0];
     const list = nearby.slice(0, 3).map(({ park: p, distance_m }) => ({ slug: p.slug, name: p.name, distance_m }));
     if (!closest) return finder({ text: 'No parks have a location yet.', nearby: [] });
-    if (!evaluateCheckin(closest.park, position).ok) {
+    // Radii differ per park, so the park to stamp is the nearest one whose check-in area holds the
+    // member, not just the nearest center.
+    const inside = nearby.find(({ park: p }) => evaluateCheckin(p, position).ok);
+    if (!inside) {
       return finder({ text: `You're ${formatMiles(closest.distance_m)} from the closest park, ${closest.park.name}. Get a little closer, or stamp it on the honor system.`, nearby: list });
     }
-    const park = getParkBySlug(db, closest.park.slug);
+    const park = getParkBySlug(db, inside.park.slug);
     const result = stampVisit(db, { user: req.user, park, method: 'gps', position }, { now: app.now() });
     if (result.error) return finder({ ...problemFor(result), text: `${park.name}: ${problemFor(result).text}`, nearby: list });
     afterStamp(req.user, result.visit, park);

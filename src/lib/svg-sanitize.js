@@ -78,7 +78,7 @@ export function sanitizeSvg(input) {
     if (++count > MAX_ELEMENTS) return null;
     const attrs = [];
     for (const [k, v] of parseAttrs(attrSrc)) {
-      const rule = ATTRS[k];
+      const rule = Object.hasOwn(ATTRS, k) ? ATTRS[k] : null;
       if (!rule || !rule.test(v)) return null;
       attrs.push(` ${k}="${v}"`);
     }

@@ -43,6 +43,8 @@ test('sanitizer: anything beyond plain shapes is rejected', () => {
     '<svg viewBox="0 0 48 48"><path d="M0 0"/></svg><script>x</script>',
     '<svg viewBox="0 0 48 48"></svg>',
     `<svg viewBox="0 0 48 48">${'<path d="M0 0"/>'.repeat(61)}</svg>`,
+    '<svg viewBox="0 0 48 48"><path constructor="x"/></svg>',
+    '<svg viewBox="0 0 48 48"><path toString="x" valueOf="y"/></svg>',
     'not svg', '', null,
   ];
   for (const s of bad) assert.equal(sanitizeSvg(s), null, String(s));
@@ -172,6 +174,17 @@ test('/stamp: inside a park stamps it by GPS; far away stamps nothing and lists 
   assert.match(again.body, /Already stamped today/);
 });
 
+test('/stamp: stamps the nearest park whose radius holds you, even if another park\'s center is nearer', async () => {
+  const { app, db } = cityApp({ now: testClock('2026-06-01T16:00:00Z') });
+  db.prepare("UPDATE parks SET checkin_radius_m = 1500 WHERE slug = 'abercrombie-park'").run();
+  db.prepare("UPDATE parks SET checkin_radius_m = 50, lat = 27.8000, lng = -82.7400 WHERE slug = 'lake-vista-park'").run();
+  const sam = await member(app);
+  // ~600 m from Lake Vista's moved center (outside its 50 m), ~1.1 km from Abercrombie (inside 1500 m).
+  const res = await sam.post('/stamp', { lat: '27.8010', lng: '-82.7460', accuracy: '10' });
+  assert.equal(res.statusCode, 303);
+  assert.match(res.headers.location, /^\/parks\/abercrombie-park\?stamped=/);
+});
+
 test('home: landing page signed out; dashboard with next park, next badge and streak signed in', async () => {
   const { app } = cityApp({ now: testClock('2026-06-01T16:00:00Z') });
   const landing = await client(app).get('/');
@@ -238,6 +251,8 @@ test('admin city: 404 for members; AI drafts stay off the site until approved', 
   // Editing re-sanitizes; a bad icon is refused and nothing changes.
   const bad = await boss.post(`/admin/city/motifs/${draft.id}`, { [`name-${draft.id}`]: 'X', [`blurb-${draft.id}`]: '', [`svg-${draft.id}`]: '<svg><script/></svg>' });
   assert.equal(bad.statusCode, 422);
+  assert.match(bad.body, /Not saved\. Fix the problems below/);
+  assert.match(bad.body, new RegExp(`id="name-${draft.id}" name="name-${draft.id}" type="text" value="X"`));
   assert.equal(db.prepare('SELECT name FROM city_motifs WHERE id = ?').pluck().get(draft.id), 'Sunken Gardens');
   assert.equal((await boss.post(`/admin/city/motifs/${draft.id}/delete`)).statusCode, 303);
   assert.equal(db.prepare('SELECT COUNT(*) FROM city_motifs WHERE id = ?').pluck().get(draft.id), 0);
@@ -289,4 +304,22 @@ test('theme generator: resumes paused turns, nudges once for the tool call, and 
   replies.push({ stop_reason: 'refusal', content: [] });
   await assert.rejects(gen.generate({ city: 'x' }), /declined/);
   assert.equal(createThemeGenerator({ apiKey: '' }).available, false);
+});
+
+test('theme job: internal errors and timeouts never reach the page word for word', async () => {
+  const { app, db } = cityApp({ themeAi: fakeGenerator(new TypeError('rule.test is not a function')) });
+  const boss = await admin(app, db);
+  await boss.post('/admin/city/generate');
+  await app.themeJobIdle();
+  assert.equal(themeJob(db).error, 'Generation failed. Check the server log.');
+
+  const slow = { beta: { messages: { create: (req, { signal }) => new Promise((_, reject) => signal.addEventListener('abort', () => reject(signal.reason))) } } };
+  const gen = createThemeGenerator({ apiKey: 'test', clientFactory: () => slow });
+  const err = await gen.generate({ city: 'x' }, { deadlineMs: 20 }).catch((e) => e);
+  assert.equal(err.name, 'TimeoutError');
+  const { app: app2, db: db2 } = cityApp({ themeAi: { available: true, generate: () => Promise.reject(err) } });
+  const boss2 = await admin(app2, db2);
+  await boss2.post('/admin/city/generate');
+  await app2.themeJobIdle();
+  assert.equal(themeJob(db2).error, 'Generation took too long and was stopped. Try again.');
 });
