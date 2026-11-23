@@ -3,7 +3,8 @@ FROM node:22-slim
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package*.json ./
-RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
+# --ignore-scripts: native deps ship prebuilt binaries; skip node-gyp (no Python in the image).
+RUN npm ci --omit=dev --no-audit --no-fund --ignore-scripts && npm cache clean --force
 COPY . .
 RUN mkdir -p /data && chown node:node /data
 USER node
