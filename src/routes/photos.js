@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { requireUser, safeNext } from '../lib/auth.js';
 import { getParkBySlug } from '../domain/parks.js';
 import { storePhoto, photoPath, removePhotoFiles } from '../lib/images.js';
-import { addPhoto, getPhoto, canSeePhoto, updatePhoto, deletePhoto } from '../domain/photos.js';
+import { addPhoto, getPhoto, canSeePhoto, updatePhoto, deletePhoto, todaysVisitAt } from '../domain/photos.js';
 import { saveRating, deleteRating } from '../domain/ratings.js';
 import { awardBadges } from '../domain/badges/index.js';
 import { renderParkPage } from './park-view.js';
@@ -27,7 +27,9 @@ export default async function photoRoutes(app) {
     }
     let photo;
     try {
-      photo = addPhoto(db, { user: req.user, park, stored, caption, visibility: str(req.body.visibility) }, { now: app.now() });
+      // A photo taken on a day you stamped this park counts toward that stamp (+3).
+      const visitId = todaysVisitAt(db, req.user.id, park.id, app.now());
+      photo = addPhoto(db, { user: req.user, park, visitId, stored, caption, visibility: str(req.body.visibility) }, { now: app.now() });
     } catch (err) {
       await removePhotoFiles(uploadsDir, stored.fileKey);
       throw err;

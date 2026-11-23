@@ -8,7 +8,7 @@ import { palsAtParkOnDay } from '../domain/pals.js';
 import { formatMiles } from '../domain/geo.js';
 import { formatDate, localDate } from '../domain/time.js';
 import { storePhoto, removePhotoFiles } from '../lib/images.js';
-import { addPhoto } from '../domain/photos.js';
+import { addPhoto, attachSameDayPhotos } from '../domain/photos.js';
 import { renderParkPage } from './park-view.js';
 
 const MESSAGES = {
@@ -28,6 +28,8 @@ export default async function visitRoutes(app) {
   // Badges for the stamper, and "Better Together" for pals who stamped here the same day.
   function afterStamp(user, visit) {
     const opts = { now: app.now(), random: app.random };
+    // Photos already uploaded here that day count toward this stamp (+3).
+    attachSameDayPhotos(db, user.id, visit, { now: app.now() });
     awardBadges(db, user.id, { type: 'visit', id: visit.id }, opts);
     for (const palId of palsAtParkOnDay(db, user.id, visit.park_id, visit.visited_on)) {
       awardBadges(db, palId, { type: 'pal', id: user.id }, { ...opts, random: () => 1 });
