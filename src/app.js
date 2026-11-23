@@ -2,8 +2,7 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import formbody from '@fastify/formbody';
 import cookie from '@fastify/cookie';
-import multipart from '@fastify/multipart';
-import { MAX_UPLOAD_BYTES, removePhotoFiles } from './lib/images.js';
+import { removePhotoFiles } from './lib/images.js';
 import { fileKeysForUser } from './domain/photos.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -60,13 +59,7 @@ export function buildApp({
   app.addHook('onClose', async () => db.close());
 
   app.register(formbody);
-  // Multipart fields land in req.body as strings and files as Buffers, so the CSRF check and the
-  // routes treat both kinds of form the same. The slightly higher limit lets storePhoto give a
-  // friendly "over 10 MB" message instead of a bare 413.
-  app.register(multipart, {
-    attachFieldsToBody: 'keyValues',
-    limits: { fileSize: MAX_UPLOAD_BYTES + 1024 * 1024, files: 1, fields: 20, fieldSize: 64 * 1024 },
-  });
+  // Multipart (uploads) is registered only around the photo routes: see lib/uploads.js.
   app.register(cookie);
   app.register(authPlugin, { db, now, secureCookies: config.secureCookies });
   app.register(fastifyStatic, {
@@ -119,6 +112,19 @@ export function buildApp({
   app.register(passportRoutes);
   app.register(palRoutes);
   app.register(photoRoutes);
+
+  // Friendly HTML errors instead of Fastify's JSON (e.g. an upload over the size limit).
+  app.setErrorHandler((err, req, reply) => {
+    const status = err.statusCode >= 400 && err.statusCode < 600 ? err.statusCode : 500;
+    if (status >= 500) req.log.error(err);
+    const text = status === 413 || err.code === 'FST_FILES_LIMIT'
+      ? 'That upload is too big. Photos can be up to 10 MB, one at a time.'
+      : status === 415 ? "This form can't take that kind of upload."
+        : status < 500 ? 'Something about that request was wrong. Go back and try again.'
+          : 'Something went wrong on our side. Try again in a minute.';
+    reply.code(status);
+    return reply.page({ title: 'Something went wrong', body: html`<h1>Sorry</h1><p>${text}</p><p><a href="/parks">Back to parks</a></p>` });
+  });
 
   app.setNotFoundHandler((req, reply) => {
     reply.code(404);

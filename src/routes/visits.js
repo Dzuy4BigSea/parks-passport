@@ -1,7 +1,8 @@
 import { requireUser } from '../lib/auth.js';
 import { getParkBySlug } from '../domain/parks.js';
 import { parsePosition } from '../domain/checkin.js';
-import { stampVisit, deleteVisit } from '../domain/visits.js';
+import { stampVisit, deleteVisit, getVisit } from '../domain/visits.js';
+import { withUploads } from '../lib/uploads.js';
 import { awardBadges, revokeUnmetBadges } from '../domain/badges/index.js';
 import { palsAtParkOnDay } from '../domain/pals.js';
 import { formatMiles } from '../domain/geo.js';
@@ -57,7 +58,8 @@ export default async function visitRoutes(app) {
     return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
   });
 
-  app.post('/parks/:slug/stamp', { preHandler: requireUser }, async (req, reply) => {
+  // Honor stamp, optionally with a photo (a photo stamp). The only visit route that takes uploads.
+  withUploads(app, (scope) => scope.post('/parks/:slug/stamp', { preHandler: requireUser }, async (req, reply) => {
     const park = getParkBySlug(db, req.params.slug);
     if (!park) return reply.callNotFound();
     const visitedOn = typeof req.body.visited_on === 'string' && req.body.visited_on ? req.body.visited_on : null;
@@ -65,19 +67,29 @@ export default async function visitRoutes(app) {
     const file = Buffer.isBuffer(req.body.photo) && req.body.photo.length ? req.body.photo : null;
     const stored = file ? await storePhoto(file, app.config.uploadsDir) : null;
     if (stored?.error) return parkWithProblem(req, reply, park, { text: stored.error, offerHonor: true });
-    const method = stored ? 'photo' : 'honor';
-    const result = stampVisit(db, { user: req.user, park, method, visitedOn }, { now: app.now() });
+    let result;
+    try {
+      // The visit and its photo are saved together, or not at all.
+      result = db.transaction(() => {
+        const r = stampVisit(db, { user: req.user, park, method: stored ? 'photo' : 'honor', visitedOn }, { now: app.now() });
+        if (!r.error && stored) {
+          addPhoto(db, { user: req.user, park, visitId: r.visit.id, stored,
+            caption: typeof req.body.caption === 'string' ? req.body.caption : '' }, { now: app.now() });
+          r.visit = getVisit(db, r.visit.id); // points now include the photo bonus
+        }
+        return r;
+      })();
+    } catch (err) {
+      if (stored) await removePhotoFiles(app.config.uploadsDir, stored.fileKey);
+      throw err;
+    }
     if (result.error) {
       if (stored) await removePhotoFiles(app.config.uploadsDir, stored.fileKey);
       return parkWithProblem(req, reply, park, problemFor(result));
     }
-    if (stored) {
-      addPhoto(db, { user: req.user, park, visitId: result.visit.id, stored,
-        caption: typeof req.body.caption === 'string' ? req.body.caption : '' }, { now: app.now() });
-    }
     afterStamp(req.user, result.visit);
     return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
-  });
+  }));
 
   app.post('/visits/:id/delete', { preHandler: requireUser }, async (req, reply) => {
     const visit = deleteVisit(db, { user: req.user, visitId: Number(req.params.id) }, { now: app.now() });

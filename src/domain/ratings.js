@@ -3,10 +3,13 @@ import { POINTS } from './points.js';
 
 export const MAX_COMMENT = 500;
 
+// Browsers send line breaks as CRLF but count them as one character for maxlength.
+export const normalizeText = (s) => String(s || '').replace(/\r\n?/g, '\n').trim();
+
 export function validateRating({ stars, comment }) {
   const n = Number(stars);
   if (!Number.isInteger(n) || n < 1 || n > 5) return 'Choose from 1 to 5 stars.';
-  if (String(comment || '').trim().length > MAX_COMMENT) return `Keep your comment to ${MAX_COMMENT} characters.`;
+  if (normalizeText(comment).length > MAX_COMMENT) return `Keep your comment to ${MAX_COMMENT} characters.`;
   return null;
 }
 
@@ -18,7 +21,7 @@ export function saveRating(db, { user, park, stars, comment = '', visibility }, 
   const error = validateRating({ stars, comment });
   if (error) return { error };
   const existing = db.prepare('SELECT * FROM ratings WHERE user_id = ? AND park_id = ?').get(user.id, park.id);
-  const text = String(comment).trim();
+  const text = normalizeText(comment);
   const ts = now.toISOString();
   if (existing) {
     const vis = VISIBILITY.includes(visibility) ? visibility : existing.visibility;

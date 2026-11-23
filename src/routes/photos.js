@@ -6,6 +6,7 @@ import { addPhoto, getPhoto, canSeePhoto, updatePhoto, deletePhoto } from '../do
 import { saveRating, deleteRating } from '../domain/ratings.js';
 import { awardBadges } from '../domain/badges/index.js';
 import { renderParkPage } from './park-view.js';
+import { withUploads } from '../lib/uploads.js';
 
 const fileOf = (body, name) => (Buffer.isBuffer(body?.[name]) ? body[name] : null);
 const str = (v, max = 1000) => (typeof v === 'string' ? v.slice(0, max) : '');
@@ -15,17 +16,25 @@ export default async function photoRoutes(app) {
   const uploadsDir = app.config.uploadsDir;
   const badgeOpts = () => ({ now: app.now(), random: app.random });
 
-  // Upload a photo to a park (not tied to a stamp).
-  app.post('/parks/:slug/photos', { preHandler: requireUser }, async (req, reply) => {
+  // Upload a photo to a park (not tied to a stamp). The only photo route that takes uploads.
+  withUploads(app, (scope) => scope.post('/parks/:slug/photos', { preHandler: requireUser }, async (req, reply) => {
     const park = getParkBySlug(db, req.params.slug);
     if (!park) return reply.callNotFound();
+    const caption = str(req.body.caption, 400);
     const stored = await storePhoto(fileOf(req.body, 'photo'), uploadsDir);
-    if (stored.error) return renderParkPage(app, req, reply, park, { problem: { text: stored.error, area: 'photo' } });
-    const photo = addPhoto(db, { user: req.user, park, stored, caption: str(req.body.caption, 400), visibility: str(req.body.visibility) },
-      { now: app.now() });
+    if (stored.error) {
+      return renderParkPage(app, req, reply, park, { problem: { text: stored.error, area: 'photo', values: { caption } } });
+    }
+    let photo;
+    try {
+      photo = addPhoto(db, { user: req.user, park, stored, caption, visibility: str(req.body.visibility) }, { now: app.now() });
+    } catch (err) {
+      await removePhotoFiles(uploadsDir, stored.fileKey);
+      throw err;
+    }
     awardBadges(db, req.user.id, { type: 'photo', id: photo.id }, badgeOpts());
     return reply.redirect(`/parks/${park.slug}?photo=added#photos`, 303);
-  });
+  }));
 
   // Serve a photo only to viewers allowed to see it; everyone else gets 404.
   app.get('/photos/:id/:size', async (req, reply) => {
@@ -37,7 +46,7 @@ export default async function photoRoutes(app) {
     if (!fs.existsSync(file)) return reply.callNotFound();
     const shared = photo.visibility === 'public' && !photo.hidden;
     return reply.type('image/jpeg')
-      .header('Cache-Control', shared ? 'public, max-age=86400' : 'private, no-store')
+      .header('Cache-Control', shared ? 'public, max-age=300' : 'private, no-store') // short: may be made private later
       .header('X-Content-Type-Options', 'nosniff')
       .send(fs.createReadStream(file));
   });
@@ -63,7 +72,9 @@ export default async function photoRoutes(app) {
     if (!park) return reply.callNotFound();
     const result = saveRating(db, { user: req.user, park, stars: req.body.stars, comment: str(req.body.comment, 2000),
       visibility: str(req.body.visibility) }, { now: app.now() });
-    if (result.error) return renderParkPage(app, req, reply, park, { problem: { text: result.error, area: 'rating' } });
+    if (result.error) {
+      return renderParkPage(app, req, reply, park, { problem: { text: result.error, area: 'rating', values: { comment: str(req.body.comment, 2000) } } });
+    }
     awardBadges(db, req.user.id, { type: 'rating', id: result.rating.id }, badgeOpts());
     return reply.redirect(`/parks/${park.slug}?rated=1#ratings`, 303);
   });

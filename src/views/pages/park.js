@@ -11,8 +11,9 @@ const visibilitySelect = (id, current) => html`<select id="${id}" name="visibili
   ${VISIBILITY.map((v) => html`<option value="${v}"${v === current ? html` selected` : ''}>${VISIBILITY_LABELS[v]}</option>`)}
 </select>`;
 
+// Errors get focus on load (announce.js), so they're seen and read even far down the page.
 const areaProblem = (problem, area) => (problem && problem.area === area
-  ? html`<p class="notice" role="alert">${problem.text}</p>` : '');
+  ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${problem.text}</p>` : '');
 
 const telHref = (phone) => `tel:${phone.replace(/[^\d+]/g, '')}`;
 
@@ -40,7 +41,7 @@ function stampPanel({ park, user, csrf, today, myVisits, problem: allProblems })
   const hasPin = park.lat != null;
   return html`<section class="stamp-panel" aria-labelledby="stamp-h">
   <h2 id="stamp-h">Stamp this park</h2>
-  ${problem ? html`<p class="notice" role="alert">${problem.text}</p>` : ''}
+  ${problem ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${problem.text}</p>` : ''}
   ${stampedToday
     ? html`<p class="stamped-today">✓ Stamped today.</p>`
     : html`${hasPin ? html`<form method="post" action="/parks/${park.slug}/checkin" id="checkin-form" hidden>
@@ -85,6 +86,7 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
   const scripts = [];
   if (hasPin) scripts.push('/js/park-map.js');
   if (user && hasPin) scripts.push('/js/checkin.js');
+  if (user) scripts.push('/js/upload-check.js');
   return {
     title: park.name,
     current: 'parks',
@@ -145,7 +147,7 @@ function ratingsSection({ park, user, csrf, summary, reviews, mine, problem }) {
     </fieldset>
     <div class="field">
       <label for="comment">Comment (optional)</label>
-      <textarea id="comment" name="comment" maxlength="500" rows="3">${mine?.comment || ''}</textarea>
+      <textarea id="comment" name="comment" maxlength="500" rows="3">${problem?.area === 'rating' ? problem.values?.comment : mine?.comment || ''}</textarea>
     </div>
     <div class="field">
       <label for="rating_visibility">Who can read your comment</label>
@@ -193,7 +195,7 @@ function photosSection({ park, user, csrf, photos, problem }) {
     </div>
     <div class="field">
       <label for="caption">Caption (optional)</label>
-      <input type="text" id="caption" name="caption" maxlength="200">
+      <input type="text" id="caption" name="caption" maxlength="200" value="${problem?.area === 'photo' ? problem.values?.caption || '' : ''}">
     </div>
     <div class="field">
       <label for="photo_visibility">Who can see it</label>

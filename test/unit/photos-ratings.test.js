@@ -90,7 +90,7 @@ test('a bad upload shows an inline error and saves nothing', async () => {
   const res = await people.ana.c.postMultipart('/parks/a-park/photos', { caption: 'x' },
     { photo: { buffer: Buffer.from('%PDF-1.4 not a photo'), filename: 'doc.jpg', type: 'image/jpeg' } });
   assert.equal(res.statusCode, 422);
-  assert.match(res.body, /role="alert">That file is not a photo we can read/);
+  assert.match(res.body, /role="alert" tabindex="-1" data-announce>That file is not a photo we can read/);
   assert.equal(db.prepare('SELECT COUNT(*) FROM photos').pluck().get(), 0);
 });
 
@@ -217,4 +217,45 @@ test('deleting an account removes its photos (files too) and ratings', async () 
   assert.equal(db.prepare('SELECT COUNT(*) FROM photos').pluck().get(), 0);
   assert.equal(db.prepare('SELECT COUNT(*) FROM ratings').pluck().get(), 0);
   assert.ok(!fs.existsSync(photoPath(uploadsDir, key, 'full')));
+});
+
+test('decompression bombs are refused before decoding', async () => {
+  const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || '/tmp', 'pp-img-'));
+  const bomb = await sharp({ create: { width: 10000, height: 6000, channels: 3, background: '#fff' } }).png().toBuffer();
+  assert.ok(bomb.length < 10 * 1024 * 1024, 'small file');
+  assert.match((await storePhoto(bomb, dir)).error, /over 50 megapixels/);
+});
+
+test('a truncated image gets the inline message and leaves no files', async () => {
+  const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || '/tmp', 'pp-img-'));
+  const good = await phonePhoto({ width: 800, height: 600 });
+  const res = await storePhoto(good.subarray(0, Math.floor(good.length / 2)), dir);
+  assert.match(res.error, /not a photo we can read/);
+  const leftover = fs.readdirSync(dir, { recursive: true }).filter((f) => String(f).endsWith('.jpg'));
+  assert.deepEqual(leftover, []);
+});
+
+test('uploads are only parsed on the photo routes; other POSTs refuse multipart', async () => {
+  const { people } = await world();
+  const res = await people.ana.c.postMultipart('/login', { email: 'x@example.com', password: 'whatever!!' },
+    { photo: { buffer: Buffer.alloc(1024), filename: 'a.bin' } });
+  assert.equal(res.statusCode, 415);
+  assert.match(res.body, /<h1>Sorry<\/h1>/);
+});
+
+test('comments with line breaks count them as one character, like the browser', async () => {
+  const { db, people } = await world();
+  const comment = Array.from({ length: 100 }, () => 'abcd').join('\r\n'); // 499 chars counted as the browser does
+  assert.equal(comment.replace(/\r\n/g, '\n').length, 499);
+  const res = await people.ana.c.post('/parks/a-park/rating', { stars: '4', comment });
+  assert.equal(res.statusCode, 303);
+  assert.ok(!db.prepare('SELECT comment FROM ratings').pluck().get().includes('\r'));
+});
+
+test('a failed rating keeps the typed comment and focuses the error', async () => {
+  const { people } = await world();
+  const res = await people.ana.c.post('/parks/a-park/rating', { stars: '9', comment: 'Keep me' });
+  assert.equal(res.statusCode, 422);
+  assert.match(res.body, /data-announce>Choose from 1 to 5 stars\./);
+  assert.match(res.body, />Keep me<\/textarea>/);
 });
