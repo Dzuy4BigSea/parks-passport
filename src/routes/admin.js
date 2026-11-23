@@ -8,8 +8,9 @@ import {
   allParksForAdmin, parkForAdmin, saveParkFromForm, allBadgesForAdmin, badgeForAdmin, validateBadgeForm, saveBadge,
   moderationQueue, setPhotoHidden, setCommentHidden, allUsersForAdmin, setAdminFlag,
 } from '../domain/admin.js';
+import { saveEmailSettings, saveSendgridKey, clearSendgridKey, sendgridKey } from '../domain/settings.js';
 import {
-  adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
+  adminEmail, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
 } from '../views/pages/admin.js';
 
 const MAX_CSV_BYTES = 1024 * 1024;
@@ -105,6 +106,41 @@ export default async function adminRoutes(app) {
     r.post('/reviews/:id/hidden', async (req, reply) => {
       if (!setCommentHidden(db, Number(req.params.id), req.body.hidden === '1')) return reply.callNotFound();
       return reply.redirect(safeNext(req.body.back), 303);
+    });
+
+    // Email: sender, subjects, SendGrid key, test send.
+    const emailPage = (req, extra = {}) => adminEmail({
+      csrf: req.csrfToken(), settings: app.emailSettings(), transport: app.config.mailTransport,
+      key: sendgridKey(db, app.secretBox, { envKey: app.config.sendgridEnvKey || '' }), me: req.user, ...extra,
+    });
+    r.get('/email', async (req, reply) => reply.page(emailPage(req, { notice: { saved: 'Email settings saved.', key: 'SendGrid key saved.', removed: 'Saved key removed.' }[req.query.done] })));
+    r.post('/email', async (req, reply) => {
+      const result = saveEmailSettings(db, req.body, { now: now() });
+      if (result.errors) return reply.code(422).page(emailPage(req, { errors: result.errors, values: result.values }));
+      return reply.redirect('/admin/email?done=saved', 303);
+    });
+    r.post('/email/key', async (req, reply) => {
+      const result = saveSendgridKey(db, app.secretBox, req.body.sendgrid_key, { now: now() });
+      if (result.error) return reply.code(422).page(emailPage(req, { keyError: result.error }));
+      return reply.redirect('/admin/email?done=key', 303);
+    });
+    r.post('/email/key/delete', async (req, reply) => {
+      clearSendgridKey(db);
+      return reply.redirect('/admin/email?done=removed', 303);
+    });
+    r.post('/email/test', async (req, reply) => {
+      const s = app.emailSettings();
+      try {
+        await app.mailer.send({
+          to: req.user.email,
+          subject: `${s.mail_from_name}: test email`,
+          text: `This is a test from Parks Passport's admin. If you're reading it, email sending works.\n\nSender: ${s.mail_from_name} <${s.mail_from_address}>\n`,
+        });
+        return reply.page(emailPage(req, { notice: `Test email sent to ${req.user.email}. Check the inbox (and spam).` }));
+      } catch (err) {
+        req.log.warn({ err: err.message }, 'test email failed');
+        return reply.code(502).page(emailPage(req, { testError: `Sending failed: ${err.message}${err.detail ? ` (${err.detail})` : ''}` }));
+      }
     });
 
     // Members

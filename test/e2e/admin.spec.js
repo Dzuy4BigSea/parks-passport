@@ -80,7 +80,7 @@ test('badge form shows only the chosen rule\'s settings', async ({ page }) => {
   await expect(page.getByLabel('N (how many)')).toBeVisible();
 });
 
-for (const url of ['/admin', '/admin/parks', '/admin/badges', '/admin/moderation', '/admin/users', '/admin/import']) {
+for (const url of ['/admin', '/admin/parks', '/admin/badges', '/admin/moderation', '/admin/users', '/admin/import', '/admin/email']) {
   test(`${url} fits at 375px and passes axe`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     const { email } = await signUp(page, { name: 'Admin' });

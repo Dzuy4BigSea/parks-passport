@@ -5,9 +5,10 @@ const pair = (a, b) => (a < b ? [a, b] : [b, a]);
 const newToken = () => crypto.randomBytes(18).toString('base64url');
 
 // The user's invite token, created on first use.
-export function inviteTokenFor(db, userId, { now = new Date() } = {}) {
+export function inviteTokenFor(db, userId, { now = new Date(), onCreate = () => {} } = {}) {
   const row = db.prepare('SELECT token FROM pal_invites WHERE user_id = ?').get(userId);
   if (row) return row.token;
+  onCreate();
   const token = newToken();
   db.prepare('INSERT INTO pal_invites (user_id, token, created_at) VALUES (?, ?, ?)').run(userId, token, now.toISOString());
   return token;

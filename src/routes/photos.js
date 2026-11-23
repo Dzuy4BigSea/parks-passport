@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { requireUser, safeNext } from '../lib/auth.js';
 import { getParkBySlug } from '../domain/parks.js';
 import { storePhoto, photoPath, removePhotoFiles } from '../lib/images.js';
-import { addPhoto, getPhoto, canSeePhoto, updatePhoto, deletePhoto } from '../domain/photos.js';
+import { addPhoto, getPhoto, canSeePhoto, updatePhoto, deletePhoto, todaysVisitAt } from '../domain/photos.js';
 import { saveRating, deleteRating } from '../domain/ratings.js';
 import { awardBadges } from '../domain/badges/index.js';
 import { renderParkPage } from './park-view.js';
@@ -27,12 +27,15 @@ export default async function photoRoutes(app) {
     }
     let photo;
     try {
-      photo = addPhoto(db, { user: req.user, park, stored, caption, visibility: str(req.body.visibility) }, { now: app.now() });
+      // A photo taken on a day you stamped this park counts toward that stamp (+3).
+      const visitId = todaysVisitAt(db, req.user.id, park.id, app.now());
+      photo = addPhoto(db, { user: req.user, park, visitId, stored, caption, visibility: str(req.body.visibility) }, { now: app.now() });
     } catch (err) {
       await removePhotoFiles(uploadsDir, stored.fileKey);
       throw err;
     }
     awardBadges(db, req.user.id, { type: 'photo', id: photo.id }, badgeOpts());
+    app.track(req.user.id, 'photo_upload', { park_slug: park.slug });
     return reply.redirect(`/parks/${park.slug}?photo=added#photos`, 303);
   }));
 
@@ -76,6 +79,7 @@ export default async function photoRoutes(app) {
       return renderParkPage(app, req, reply, park, { problem: { text: result.error, area: 'rating', values: { comment: str(req.body.comment, 2000) } } });
     }
     awardBadges(db, req.user.id, { type: 'rating', id: result.rating.id }, badgeOpts());
+    app.track(req.user.id, 'rating_submit', { park_slug: park.slug, stars: result.rating.stars });
     return reply.redirect(`/parks/${park.slug}?rated=1#ratings`, 303);
   });
 

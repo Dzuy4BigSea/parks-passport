@@ -131,12 +131,15 @@ moderation hide/unhide, promote/demote, can't demote self), `test/e2e/admin.spec
 picker map click, rule settings show/hide, axe and 375 px on every admin page).
 
 ### M9 — Analytics and consent (Flow 10)
-Outcome: every Flow 10 criterion. Consent banner, Consent Mode v2, configurable GTM loader,
-`track()` with PII guard, Umami events, `/privacy` updated. Umami containers and nginx
-`/stats/` only after Dzuy's go-ahead on aster.
-Checks: `test/unit/analytics.test.js` (PII guard), `test/e2e/consent.spec.js` (no `_ga`
-cookie before Accept, cookie after, Reject keeps it absent, footer reopens), and
-`test/e2e/datalayer.spec.js` (every event name and its keys).
+Outcome: every Flow 10 criterion. Consent banner (in the page flow, no JS needed), Consent Mode v2
+defaults before GTM, configurable GTM loader (`GTM_SCRIPT_ORIGIN` for sGTM later), events through
+one allowlisted builder with a PII guard (queued server-side across redirects), Umami client,
+`/privacy` updated, Umami containers in the compose file's `analytics` profile, and
+`docs/umami-setup-prompt.md` for the server steps.
+Checks: `test/unit/analytics.test.js` (event list and PII guard, inline JSON safety, consent cookie,
+config gating, head order, banner, every event over HTTP), `test/e2e/consent.spec.js` (a fake GTM
+that sets `_ga` only after Accept: none before, one after; Reject; no-JS forms; footer settings;
+375 px; dataLayer events and no PII). Lighthouse with consent denied is checked in M10.
 
 ### M10 — Ops and end-to-end verification
 Outcome: SPEC "End-to-end verification" and the Ops NFRs.

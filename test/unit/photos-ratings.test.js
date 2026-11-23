@@ -259,3 +259,34 @@ test('a failed rating keeps the typed comment and focuses the error', async () =
   assert.match(res.body, /data-announce>Choose from 1 to 5 stars\./);
   assert.match(res.body, />Keep me<\/textarea>/);
 });
+
+test('same-day photos count toward a GPS stamp, in either order', async () => {
+  const { db, people } = await world();
+  // Stamp by GPS first, then upload from the park page the same day.
+  await people.ana.c.post('/parks/a-park/checkin', { lat: '27.8', lng: '-82.7', accuracy: '10' });
+  const v = db.prepare('SELECT * FROM visits WHERE user_id = ?').get(people.ana.id);
+  assert.equal(v.method, 'gps');
+  assert.equal(v.points, 15);
+  await upload(people.ana.c);
+  assert.equal(db.prepare('SELECT visit_id FROM photos WHERE user_id = ?').pluck().get(people.ana.id), v.id);
+  assert.equal(db.prepare('SELECT points FROM visits WHERE id = ?').pluck().get(v.id), 18);
+  assert.equal(totalPoints(db, people.ana.id), 18);
+
+  // Upload first, then stamp by GPS the same day.
+  await upload(people.ben.c);
+  assert.equal(db.prepare('SELECT visit_id FROM photos WHERE user_id = ?').pluck().get(people.ben.id), null);
+  const res = await people.ben.c.post('/parks/a-park/checkin', { lat: '27.8', lng: '-82.7', accuracy: '10' });
+  const page = (await people.ben.c.get(res.headers.location)).body;
+  assert.match(page, /Stamped! \+18 points/);
+  assert.match(page, /photo: \+3/);
+  assert.equal(totalPoints(db, people.ben.id), 18);
+});
+
+test('photos from another day do not attach to a stamp', async () => {
+  const { db, now, people } = await world();
+  await upload(people.ana.c);
+  now.advanceMinutes(24 * 60);
+  await people.ana.c.post('/parks/a-park/checkin', { lat: '27.8', lng: '-82.7', accuracy: '10' });
+  assert.equal(db.prepare('SELECT visit_id FROM photos').pluck().get(), null);
+  assert.equal(totalPoints(db, people.ana.id), 15);
+});

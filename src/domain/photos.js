@@ -1,6 +1,7 @@
 import { canSee, areFriends, VISIBILITY } from './visibility.js';
 import { rebuildParkVisitPoints } from './points.js';
 import { normalizeText } from './ratings.js';
+import { localDate } from './time.js';
 
 export const MAX_CAPTION = 200;
 
@@ -12,6 +13,24 @@ export function addPhoto(db, { user, park, visitId = null, stored, caption = '',
     normalizeText(caption).slice(0, MAX_CAPTION), vis, now.toISOString());
   if (visitId) rebuildParkVisitPoints(db, user.id, park.id, { now }); // photo bonus
   return db.prepare('SELECT * FROM photos WHERE id = ?').get(lastInsertRowid);
+}
+
+/**
+ * Same-day photos count toward a stamp: a photo uploaded at a park on a day the user stamped it
+ * is linked to that stamp (earning the photo bonus), in either order.
+ */
+export const todaysVisitAt = (db, userId, parkId, now) => db.prepare(
+  'SELECT id FROM visits WHERE user_id = ? AND park_id = ? AND visited_on = ?',
+).pluck().get(userId, parkId, localDate(now)) ?? null;
+
+export function attachSameDayPhotos(db, userId, visit, { now = new Date() } = {}) {
+  const loose = db.prepare('SELECT id, created_at FROM photos WHERE user_id = ? AND park_id = ? AND visit_id IS NULL')
+    .all(userId, visit.park_id).filter((p) => localDate(new Date(p.created_at)) === visit.visited_on);
+  if (!loose.length) return 0;
+  const link = db.prepare('UPDATE photos SET visit_id = ? WHERE id = ?');
+  for (const p of loose) link.run(visit.id, p.id);
+  rebuildParkVisitPoints(db, userId, visit.park_id, { now });
+  return loose.length;
 }
 
 export const getPhoto = (db, id) => db.prepare('SELECT * FROM photos WHERE id = ?').get(id);

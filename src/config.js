@@ -12,6 +12,14 @@ export function loadConfig(env = process.env) {
     dataDir,
     baseUrl: (env.BASE_URL || 'http://localhost:8080').replace(/\/$/, ''),
     secureCookies: production,
+    // Analytics (SPEC Flow 10). Empty = not loaded.
+    analytics: {
+      gtmId: /^GTM-[A-Z0-9]{4,12}$/.test(env.GTM_ID || '') ? env.GTM_ID : '',
+      gtmScriptOrigin: (env.GTM_SCRIPT_ORIGIN || 'https://www.googletagmanager.com').replace(/\/$/, ''),
+      umamiWebsiteId: /^[0-9a-f-]{36}$/i.test(env.UMAMI_WEBSITE_ID || '') ? env.UMAMI_WEBSITE_ID : '',
+      umamiScriptUrl: env.UMAMI_SCRIPT_URL || '/stats/script.js',
+      umamiHostUrl: (env.UMAMI_HOST_URL || `${(env.BASE_URL || 'http://localhost:8080').replace(/\/$/, '')}/stats`).replace(/\/$/, ''),
+    },
     mail: {
       transport: env.MAIL_TRANSPORT || (production ? 'sendgrid' : 'outbox'),
       outboxDir: path.join(dataDir, 'outbox'),

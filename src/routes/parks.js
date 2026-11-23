@@ -15,10 +15,12 @@ export default async function parkRoutes(app) {
     const unvisited = Boolean(req.user) && req.query.unvisited === '1';
     let parks = listParks(db, { q, categories: selected, near });
     if (unvisited) parks = parks.filter((p) => !stamped.has(p.id));
-    return reply.page(parksPage({
+    const filterCount = selected.length + (unvisited ? 1 : 0);
+    const events = q || filterCount ? [['park_search', { has_query: Boolean(q), filter_count: filterCount }]] : [];
+    return reply.page({ events, ...parksPage({
       parks, total: countActiveParks(db), q, selected, near, unvisited, stamped,
       categories: categoriesInUse(db), signedIn: Boolean(req.user),
-    }));
+    }) });
   });
 
   app.get('/parks/:slug', async (req, reply) => {
@@ -36,6 +38,6 @@ export default async function parkRoutes(app) {
       }
     }
     const flash = { added: 'Photo added.' }[req.query.photo] || (req.query.rated ? 'Rating saved.' : null);
-    return renderParkPage(app, req, reply, park, { stamped, flash });
+    return renderParkPage(app, req, reply, park, { stamped, flash, events: [['park_view', { park_slug: park.slug }]] });
   });
 }

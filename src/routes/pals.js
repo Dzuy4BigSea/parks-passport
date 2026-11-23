@@ -20,13 +20,14 @@ export default async function palRoutes(app) {
     const notice = { accepted: "You're now Park Pals!", regenerated: 'New invite link made. The old one no longer works.', removed: 'Pal removed. Your invite link was renewed, so the old one no longer works.' }[req.query.done];
     return reply.page(palsPage({
       user, csrf: req.csrfToken(), page, notice,
-      inviteUrl: `${app.config.baseUrl}/pals/invite/${inviteTokenFor(db, user.id, { now: now() })}`,
+      inviteUrl: `${app.config.baseUrl}/pals/invite/${inviteTokenFor(db, user.id, { now: now(), onCreate: () => app.track(user.id, 'pal_invite_created') })}`,
       pals: palsOf(db, user.id).map((p) => ({ ...p, visible: canViewOwner(db, user.id, p.id, p.default_visibility) })), board: leaderboard(db, user.id), feed: palsFeed(db, user.id, { page }),
     }));
   });
 
   app.post('/pals/invite/regenerate', { preHandler: requireUser }, async (req, reply) => {
     regenerateInvite(db, req.user.id, { now: now() });
+    app.track(req.user.id, 'pal_invite_created');
     return reply.redirect('/pals?done=regenerated', 303);
   });
 
@@ -48,6 +49,7 @@ export default async function palRoutes(app) {
     const inviter = inviterForToken(db, req.params.token);
     if (!inviter) return reply.callNotFound();
     const result = acceptInvite(db, inviter, req.user, { now: now(), random: app.random });
+    if (result.ok) app.track(req.user.id, 'pal_accepted');
     if (result.error) {
       return reply.page(invitePage({ inviter, user: req.user, csrf: req.csrfToken(), token: req.params.token, state: result.error }));
     }
@@ -64,12 +66,14 @@ export default async function palRoutes(app) {
     const v = req.body.default_visibility;
     if (!VISIBILITY.includes(v)) return reply.code(422).type('text/plain').send('Choose who can see your passport.');
     db.prepare('UPDATE users SET default_visibility = ? WHERE id = ?').run(v, req.user.id);
+    if (req.body.source === 'nudge') app.track(req.user.id, 'share_prompt_action', { action: 'share' });
     const back = typeof req.body.back === 'string' && req.body.back ? safeNext(req.body.back) : '/account?done=visibility';
     return reply.redirect(back, 303);
   });
 
   app.post('/account/nudge/dismiss', { preHandler: requireUser }, async (req, reply) => {
     db.prepare('UPDATE users SET share_nudge_dismissals = share_nudge_dismissals + 1 WHERE id = ?').run(req.user.id);
+    app.track(req.user.id, 'share_prompt_action', { action: 'dismiss' });
     return reply.redirect(safeNext(req.body.back), 303);
   });
 

@@ -8,7 +8,7 @@ import { palsAtParkOnDay } from '../domain/pals.js';
 import { formatMiles } from '../domain/geo.js';
 import { formatDate, localDate } from '../domain/time.js';
 import { storePhoto, removePhotoFiles } from '../lib/images.js';
-import { addPhoto } from '../domain/photos.js';
+import { addPhoto, attachSameDayPhotos } from '../domain/photos.js';
 import { renderParkPage } from './park-view.js';
 
 const MESSAGES = {
@@ -26,8 +26,11 @@ export default async function visitRoutes(app) {
     renderParkPage(app, req, reply, park, { problem: { area: 'stamp', ...problem } });
 
   // Badges for the stamper, and "Better Together" for pals who stamped here the same day.
-  function afterStamp(user, visit) {
+  function afterStamp(user, visit, park) {
+    app.track(user.id, 'check_in', { park_slug: park.slug, method: visit.method });
     const opts = { now: app.now(), random: app.random };
+    // Photos already uploaded here that day count toward this stamp (+3).
+    attachSameDayPhotos(db, user.id, visit, { now: app.now() });
     awardBadges(db, user.id, { type: 'visit', id: visit.id }, opts);
     for (const palId of palsAtParkOnDay(db, user.id, visit.park_id, visit.visited_on)) {
       awardBadges(db, palId, { type: 'pal', id: user.id }, { ...opts, random: () => 1 });
@@ -54,7 +57,7 @@ export default async function visitRoutes(app) {
     if (!park) return reply.callNotFound();
     const result = stampVisit(db, { user: req.user, park, method: 'gps', position: parsePosition(req.body) }, { now: app.now() });
     if (result.error) return parkWithProblem(req, reply, park, problemFor(result));
-    afterStamp(req.user, result.visit);
+    afterStamp(req.user, result.visit, park);
     return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
   });
 
@@ -87,7 +90,7 @@ export default async function visitRoutes(app) {
       if (stored) await removePhotoFiles(app.config.uploadsDir, stored.fileKey);
       return parkWithProblem(req, reply, park, problemFor(result));
     }
-    afterStamp(req.user, result.visit);
+    afterStamp(req.user, result.visit, park);
     return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
   }));
 

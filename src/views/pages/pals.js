@@ -130,7 +130,7 @@ export function shareNudge({ csrf, back }) {
   <p><strong>Share your passport with Park Pals?</strong> Right now only you can see your stamps.</p>
   <div class="actions">
     <form method="post" action="/account/visibility">${csrfField(csrf)}
-      <input type="hidden" name="default_visibility" value="pals"><input type="hidden" name="back" value="${back}">
+      <input type="hidden" name="default_visibility" value="pals"><input type="hidden" name="back" value="${back}"><input type="hidden" name="source" value="nudge">
       <button type="submit" class="btn btn-primary btn-small">Share with Park Pals</button></form>
     <form method="post" action="/account/nudge/dismiss">${csrfField(csrf)}
       <input type="hidden" name="back" value="${back}">

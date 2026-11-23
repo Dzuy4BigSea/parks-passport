@@ -11,6 +11,9 @@ import { layout } from './views/layout.js';
 import { homePage, privacyPage } from './views/pages/static.js';
 import { countActiveParks } from './domain/parks.js';
 import { takeUnseenBadges } from './domain/badges/index.js';
+import { emailSettings } from './domain/settings.js';
+import { buildEvent, queueEvent, takeEvents, parseConsent, CONSENT_COOKIE } from './lib/analytics.js';
+import consentRoutes from './routes/consent.js';
 import { totalPoints } from './domain/points.js';
 import { levelFor } from './domain/levels.js';
 import { authPlugin } from './lib/auth.js';
@@ -23,6 +26,9 @@ import photoRoutes from './routes/photos.js';
 import adminRoutes from './routes/admin.js';
 import { shareNudge } from './views/pages/pals.js';
 
+// Paths with tokens or handles in the URL: no analytics scripts there (see reply.page).
+const NO_ANALYTICS = [/^\/reset$/, /^\/auth\/magic$/, /^\/account\/delete\/confirm$/, /^\/pals\/invite\//, /^\/u\//];
+
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
@@ -30,7 +36,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
  * config: { baseUrl, secureCookies, uploadsDir }
  */
 export function buildApp({
-  db, mailer, now = () => new Date(), random = Math.random, logger = false,
+  db, mailer, secretBox = null, now = () => new Date(), random = Math.random, logger = false,
   config = { baseUrl: 'http://localhost:8080', secureCookies: false, uploadsDir: './data/uploads' },
 } = {}) {
   if (!db) throw new Error('buildApp needs a db');
@@ -42,6 +48,10 @@ export function buildApp({
   app.decorate('now', now);
   app.decorate('random', random); // injectable for lucky badges in tests
   app.decorate('config', config);
+  app.decorate('secretBox', secretBox); // encrypts the admin-saved SendGrid key
+  // app.track(userId, name, params): an analytics event for the user's next page (see lib/analytics.js).
+  app.decorate('track', (userId, name, params = {}) => queueEvent(db, userId, name, params, { now: now(), log: app.log }));
+  app.decorate('emailSettings', () => emailSettings(db, { envFrom: config.mailFrom || '' }));
   // Removes a user's photo files before their rows are deleted (rows cascade).
   app.decorate('beforeUserDelete', async (userId) => {
     for (const key of fileKeysForUser(db, userId)) await removePhotoFiles(config.uploadsDir, key);
@@ -91,9 +101,27 @@ export function buildApp({
     // After a stamp or a new badge, nudge a private passport towards sharing (until dismissed 3 times).
     const nudge = req.user && (announcements || view.offerShare) && req.user.default_visibility === 'private'
       && req.user.share_nudge_dismissals < 3 ? shareNudge({ csrf: req.csrfToken(), back: req.url }) : null;
+    // Analytics: page events, events queued by earlier redirects, and new badges / level-ups.
+    const events = [];
+    const add = (name, params) => { try { events.push(buildEvent(name, params)); } catch (err) { req.log.warn(err.message); } };
+    for (const [name, params] of view.events || []) add(name, params);
+    if (req.user && this.statusCode < 400) events.push(...takeEvents(db, req.user.id));
+    for (const b of announcements?.badges || []) add('badge_earned', { badge_slug: b.slug, kind: b.kind });
+    if (announcements?.levelUp) add('level_up', { level: announcements.levelUp.name });
+    const consent = parseConsent(req.cookies[CONSENT_COOKIE]);
+    // Pages whose URL carries a secret (one-time or invite tokens) or a person's handle never load
+    // GTM/Umami, and nothing copies their query string into other links.
+    const pathname = req.url.split(/[?#]/)[0];
+    const private_ = NO_ANALYTICS.some((re) => re.test(pathname));
+    const path = private_ ? pathname : req.url.split('#')[0];
     return this.type('text/html; charset=utf-8')
       .header('Cache-Control', 'no-store')
-      .send(String(layout({ ...view, user: req.user, csrf: req.csrfToken(), announcements, nudge })));
+      .send(String(layout({
+        ...view, user: req.user, csrf: req.csrfToken(), announcements, nudge, events, consent, path,
+        analytics: private_ ? null : config.analytics || null,
+        // The banner asks only when there is something to consent to (GTM) and no choice yet.
+        showConsentBanner: !private_ && Boolean(config.analytics?.gtmId) && !consent.chosen && !path.startsWith('/consent'),
+      })));
   });
 
   app.get('/healthz', async (req, reply) => {
@@ -114,6 +142,7 @@ export function buildApp({
   app.register(palRoutes);
   app.register(photoRoutes);
   app.register(adminRoutes);
+  app.register(consentRoutes);
 
   // Friendly HTML errors instead of Fastify's JSON (e.g. an upload over the size limit).
   app.setErrorHandler((err, req, reply) => {
