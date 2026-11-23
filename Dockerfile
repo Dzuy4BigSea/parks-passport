@@ -1,11 +1,13 @@
-FROM node:22-alpine
+# Debian slim (glibc) so better-sqlite3 and sharp install from prebuilt binaries.
+FROM node:22-slim
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package*.json ./
-RUN npm install --omit=dev --no-audit --no-fund
+# --ignore-scripts: native deps ship prebuilt binaries; skip node-gyp (no Python in the image).
+RUN npm ci --omit=dev --no-audit --no-fund --ignore-scripts && npm cache clean --force
 COPY . .
 RUN mkdir -p /data && chown node:node /data
 USER node
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost:8080/healthz || exit 1
-CMD ["node", "server.js"]
+HEALTHCHECK --interval=30s --timeout=3s CMD node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "src/server.js"]

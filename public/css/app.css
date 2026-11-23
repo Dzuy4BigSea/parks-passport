@@ -1,0 +1,214 @@
+/* Parks Passport: a paper-passport look. Mobile first. Colors meet WCAG AA on --paper. */
+:root {
+  --paper: #f6efdf;
+  --paper-2: #fffaf0;
+  --cover: #1d4a35;      /* passport cover green */
+  --cover-ink: #f6efdf;
+  --ink: #1e2a24;
+  --muted: #4b564f;      /* 7.0:1 on --paper */
+  --stamp: #a3302a;      /* stamp red, 6.1:1 on --paper */
+  --gold: #f2c14e;
+  --rule: #c9bc9c;
+  --focus: #1659c7;
+  --radius: 10px;
+  --serif: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font: 1rem/1.55 var(--sans);
+  color: var(--ink);
+  background: var(--paper);
+}
+.wrap { max-width: 60rem; margin: 0 auto; padding: 0 1rem; }
+main { padding-top: 1.25rem; padding-bottom: 3rem; min-height: 60vh; }
+main:focus { outline: none; }
+
+h1, h2, h3 { font-family: var(--serif); line-height: 1.2; color: var(--ink); }
+h1 { font-size: clamp(1.75rem, 5vw, 2.5rem); margin: 0.25rem 0 1rem; }
+h2 { font-size: 1.25rem; margin: 1.5rem 0 0.5rem; }
+
+a { color: var(--cover); text-underline-offset: 0.15em; }
+a:hover { color: var(--stamp); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+
+.skip-link { position: absolute; left: -999px; top: 0.5rem; z-index: 10; }
+.skip-link:focus { left: 0.5rem; background: #fff; padding: 0.5rem 0.75rem; }
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* Header: the passport cover. */
+.site-header { background: var(--cover); color: var(--cover-ink); border-bottom: 4px double var(--gold); }
+.header-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 3.5rem; }
+.brand {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-family: var(--serif); font-weight: 700; font-size: 1.2rem; letter-spacing: 0.02em;
+  color: var(--cover-ink); text-decoration: none;
+}
+.brand:hover { color: var(--gold); }
+.nav-list { list-style: none; display: flex; gap: 0.25rem; margin: 0; padding: 0; }
+.nav-list a {
+  display: inline-block; padding: 0.5rem 0.75rem; min-height: 44px; line-height: 1.75;
+  color: var(--cover-ink); text-decoration: none; border-radius: 6px;
+}
+.nav-list a:hover, .nav-list a[aria-current="page"] { background: rgba(255, 255, 255, 0.14); color: #fff; }
+
+.site-footer { border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.9rem; padding: 1rem 0 2rem; }
+.site-footer p { margin: 0.25rem 0; }
+
+/* Buttons and fields. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; padding: 0.5rem 1rem; border-radius: 999px;
+  border: 2px solid var(--cover); background: var(--paper-2); color: var(--cover);
+  font: 600 1rem var(--sans); text-decoration: none; cursor: pointer;
+}
+.btn:hover { background: #fff; color: var(--cover); }
+.btn-primary { background: var(--cover); color: var(--cover-ink); }
+.btn-primary:hover { background: #163a2a; color: #fff; }
+.btn-quiet { border-color: transparent; background: transparent; text-decoration: underline; }
+.btn[disabled] { opacity: 0.6; cursor: progress; }
+
+label { font-weight: 600; }
+input[type="search"], input[type="text"], input[type="email"], input[type="password"] {
+  width: 100%; min-height: 44px; padding: 0.5rem 0.75rem; font: inherit;
+  border: 2px solid var(--muted); border-radius: 8px; background: #fff; color: var(--ink);
+}
+.field { display: grid; gap: 0.25rem; margin-bottom: 0.75rem; }
+
+/* Home. */
+.hero {
+  margin-top: 1rem; padding: 2rem 1.25rem; border-radius: var(--radius);
+  background: var(--paper-2); border: 2px dashed var(--rule);
+}
+.hero h1 { margin-top: 0; }
+.eyebrow { text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.8rem; color: var(--stamp); font-weight: 700; margin: 0; }
+.lede { font-size: 1.125rem; max-width: 38rem; }
+
+/* Park search. */
+.park-search {
+  background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius);
+  padding: 1rem; margin-bottom: 1rem;
+}
+.filters { margin: 0.25rem 0 0.75rem; }
+.filters summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.filters fieldset { border: 0; padding: 0; margin: 0.5rem 0 0; }
+.filter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.25rem 1rem; }
+.check { display: flex; align-items: center; gap: 0.5rem; font-weight: 400; min-height: 44px; }
+.check input { width: 1.25rem; height: 1.25rem; accent-color: var(--cover); }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.notice:empty { display: none; }
+.notice { margin: 0.75rem 0 0; padding: 0.5rem 0.75rem; border-left: 4px solid var(--stamp); background: #fff; }
+.result-count { color: var(--muted); margin: 0 0 0.5rem; }
+.empty { padding: 1rem; background: var(--paper-2); border-radius: var(--radius); }
+
+/* Park list: passport pages. */
+.park-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
+@media (min-width: 768px) { .park-list { grid-template-columns: repeat(2, 1fr); } }
+.park-card {
+  background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius);
+  padding: 0.875rem 1rem; position: relative;
+}
+.park-card h2 { margin: 0 0 0.25rem; font-size: 1.15rem; }
+.park-card h2 a { text-decoration: none; }
+.park-card h2 a::after { content: ""; position: absolute; inset: 0; } /* whole card is the link */
+.park-card h2 a:hover { text-decoration: underline; }
+.address { color: var(--muted); margin: 0 0 0.5rem; font-size: 0.95rem; }
+.distance { font-weight: 700; color: var(--stamp); margin: 0 0 0.25rem; }
+
+.chips { list-style: none; display: flex; flex-wrap: wrap; gap: 0.375rem; padding: 0; margin: 0.25rem 0 0; }
+.chips li {
+  font-size: 0.85rem; padding: 0.125rem 0.625rem; border-radius: 999px;
+  border: 1px solid var(--rule); background: var(--paper); color: var(--ink);
+}
+.chips a { color: var(--ink); text-decoration: none; display: inline-block; min-height: 24px; }
+.chips a:hover { text-decoration: underline; }
+
+/* Park page. */
+.breadcrumb { margin: 0; }
+.breadcrumb a { display: inline-block; min-height: 24px; }
+.park-header { border-bottom: 2px dashed var(--rule); padding-bottom: 0.75rem; }
+.park-map { height: 260px; border-radius: var(--radius); border: 1px solid var(--rule); background: #e8e2d0; }
+@media (min-width: 768px) { .park-map { height: 340px; } }
+.rating-summary { color: var(--muted); }
+
+/* Header nav: wraps on small screens. */
+.nav-list { flex-wrap: wrap; justify-content: flex-end; }
+.nav-list form { margin: 0; }
+.nav-button {
+  min-height: 44px; padding: 0.5rem 0.75rem; border: 0; border-radius: 6px; cursor: pointer;
+  background: transparent; color: var(--cover-ink); font: inherit;
+}
+.nav-button:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+@media (max-width: 420px) {
+  .brand span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .nav-list a, .nav-button { padding: 0.5rem; }
+  .nav-logout { display: none; } /* on phones, Log out lives on the Account page */
+}
+
+/* Forms. */
+.narrow { max-width: 32rem; }
+.card-form {
+  background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius);
+  padding: 1rem; margin: 0 0 1rem;
+}
+.card-form.danger { border-color: var(--stamp); }
+.inline-form { margin: 0 0 1rem; }
+.hint { margin: 0; color: var(--muted); font-size: 0.9rem; font-weight: 400; }
+.error-text { margin: 0; color: var(--stamp); font-weight: 700; }
+.field-error input { border-color: var(--stamp); border-width: 3px; }
+.error-summary {
+  border: 3px solid var(--stamp); border-radius: var(--radius); background: #fff;
+  padding: 0.75rem 1rem; margin-bottom: 1rem;
+}
+.error-summary h2 { margin: 0 0 0.25rem; font-size: 1.1rem; }
+.error-summary ul { margin: 0; padding-left: 1.25rem; }
+.error-summary a { color: var(--stamp); }
+.btn-danger { background: var(--stamp); border-color: var(--stamp); color: #fff; }
+.btn-danger:hover { background: #7f231f; color: #fff; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+.facts dt { font-weight: 700; }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Stamping. */
+.stamp-panel {
+  background: var(--paper-2); border: 2px solid var(--cover); border-radius: var(--radius);
+  padding: 1rem; margin: 1rem 0;
+}
+.stamp-panel h2 { margin-top: 0; }
+.btn-big { min-height: 52px; font-size: 1.1rem; padding: 0.75rem 1.5rem; }
+.btn-small { min-height: 32px; padding: 0.25rem 0.5rem; font-size: 0.9rem; }
+.honor { margin-top: 0.75rem; }
+.honor summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
+.honor-form { margin-top: 0.5rem; }
+.honor-form input[type="date"] {
+  min-height: 44px; padding: 0.5rem; font: inherit; border: 2px solid var(--muted); border-radius: 8px; background: #fff;
+}
+.stamped-today { font-weight: 700; color: var(--cover); font-size: 1.1rem; }
+.my-visits { list-style: none; padding: 0; margin: 0; }
+.my-visits li {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem;
+  padding: 0.25rem 0; border-bottom: 1px dashed var(--rule);
+}
+.my-visits form { margin: 0; }
+.stamp-result {
+  display: flex; gap: 1rem; align-items: center; margin: 1rem 0; padding: 1rem;
+  border-radius: var(--radius); background: #fff; border: 2px solid var(--stamp);
+}
+.stamp-result h2 { margin: 0; color: var(--stamp); }
+.stamp-mark {
+  flex: none; display: grid; place-items: center; width: 4.5rem; height: 4.5rem; margin: 0;
+  border: 4px double var(--stamp); border-radius: 50%; color: var(--stamp);
+  font: 700 0.85rem var(--sans); text-transform: uppercase; transform: rotate(-12deg); text-align: center;
+}
+.points-breakdown { margin: 0.25rem 0 0; padding-left: 1.1rem; color: var(--muted); }
+.stamp-badge { display: inline-block; margin: 0 0 0.25rem; font-size: 0.85rem; font-weight: 700; color: var(--cover); }
+.stamp-badge.unstamped { color: var(--muted); font-weight: 400; }
+.park-card.is-stamped { border-color: var(--cover); box-shadow: inset 4px 0 0 var(--cover); }
