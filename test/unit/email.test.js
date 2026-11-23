@@ -54,3 +54,17 @@ test('the magic-link email sent by the app is the branded one', async () => {
   assert.match(msg.html, /Your sign-in link/);
   assert.match(mailer.linkIn(msg), /\/auth\/magic\?token=/);
 });
+
+test('email and site footers carry the copyright and the Big Sea credit', async () => {
+  const m = testEmail({ baseUrl: BASE, fromName: 'P', fromAddress: 'p@parks.example', tagline: '' });
+  assert.match(m.html, /&copy; \d{4} Parks Passport &middot; Purpose built by <a href="https:\/\/bigsea\.co"/);
+  const { app } = makeApp();
+  const home = (await client(app).get('/')).body;
+  assert.match(home, /© \d{4} Parks Passport · Purpose built by <a class="bigsea" href="https:\/\/bigsea\.co"/);
+});
+
+test('production pins the public address, so email links and the logo never point at localhost', async () => {
+  const fs = await import('node:fs');
+  const compose = fs.readFileSync(new URL('../../docker-compose.aster.yml', import.meta.url), 'utf8');
+  assert.match(compose, /^\s+BASE_URL: https:\/\/parkspassport\.dzuynguyen\.com$/m);
+});
