@@ -9,7 +9,23 @@ async function init() {
   el.setAttribute('role', 'region');
   el.setAttribute('aria-label', `Map showing ${el.dataset.name}`);
   const map = L.map(el, { scrollWheelZoom: false }).setView([lat, lng], 16);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  // Tiles are drawn on <canvas> rather than <img>: a background map tile isn't the page's main
+  // content, and as an <img> it became the Largest Contentful Paint on phones (canvas isn't an
+  // LCP candidate, as with WebGL maps). They look the same.
+  const CanvasTiles = L.GridLayer.extend({
+    createTile(coords, done) {
+      const size = this.getTileSize();
+      const tile = document.createElement('canvas');
+      tile.width = size.x;
+      tile.height = size.y;
+      const img = new Image();
+      img.onload = () => { tile.getContext('2d').drawImage(img, 0, 0, size.x, size.y); done(null, tile); };
+      img.onerror = (err) => done(err, tile);
+      img.src = `https://tile.openstreetmap.org/${coords.z}/${coords.x}/${coords.y}.png`;
+      return tile;
+    },
+  });
+  new CanvasTiles({
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map);
@@ -18,4 +34,14 @@ async function init() {
     .bindTooltip(document.createTextNode(el.dataset.name)); // text, never HTML
 }
 
-if (el) init().catch(() => { el.textContent = 'Map unavailable.'; });
+// Start the map only when it scrolls into view: map tiles are large third-party images, and
+// loading them up front made one the page's Largest Contentful Paint on phones.
+const start = () => init().catch(() => { el.textContent = 'Map unavailable.'; });
+if (el) {
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { io.disconnect(); start(); }
+    }, { rootMargin: '200px' });
+    io.observe(el);
+  } else start();
+}
