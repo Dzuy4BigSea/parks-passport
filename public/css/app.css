@@ -138,3 +138,41 @@ input[type="search"], input[type="text"], input[type="email"], input[type="passw
 .park-map { height: 260px; border-radius: var(--radius); border: 1px solid var(--rule); background: #e8e2d0; }
 @media (min-width: 768px) { .park-map { height: 340px; } }
 .rating-summary { color: var(--muted); }
+
+/* Header nav: wraps on small screens. */
+.nav-list { flex-wrap: wrap; justify-content: flex-end; }
+.nav-list form { margin: 0; }
+.nav-button {
+  min-height: 44px; padding: 0.5rem 0.75rem; border: 0; border-radius: 6px; cursor: pointer;
+  background: transparent; color: var(--cover-ink); font: inherit;
+}
+.nav-button:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+@media (max-width: 420px) {
+  .brand span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .nav-list a, .nav-button { padding: 0.5rem; }
+  .nav-logout { display: none; } /* on phones, Log out lives on the Account page */
+}
+
+/* Forms. */
+.narrow { max-width: 32rem; }
+.card-form {
+  background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius);
+  padding: 1rem; margin: 0 0 1rem;
+}
+.card-form.danger { border-color: var(--stamp); }
+.inline-form { margin: 0 0 1rem; }
+.hint { margin: 0; color: var(--muted); font-size: 0.9rem; font-weight: 400; }
+.error-text { margin: 0; color: var(--stamp); font-weight: 700; }
+.field-error input { border-color: var(--stamp); border-width: 3px; }
+.error-summary {
+  border: 3px solid var(--stamp); border-radius: var(--radius); background: #fff;
+  padding: 0.75rem 1rem; margin-bottom: 1rem;
+}
+.error-summary h2 { margin: 0 0 0.25rem; font-size: 1.1rem; }
+.error-summary ul { margin: 0; padding-left: 1.25rem; }
+.error-summary a { color: var(--stamp); }
+.btn-danger { background: var(--stamp); border-color: var(--stamp); color: #fff; }
+.btn-danger:hover { background: #7f231f; color: #fff; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+.facts dt { font-weight: 700; }
+.facts dd { margin: 0; overflow-wrap: anywhere; }

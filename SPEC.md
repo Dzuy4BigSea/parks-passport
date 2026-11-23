@@ -280,7 +280,7 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
   EXIF is stripped. Visit coordinates are never shown to others. Secrets live only in `.env`
   and GitHub secrets. A `/privacy` page says what's collected (email, visits incl. GPS,
   photos, ratings), who can see it, and how to delete it. Without consent, the only cookies are
-  the essential session cookie and `pp_consent`. GA4 cookies are set only after Accept
+  the essential `pp_session` (sign-in), `pp_csrf` (form protection) and `pp_consent`. GA4 cookies are set only after Accept
   (Flow 10).
 - **Not official:** the footer says it's an independent project, not affiliated with the City
   of St. Petersburg. No City logo.

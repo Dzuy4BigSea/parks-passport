@@ -2,11 +2,16 @@ import path from 'node:path';
 import { loadConfig } from './config.js';
 import { openDb } from './db/index.js';
 import { seedParksIfEmpty } from './db/seed.js';
+import { createMailer } from './lib/mail.js';
 import { buildApp } from './app.js';
 
 const config = loadConfig();
 const db = openDb(path.join(config.dataDir, 'app.db'));
-const app = buildApp({ db, logger: config.nodeEnv !== 'test' });
+const mailer = createMailer(config.mail);
+const app = buildApp({
+  db, mailer, logger: config.nodeEnv !== 'test',
+  config: { baseUrl: config.baseUrl, secureCookies: config.secureCookies },
+});
 
 const seeded = seedParksIfEmpty(db);
 if (seeded) app.log.info({ ...seeded, invalid: seeded.invalid.length }, 'seeded parks from seed/parks.csv');

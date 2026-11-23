@@ -3,8 +3,10 @@ import os from 'node:os';
 import path from 'node:path';
 
 const PORT = 8181;
-// Fresh data dir per run, so tests never touch real data.
-const DATA_DIR = path.join(os.tmpdir(), `parks-passport-e2e-${process.pid}`);
+// Fresh data dir per run, so tests never touch real data. Set once in the main process so
+// workers (which inherit env) read the same outbox.
+process.env.PP_E2E_DATA_DIR ??= path.join(os.tmpdir(), `parks-passport-e2e-${process.pid}`);
+const DATA_DIR = process.env.PP_E2E_DATA_DIR;
 
 export default defineConfig({
   testDir: 'test/e2e',
@@ -19,6 +21,6 @@ export default defineConfig({
     command: 'node src/server.js',
     url: `http://127.0.0.1:${PORT}/healthz`,
     reuseExistingServer: false,
-    env: { PORT: String(PORT), HOST: '127.0.0.1', DATA_DIR, NODE_ENV: 'test' },
+    env: { PORT: String(PORT), HOST: '127.0.0.1', DATA_DIR, NODE_ENV: 'test', MAIL_TRANSPORT: 'outbox', BASE_URL: `http://127.0.0.1:${PORT}` },
   },
 });

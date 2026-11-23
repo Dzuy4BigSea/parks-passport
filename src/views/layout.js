@@ -4,8 +4,10 @@ import { html } from './html.js';
  * Page shell. `head` adds per-page tags (e.g. Leaflet CSS); `scripts` are module URLs loaded with defer.
  * `current` marks the active nav item.
  */
-export function layout({ title, body, head = null, scripts = [], current = '' }) {
-  const nav = [['/parks', 'Parks', 'parks']];
+export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '' }) {
+  const nav = user
+    ? [['/parks', 'Parks', 'parks'], ['/passport', 'Passport', 'passport'], ['/account', 'Account', 'account']]
+    : [['/parks', 'Parks', 'parks'], ['/login', 'Log in', 'login']];
   return html`<!doctype html>
 <html lang="en">
 <head>
@@ -29,6 +31,7 @@ ${scripts.map((src) => html`<script type="module" src="${src}"></script>`)}
     <nav aria-label="Main">
       <ul class="nav-list">
         ${nav.map(([href, label, key]) => html`<li><a href="${href}"${key === current ? html` aria-current="page"` : ''}>${label}</a></li>`)}
+        ${user ? html`<li class="nav-logout"><form method="post" action="/logout"><input type="hidden" name="_csrf" value="${csrf}"><button type="submit" class="nav-button">Log out</button></form></li>` : ''}
       </ul>
     </nav>
   </div>

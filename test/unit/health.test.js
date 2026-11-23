@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { openDb } from '../../src/db/index.js';
-import { buildApp } from '../../src/app.js';
+import { makeApp } from './helpers.js';
 import { html, raw } from '../../src/views/html.js';
 
 test('/healthz returns 200 ok when the DB is open', async () => {
-  const app = buildApp({ db: openDb(':memory:') });
+  const { app } = makeApp();
   const res = await app.inject('/healthz');
   assert.equal(res.statusCode, 200);
   assert.equal(res.body, 'ok');
@@ -13,8 +13,7 @@ test('/healthz returns 200 ok when the DB is open', async () => {
 });
 
 test('/healthz returns 503 when the DB is unreachable', async () => {
-  const db = openDb(':memory:');
-  const app = buildApp({ db });
+  const { app, db } = makeApp();
   await app.ready();
   const realPrepare = db.prepare.bind(db);
   db.prepare = () => { throw new Error('gone'); };
@@ -25,7 +24,7 @@ test('/healthz returns 503 when the DB is unreachable', async () => {
 });
 
 test('unknown routes return 404 HTML', async () => {
-  const app = buildApp({ db: openDb(':memory:') });
+  const { app } = makeApp();
   const res = await app.inject('/nope');
   assert.equal(res.statusCode, 404);
   assert.match(res.headers['content-type'], /text\/html/);
