@@ -78,12 +78,47 @@ test('10 failed logins in 15 minutes lock the email (429) until they age out', a
   assert.equal((await c.post('/login', { email: 'sam@example.com', password: PW })).statusCode, 303);
 });
 
+test('the lock lasts 15 minutes from the 10th failure, even when failures are spread out', async () => {
+  const { app, now } = makeApp();
+  await signUp(client(app));
+  const c = client(app);
+  for (let i = 0; i < 9; i++) await c.post('/login', { email: 'sam@example.com', password: 'bad password!' });
+  now.advanceMinutes(14);
+  await c.post('/login', { email: 'sam@example.com', password: 'bad password!' }); // 10th
+  now.advanceMinutes(2); // the first 9 are now older than 15 minutes
+  assert.equal((await c.post('/login', { email: 'sam@example.com', password: PW })).statusCode, 429);
+  now.advanceMinutes(14);
+  assert.equal((await c.post('/login', { email: 'sam@example.com', password: PW })).statusCode, 303);
+});
+
+test('parallel wrong guesses cannot get past the limit', async () => {
+  const { app } = makeApp();
+  await signUp(client(app));
+  const c = client(app);
+  await c.get('/');
+  const results = await Promise.all(Array.from({ length: 30 }, (_, i) =>
+    c.post('/login', { email: 'sam@example.com', password: `guess number ${i}` })));
+  const codes = results.map((r) => r.statusCode);
+  assert.equal(codes.filter((x) => x === 401).length, 10);
+  assert.equal(codes.filter((x) => x === 429).length, 20);
+});
+
+test('logging in replaces the browser\'s previous session', async () => {
+  const { app, db } = makeApp();
+  const c = client(app);
+  await signUp(c);
+  await c.post('/login', { email: 'sam@example.com', password: PW });
+  await c.post('/login', { email: 'sam@example.com', password: PW });
+  assert.equal(db.prepare('SELECT COUNT(*) FROM sessions').pluck().get(), 1);
+});
+
 test('magic link: emailed, confirm page does not use it, sign-in works once', async () => {
   const { app, mailer } = makeApp();
   await signUp(client(app));
   const c = client(app);
   const res = await c.post('/login/magic', { magic_email: 'sam@example.com' });
   assert.match(res.body, /Check your email/);
+  await app.mailIdle();
   assert.equal(mailer.sent.length, 1);
   const url = new URL(mailer.linkIn(mailer.sent[0]));
   assert.equal(url.pathname, '/auth/magic');
@@ -107,6 +142,7 @@ test('magic link expires after 15 minutes', async () => {
   const { app, mailer, now } = makeApp();
   await signUp(client(app));
   await client(app).post('/login/magic', { magic_email: 'sam@example.com' });
+  await app.mailIdle();
   const token = new URL(mailer.linkIn(mailer.sent[0])).searchParams.get('token');
   now.advanceMinutes(15);
   const c = client(app);
@@ -119,16 +155,55 @@ test('magic link for an unknown email shows the same message and sends nothing',
   const { app, mailer } = makeApp();
   const res = await client(app).post('/login/magic', { magic_email: 'nobody@example.com' });
   assert.match(res.body, /Check your email/);
+  await app.mailIdle();
   assert.equal(mailer.sent.length, 0);
 });
 
-test('email failure shows "Couldn\'t send email, try again"', async () => {
+test('signed-out link requests look the same whether or not the account exists, even when email is down', async () => {
   const { app, mailer } = makeApp();
   await signUp(client(app));
   mailer.fail = true;
-  const res = await client(app).post('/login/magic', { magic_email: 'sam@example.com' });
+  const known = await client(app).post('/login/magic', { magic_email: 'sam@example.com' });
+  const unknown = await client(app).post('/login/magic', { magic_email: 'nobody@example.com' });
+  await app.mailIdle();
+  assert.equal(known.statusCode, unknown.statusCode);
+  assert.equal(known.body.replace(/value="[^"]+"/g, ''), unknown.body.replace(/value="[^"]+"/g, ''));
+});
+
+test('signed-in email failure shows "Couldn\'t send email, try again"', async () => {
+  const { app, mailer } = makeApp();
+  const c = client(app);
+  await signUp(c);
+  mailer.fail = true;
+  const res = await c.post('/account/delete/email');
   assert.equal(res.statusCode, 502);
   assert.match(res.body, /Couldn't send email, try again/);
+});
+
+test('at most 3 links per purpose per 15 minutes are emailed', async () => {
+  const { app, mailer, now } = makeApp();
+  await signUp(client(app));
+  for (let i = 0; i < 6; i++) await client(app).post('/forgot', { email: 'sam@example.com' });
+  await app.mailIdle();
+  assert.equal(mailer.sent.length, 3);
+  now.advanceMinutes(16);
+  await client(app).post('/forgot', { email: 'sam@example.com' });
+  await app.mailIdle();
+  assert.equal(mailer.sent.length, 4);
+});
+
+test('a password reset cancels other outstanding reset and sign-in links', async () => {
+  const { app, mailer } = makeApp();
+  await signUp(client(app));
+  const c = client(app);
+  await c.post('/forgot', { email: 'sam@example.com' });
+  await c.post('/forgot', { email: 'sam@example.com' });
+  await c.post('/login/magic', { magic_email: 'sam@example.com' });
+  await app.mailIdle();
+  const [first, second, magic] = mailer.sent.map((m) => new URL(mailer.linkIn(m)).searchParams.get('token'));
+  assert.equal((await c.post('/reset', { token: second, password: 'a brand new password' })).statusCode, 303);
+  assert.match((await client(app).post('/reset', { token: first, password: 'attacker password!' })).body, /This link has expired/);
+  assert.match((await client(app).post('/auth/magic', { token: magic })).body, /This link has expired/);
 });
 
 test('password reset: single use, 15 minutes, signs out every other session', async () => {
@@ -139,6 +214,7 @@ test('password reset: single use, 15 minutes, signs out every other session', as
 
   const c = client(app);
   await c.post('/forgot', { email: 'sam@example.com' });
+  await app.mailIdle();
   const token = new URL(mailer.linkIn(mailer.sent[0])).searchParams.get('token');
   assert.equal((await c.post('/reset', { token, password: 'short' })).statusCode, 422); // doesn't use the token
   const res = await c.post('/reset', { token, password: 'a brand new password' });
@@ -151,6 +227,7 @@ test('password reset: single use, 15 minutes, signs out every other session', as
   assert.equal((await fresh.post('/login', { email: 'sam@example.com', password: 'a brand new password' })).statusCode, 303);
 
   await c.post('/forgot', { email: 'sam@example.com' });
+  await app.mailIdle();
   const late = new URL(mailer.linkIn(mailer.sent[1])).searchParams.get('token');
   now.advanceMinutes(16);
   assert.match((await c.get(`/reset?token=${late}`)).body, /This link has expired/);
@@ -194,6 +271,22 @@ test('delete account by emailed confirmation link', async () => {
   assert.equal(db.prepare('SELECT COUNT(*) FROM users').pluck().get(), 0);
 });
 
+test('every POST route rejects a missing or wrong CSRF token with 403', async () => {
+  const { app } = makeApp();
+  const c = client(app);
+  await signUp(c);
+  const posts = app.printRoutes({ commonPrefix: false }); // sanity: routes are registered
+  assert.ok(posts.includes('logout'));
+  const routes = ['/signup', '/login', '/login/magic', '/auth/magic', '/forgot', '/reset', '/logout',
+    '/account/delete', '/account/delete/email', '/account/delete/confirm',
+    '/parks/abercrombie-park/checkin', '/parks/abercrombie-park/stamp', '/visits/1/delete'];
+  for (const url of routes) {
+    assert.equal((await c.post(url, {}, { csrf: false })).statusCode, 403, `${url} without token`);
+    assert.equal((await c.post(url, { _csrf: 'forged' }, { csrf: false })).statusCode, 403, `${url} with wrong token`);
+  }
+  assert.equal((await c.get('/passport')).statusCode, 200, 'still signed in');
+});
+
 test('state-changing requests without a valid CSRF token get 403', async () => {
   const { app, db } = makeApp();
   const c = client(app);
@@ -210,12 +303,15 @@ test('cookies are HttpOnly and SameSite=Lax, and Secure in production', async ()
     const { app } = makeApp({ secureCookies });
     const c = client(app);
     const res = await signUp(c);
-    const session = res.cookies.find((x) => x.name === 'pp_session');
+    const prefix = secureCookies ? '__Host-' : '';
+    const session = res.cookies.find((x) => x.name === `${prefix}pp_session`);
     assert.ok(session, 'session cookie set');
     assert.equal(session.httpOnly, true);
     assert.equal(session.sameSite, 'Lax');
     assert.equal(Boolean(session.secure), secureCookies);
-    const csrf = (await app.inject('/')).cookies.find((x) => x.name === 'pp_csrf');
+    assert.equal(session.path, '/');
+    assert.equal(session.domain, undefined);
+    const csrf = (await app.inject('/')).cookies.find((x) => x.name === `${prefix}pp_csrf`);
     assert.equal(csrf.httpOnly, true);
     assert.equal(Boolean(csrf.secure), secureCookies);
   }
@@ -223,7 +319,7 @@ test('cookies are HttpOnly and SameSite=Lax, and Secure in production', async ()
 
 test('post-login redirects only to local paths', () => {
   assert.equal(safeNext('/parks/abercrombie-park'), '/parks/abercrombie-park');
-  for (const bad of ['//evil.com', 'https://evil.com', '/\\evil.com', '', undefined]) assert.equal(safeNext(bad), '/passport');
+  for (const bad of ['//evil.com', 'https://evil.com', '/\\evil.com', '/☃', '/a b', '', undefined]) assert.equal(safeNext(bad), '/passport');
 });
 
 test('sendgrid mailer posts to the v3 API with click tracking off, and fails loudly', async () => {

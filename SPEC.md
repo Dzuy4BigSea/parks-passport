@@ -256,7 +256,7 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 ## Integrations
 | Service | Direction | Auth | Failure behavior |
 |---|---|---|---|
-| SendGrid (magic links, password resets) | write | API key `SENDGRID_API_KEY` in `.env`. Sender on `dzuynguyen.com`, domain-authenticated with CNAME records Dzuy adds. | The sign-up still succeeds. Sending magic or reset links shows "Couldn't send email, try again" and logs the error. When `MAIL_TRANSPORT=outbox` (dev/test), mail goes to `/data/outbox/*.eml` instead. |
+| SendGrid (magic links, password resets) | write | API key `SENDGRID_API_KEY` in `.env`. Sender on `dzuynguyen.com`, domain-authenticated with CNAME records Dzuy adds. | The sign-up still succeeds. Signed-out link requests (magic link, password reset) always show the same "Check your email" page and send in the background, so the response never reveals whether an account exists; failures are logged. Signed-in sends (delete confirmation) show "Couldn't send email, try again". At most 3 links per user and purpose per 15 minutes. When `MAIL_TRANSPORT=outbox` (dev/test), mail goes to `/data/outbox/*.eml` instead. |
 | Umami (self-hosted on aster) | write (client + server events) | Website ID in `.env`, no cookies | If Umami is down, the page still works and events are dropped silently. |
 | Google Tag Manager / GA4 | write (client) | `GTM_ID` and `GTM_SCRIPT_ORIGIN` in `.env` | Not loaded when `GTM_ID` is empty. Gated by Consent Mode v2. |
 | Browser Geolocation API | read (client) | user permission | Falls back to the honor system with an explanation. |

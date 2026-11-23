@@ -2,8 +2,12 @@ import fp from 'fastify-plugin';
 import { randomToken, safeEqual } from './crypto.js';
 import { userForSession, SESSION_DAYS } from '../domain/users.js';
 
-export const SESSION_COOKIE = 'pp_session';
-export const CSRF_COOKIE = 'pp_csrf';
+// In production the cookies use the __Host- prefix: browsers then refuse them unless they are
+// Secure, Path=/ and host-only, so sibling *.dzuynguyen.com sites can't plant or overwrite them.
+export const cookieNames = (secure) => ({
+  session: secure ? '__Host-pp_session' : 'pp_session',
+  csrf: secure ? '__Host-pp_csrf' : 'pp_csrf',
+});
 
 /**
  * Adds to every request:
@@ -14,6 +18,10 @@ export const CSRF_COOKIE = 'pp_csrf';
  */
 export const authPlugin = fp(async function auth(app, { db, now, secureCookies }) {
   const cookieBase = { path: '/', httpOnly: true, sameSite: 'lax', secure: secureCookies };
+  const names = cookieNames(secureCookies);
+  const SESSION_COOKIE = names.session;
+  const CSRF_COOKIE = names.csrf;
+  app.decorate('cookieNames', names);
 
   app.decorateRequest('user', null);
   app.decorateRequest('_csrf', null);
@@ -53,5 +61,6 @@ export async function requireUser(req, reply) {
 }
 
 // Only allows local paths as post-login destinations.
+// Printable ASCII only (anything else is invalid in a Location header), no "//" or backslash.
 export const safeNext = (next) =>
-  typeof next === 'string' && /^\/(?!\/)[^\s\\]*$/.test(next) ? next : '/passport';
+  typeof next === 'string' && /^\/(?!\/)[\x21-\x5b\x5d-\x7e]*$/.test(next) ? next : '/passport';

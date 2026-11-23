@@ -39,14 +39,15 @@ export function client(app) {
     }
     return res;
   };
+  const csrfValue = () => [...jar].find(([k]) => k.endsWith('pp_csrf'))?.[1];
   const api = {
     jar,
     async get(url) {
       return store(await app.inject({ method: 'GET', url, headers: { cookie: cookieHeader() } }));
     },
     async post(url, fields = {}, { csrf = true } = {}) {
-      if (csrf && !jar.has('pp_csrf')) await api.get('/');
-      const body = new URLSearchParams({ ...(csrf ? { _csrf: jar.get('pp_csrf') } : {}), ...fields }).toString();
+      if (csrf && !csrfValue()) await api.get('/');
+      const body = new URLSearchParams({ ...(csrf ? { _csrf: csrfValue() } : {}), ...fields }).toString();
       return store(await app.inject({
         method: 'POST', url, payload: body,
         headers: { cookie: cookieHeader(), 'content-type': 'application/x-www-form-urlencoded' },

@@ -96,6 +96,18 @@ export function createAuthToken(db, userId, purpose, { now = new Date() } = {}) 
   return token;
 }
 
+// Emailed links per user and purpose allowed in 15 minutes (stops email-bombing).
+export const MAX_LINKS_PER_WINDOW = 3;
+export function canSendAuthToken(db, userId, purpose, { now = new Date() } = {}) {
+  const n = db.prepare('SELECT COUNT(*) FROM auth_tokens WHERE user_id = ? AND purpose = ? AND created_at > ?').pluck()
+    .get(userId, purpose, addMinutes(now, -TOKEN_MINUTES).toISOString());
+  return n < MAX_LINKS_PER_WINDOW;
+}
+
+// Cancels every unused emailed link for a user (after a password reset).
+export const revokeAuthTokens = (db, userId, { now = new Date() } = {}) =>
+  db.prepare('UPDATE auth_tokens SET used_at = ? WHERE user_id = ? AND used_at IS NULL').run(now.toISOString(), userId);
+
 // Looks a token up without using it. Returns the row or null if unknown, used, expired or wrong purpose.
 export function peekAuthToken(db, token, purpose, { now = new Date() } = {}) {
   if (!token || typeof token !== 'string') return null;
@@ -113,17 +125,22 @@ export function consumeAuthToken(db, token, purpose, { now = new Date() } = {}) 
   return changes === 1 ? row : null;
 }
 
-// Login rate limit: 10 failures for one email within 15 minutes locks it until they age out.
+// Login rate limit: once an email has 10 failures within 15 minutes, it is locked for
+// 15 minutes after the 10th. Attempts while locked aren't recorded.
 export function isLoginLocked(db, email, { now = new Date() } = {}) {
-  const since = addMinutes(now, -LOGIN_WINDOW_MINUTES).toISOString();
-  const n = db.prepare('SELECT COUNT(*) FROM login_failures WHERE email = ? AND at > ?').pluck()
-    .get(normalizeEmail(email), since);
-  return n >= LOGIN_MAX_FAILURES;
+  const recent = db.prepare('SELECT at FROM login_failures WHERE email = ? ORDER BY at DESC LIMIT ?').pluck()
+    .all(normalizeEmail(email), LOGIN_MAX_FAILURES);
+  if (recent.length < LOGIN_MAX_FAILURES) return false;
+  const newest = new Date(recent[0]);
+  const tenthNewest = new Date(recent[LOGIN_MAX_FAILURES - 1]);
+  const burst = newest - tenthNewest <= LOGIN_WINDOW_MINUTES * 60000;
+  return burst && now < addMinutes(newest, LOGIN_WINDOW_MINUTES);
 }
 
+// Records a failed (or pending) attempt; returns its id so a successful login can remove it.
 export function recordLoginFailure(db, email, { now = new Date() } = {}) {
-  db.prepare('INSERT INTO login_failures (email, at) VALUES (?, ?)').run(normalizeEmail(email), now.toISOString());
   db.prepare('DELETE FROM login_failures WHERE at < ?').run(addMinutes(now, -1440).toISOString());
+  return db.prepare('INSERT INTO login_failures (email, at) VALUES (?, ?)').run(normalizeEmail(email), now.toISOString()).lastInsertRowid;
 }
 
 export const clearLoginFailures = (db, email) =>
