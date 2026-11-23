@@ -13,6 +13,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 const LIMIT_MB = Number(process.env.LIMIT_MB || 400);
+const UPLOAD_RETRY_MS = 3 * 60 * 1000; // how long one upload keeps retrying a "busy" answer
 const PORT = 8233;
 const BASE = `http://127.0.0.1:${PORT}`;
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-load-'));
@@ -49,8 +50,12 @@ async function user(i) {
   return {
     get: (url) => fetch(`${BASE}${url}`, { headers: { cookie: cookie() } }).then((r) => { if (r.status !== 200) { failures++; failed.push(`GET ${url} ${r.status}`); } return r.arrayBuffer(); }),
     post: (url, fields) => fetch(`${BASE}${url}`, form(fields)).then((r) => { if (r.status !== 303) { failures++; failed.push(`POST ${url} ${r.status}`); } return r; }),
+    // Uploads past the 3 in progress get "busy, try again" (503), like a person retrying. 20 uploads
+    // queue per round, so on a slow CI runner one can wait well past 15 s; the deadline is generous
+    // and the check still fails if uploads never get through.
     async upload(url, buf) {
-      for (let attempt = 0; attempt < 60; attempt++) {
+      const deadline = Date.now() + UPLOAD_RETRY_MS;
+      for (let attempt = 0; Date.now() < deadline; attempt++) {
         const fd = new FormData();
         fd.append('_csrf', jar.get('pp_csrf'));
         fd.append('photo', new Blob([buf], { type: 'image/jpeg' }), 'load.jpg');
@@ -59,7 +64,7 @@ async function user(i) {
         if (res.status !== 503) { busyRetries += attempt; return res; }
         await new Promise((r) => setTimeout(r, 250));
       }
-      throw new Error('upload kept getting 503');
+      throw new Error(`upload kept getting 503 for ${UPLOAD_RETRY_MS / 1000} s`);
     },
   };
 }
