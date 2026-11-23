@@ -1,4 +1,5 @@
 import { html } from '../html.js';
+import { badgeArt } from '../badge-art.js';
 import { csrfField } from '../forms.js';
 import { METHOD_LABELS } from '../../domain/visits.js';
 import { formatDate, localDate } from '../../domain/time.js';
@@ -16,7 +17,7 @@ function feedItem(item) {
     return html`<li class="feed-item feed-photo"><a href="/photos/${item.photo_id}/full"><img src="/photos/${item.photo_id}/thumb" alt="${item.caption || `Photo of ${item.park_name}`}" width="72" height="72" loading="lazy"></a>
   <p>${who} added a photo of <a href="/parks/${item.park_slug}">${item.park_name}</a> <span class="muted">${when}</span></p></li>`;
   }
-  return html`<li class="feed-item"><span class="feed-icon" aria-hidden="true">${item.badge_art}</span>
+  return html`<li class="feed-item">${badgeArt(item.badge_art, 'feed-icon')}
   <p>${who} earned the <strong>${item.badge_name}</strong> badge <span class="muted">${when}</span></p></li>`;
 }
 

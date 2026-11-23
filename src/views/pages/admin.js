@@ -1,0 +1,217 @@
+import { html } from '../html.js';
+import { csrfField, errorSummary } from '../forms.js';
+import { CATEGORIES, categoryLabel } from '../../domain/categories.js';
+import { RULES } from '../../domain/badges/rules.js';
+import { formatDate, localDate } from '../../domain/time.js';
+import { badgeArt } from '../badge-art.js';
+
+const page = (title, body, extra = {}) => ({ title: `Admin · ${title}`, current: 'admin', ...extra, body });
+const crumb = html`<p class="breadcrumb"><a href="/admin">Admin</a></p>`;
+const dateOf = (iso) => formatDate(localDate(new Date(iso)));
+const input = (name, label, value, { type = 'text', hint, error, required = false, attrs = '' } = {}) => html`<div class="field${error ? ' field-error' : ''}">
+  <label for="${name}">${label}</label>
+  ${hint ? html`<p class="hint" id="${name}-hint">${hint}</p>` : ''}
+  ${error ? html`<p class="error-text" id="${name}-error">${error}</p>` : ''}
+  <input id="${name}" name="${name}" type="${type}" value="${value ?? ''}"${required ? html` required` : ''}${hint || error ? html` aria-describedby="${[hint ? `${name}-hint` : '', error ? `${name}-error` : ''].filter(Boolean).join(' ')}"` : ''}${error ? html` aria-invalid="true"` : ''} ${attrs}>
+</div>`;
+
+export function adminHome({ counts }) {
+  return page('Dashboard', html`<h1>Admin</h1>
+<ul class="admin-cards">
+  <li><a href="/admin/parks"><strong>Parks</strong><span>${counts.active} active · ${counts.inactive} inactive</span></a></li>
+  <li><a href="/admin/parks?filter=needs_pin"><strong>Pins to check</strong><span>${counts.needsPin} parks</span></a></li>
+  <li><a href="/admin/import"><strong>Import parks</strong><span>CSV upload or seed file</span></a></li>
+  <li><a href="/admin/badges"><strong>Badges</strong><span>${counts.badges} badges</span></a></li>
+  <li><a href="/admin/moderation"><strong>Moderation</strong><span>${counts.shared} shared photos and reviews</span></a></li>
+  <li><a href="/admin/users"><strong>Members</strong><span>${counts.users} members · ${counts.admins} admins</span></a></li>
+</ul>`);
+}
+
+export function adminParks({ parks, filter }) {
+  const tabs = [['', 'All'], ['needs_pin', 'Pins to check'], ['inactive', 'Inactive']];
+  return page('Parks', html`${crumb}<h1>Parks</h1>
+<p><a class="btn btn-primary" href="/admin/parks/new">Add a park</a></p>
+<nav class="tabs" aria-label="Filter parks">${tabs.map(([f, label]) => html`<a href="/admin/parks${f ? `?filter=${f}` : ''}"${f === filter ? html` aria-current="page"` : ''}>${label}</a>`)}</nav>
+<div class="table-wrap"><table class="admin-table">
+  <caption class="visually-hidden">Parks</caption>
+  <thead><tr><th scope="col">Park</th><th scope="col">Status</th><th scope="col">Visits</th></tr></thead>
+  <tbody>${parks.map((p) => html`<tr>
+    <td><a href="/admin/parks/${p.id}">${p.name}</a><br><span class="muted">${p.slug}</span></td>
+    <td>${p.active ? 'Active' : html`<strong>Inactive</strong>`}${p.needs_pin ? html`<br><span class="flag">Pin to check</span>` : ''}${p.lat == null ? html`<br><span class="flag">No location</span>` : ''}</td>
+    <td>${p.visit_count}</td>
+  </tr>`)}</tbody>
+</table></div>
+${parks.length ? '' : html`<p>No parks here.</p>`}`);
+}
+
+export function adminParkForm({ park, csrf, isNew, error, notice }) {
+  const p = park || { checkin_radius_m: 150, active: 1, categories: [] };
+  const action = isNew ? '/admin/parks/new' : `/admin/parks/${p.id}`;
+  return page(isNew ? 'Add a park' : p.name, html`<p class="breadcrumb"><a href="/admin">Admin</a> › <a href="/admin/parks">Parks</a></p>
+<h1>${isNew ? 'Add a park' : `Edit ${p.name}`}</h1>
+${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${notice}</p>` : ''}
+${error ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${error}</p>` : ''}
+${!isNew && p.active ? html`<p><a href="/parks/${p.slug}">View the public page</a></p>` : ''}
+<form method="post" action="${action}" class="card-form admin-form">
+  ${csrfField(csrf)}
+  ${input('name', 'Name', p.name, { required: true })}
+  ${input('slug', 'Slug', p.slug, { required: true, hint: 'Used in the address, e.g. crescent-lake-park. Changing it breaks old links.' })}
+  ${input('address', 'Address', p.address)}
+  ${input('phone', 'Phone', p.phone)}
+  <fieldset class="pin-fieldset">
+    <legend>Location</legend>
+    <p class="hint">Click the map or drag the pin to set it, or type the coordinates.</p>
+    <div id="pin-map" class="park-map" data-lat="${p.lat ?? ''}" data-lng="${p.lng ?? ''}"></div>
+    <div class="two-col">
+      ${input('lat', 'Latitude', p.lat, { attrs: html`inputmode="decimal"` })}
+      ${input('lng', 'Longitude', p.lng, { attrs: html`inputmode="decimal"` })}
+    </div>
+    <label class="check"><input type="checkbox" name="needs_pin" value="1"${p.needs_pin && !isNew ? html` checked` : ''}> Pin still needs checking</label>
+  </fieldset>
+  ${input('checkin_radius_m', 'Check-in radius (meters)', p.checkin_radius_m, { type: 'number', hint: '25 to 2000. Larger parks need a larger radius.', attrs: html`min="25" max="2000" step="1"` })}
+  <fieldset class="radio-group">
+    <legend>Amenities</legend>
+    <div class="filter-grid">${Object.keys(CATEGORIES).map((c) => html`<label class="check"><input type="checkbox" name="categories" value="${c}"${p.categories.includes(c) ? html` checked` : ''}> ${categoryLabel(c)}</label>`)}</div>
+  </fieldset>
+  ${input('city_url', "City's page (https://…)", p.city_url, { type: 'url' })}
+  <label class="check"><input type="checkbox" name="active" value="1"${p.active ? html` checked` : ''}> Active (shown in the app). Unticking keeps existing stamps.</label>
+  <button type="submit" class="btn btn-primary">${isNew ? 'Add park' : 'Save park'}</button>
+</form>`, { head: html`<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">`, scripts: ['/js/pin-picker.js'] });
+}
+
+export function adminImport({ csrf, result, error }) {
+  return page('Import parks', html`${crumb}<h1>Import parks</h1>
+<p>Rows match existing parks by slug: matching parks are updated, new slugs are added. Importing the same file twice changes nothing.
+<strong>Importing overwrites edits made here</strong> (for example pins you fixed) for every park in the file.</p>
+${error ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${error}</p>` : ''}
+${result ? html`<div class="notice import-result" role="status" tabindex="-1" data-announce>
+  <p><strong>${result.added} added, ${result.updated} updated, ${result.unchanged} unchanged, ${result.invalid.length} invalid.</strong></p>
+  ${result.invalid.length ? html`<ul>${result.invalid.map((r) => html`<li>Line ${r.line}${r.slug ? html` (${r.slug})` : ''}: ${r.reason}</li>`)}</ul>` : ''}
+</div>` : ''}
+<form method="post" action="/admin/import" class="card-form" enctype="multipart/form-data">
+  ${csrfField(csrf)}
+  <div class="field">
+    <label for="csv">CSV file</label>
+    <p class="hint" id="csv-hint">Columns: slug, name, address, phone, lat, lng, checkin_radius_m, categories (separated by |), city_url, needs_pin. Up to 1 MB.</p>
+    <input type="file" id="csv" name="csv" accept=".csv,text/csv" required aria-describedby="csv-hint">
+  </div>
+  <button type="submit" class="btn btn-primary">Import CSV</button>
+</form>
+<form method="post" action="/admin/import/seed" class="card-form">
+  ${csrfField(csrf)}
+  <p>Or re-import the seed file that ships with the app (<code>seed/parks.csv</code>).</p>
+  <button type="submit" class="btn">Import seed/parks.csv</button>
+</form>`);
+}
+
+export function adminBadges({ badges }) {
+  return page('Badges', html`${crumb}<h1>Badges</h1>
+<p><a class="btn btn-primary" href="/admin/badges/new">Add a badge</a></p>
+<div class="table-wrap"><table class="admin-table">
+  <caption class="visually-hidden">Badges</caption>
+  <thead><tr><th scope="col">Badge</th><th scope="col">Rule</th><th scope="col">Shows as</th><th scope="col">Earned</th></tr></thead>
+  <tbody>${badges.map((b) => html`<tr${b.enabled ? '' : html` class="disabled"`}>
+    <td>${badgeArt(b.art, 'table-art')} <a href="/admin/badges/${b.id}">${b.name}</a>${b.enabled ? '' : html` <span class="flag">Disabled</span>`}</td>
+    <td>${RULES[b.rule_type]?.label || b.rule_type}<br><span class="muted">${b.rule_params}</span></td>
+    <td>${b.kind}</td>
+    <td>${b.earned_count}</td>
+  </tr>`)}</tbody>
+</table></div>`);
+}
+
+const PARAM_LABELS = { n: 'N (how many)', category: 'Amenity', start: 'From (local time)', end: 'Until (local time)', probability: 'Chance per stamp (0–1)' };
+
+export function adminBadgeForm({ badge, csrf, isNew, errors = {}, values = null, notice }) {
+  const b = values || badge || { kind: 'known', enabled: 1, rule_type: 'parks_count', rule_params: '{}', art: '🏅' };
+  let params = {};
+  try { params = values ? Object.fromEntries(Object.keys(PARAM_LABELS).map((k) => [k, values[`param_${k}`]])) : JSON.parse(b.rule_params || '{}'); } catch { params = {}; }
+  const allParams = Object.keys(PARAM_LABELS);
+  const action = isNew ? '/admin/badges/new' : `/admin/badges/${badge.id}`;
+  const enabled = values ? values.enabled === '1' : Boolean(b.enabled);
+  return page(isNew ? 'Add a badge' : b.name, html`<p class="breadcrumb"><a href="/admin">Admin</a> › <a href="/admin/badges">Badges</a></p>
+<h1>${isNew ? 'Add a badge' : `Edit ${b.name}`}</h1>
+${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${notice}</p>` : ''}
+${errorSummary(errors)}
+<form method="post" action="${action}" class="card-form admin-form" enctype="multipart/form-data" id="badge-form">
+  ${csrfField(csrf)}
+  ${input('name', 'Name', b.name, { required: true, error: errors.name })}
+  ${isNew ? input('slug', 'Slug', b.slug, { required: true, error: errors.slug, hint: 'Permanent id, e.g. sunrise-club.' }) : html`<p><strong>Slug:</strong> ${badge.slug}</p>`}
+  ${input('description', 'Description (shown once earned, and for known badges)', b.description, { error: errors.description })}
+  ${input('hint', 'Hint (shown for hidden and lucky badges)', b.hint, { error: errors.hint })}
+  <div class="art-row">
+    ${!isNew && badge ? html`<p>Current art: ${badgeArt(badge.art, 'table-art')}</p>` : ''}
+    ${input('art', 'Art: one emoji', String(b.art || '').startsWith('upload:') ? '' : b.art, { error: errors.art, hint: 'Leave empty to keep an uploaded image.' })}
+    <div class="field${errors.art_file ? ' field-error' : ''}">
+      <label for="art_file">…or upload art (SVG or PNG, under 512 KB)</label>
+      ${errors.art_file ? html`<p class="error-text" id="art_file-error">${errors.art_file}</p>` : ''}
+      <input type="file" id="art_file" name="art_file" accept=".svg,.png,image/svg+xml,image/png">
+    </div>
+  </div>
+  <div class="field${errors.rule_type ? ' field-error' : ''}">
+    <label for="rule_type">Rule</label>
+    ${errors.rule_type ? html`<p class="error-text">${errors.rule_type}</p>` : ''}
+    <select id="rule_type" name="rule_type">${Object.entries(RULES).map(([k, r]) => html`<option value="${k}" data-params="${Object.keys(r.params).join(' ')}"${k === b.rule_type ? html` selected` : ''}>${r.label}</option>`)}</select>
+  </div>
+  <fieldset class="radio-group rule-params">
+    <legend>Rule settings</legend>
+    <p class="hint">Only the settings the chosen rule uses are saved.</p>
+    ${allParams.map((k) => (k === 'category'
+      ? html`<div class="field param" data-param="${k}">
+          <label for="param_${k}">${PARAM_LABELS[k]}</label>
+          ${errors[`param_${k}`] ? html`<p class="error-text">${errors[`param_${k}`]}</p>` : ''}
+          <select id="param_${k}" name="param_${k}"><option value="">Choose…</option>${Object.keys(CATEGORIES).map((c) => html`<option value="${c}"${params[k] === c ? html` selected` : ''}>${categoryLabel(c)}</option>`)}</select>
+        </div>`
+      : html`<div class="param" data-param="${k}">${input(`param_${k}`, PARAM_LABELS[k], params[k], {
+        type: k === 'start' || k === 'end' ? 'time' : 'number', error: errors[`param_${k}`],
+        attrs: k === 'probability' ? html`step="0.01" min="0.01" max="1"` : k === 'n' ? html`step="1" min="1" max="1000"` : '',
+      })}</div>`))}
+  </fieldset>
+  <fieldset class="radio-group${errors.kind ? ' field-error' : ''}">
+    <legend>Shows as</legend>
+    ${errors.kind ? html`<p class="error-text">${errors.kind}</p>` : ''}
+    ${[['known', 'Known: name and progress shown'], ['hidden', 'Hidden: "?" with the hint until earned'], ['lucky', 'Lucky: awarded at random (lucky rule)']].map(([k, label]) => html`<label class="check"><input type="radio" name="kind" value="${k}"${b.kind === k ? html` checked` : ''}> ${label}</label>`)}
+  </fieldset>
+  <label class="check"><input type="checkbox" name="enabled" value="1"${enabled ? html` checked` : ''}> Enabled. Disabling stops new awards; members keep badges they earned.</label>
+  <button type="submit" class="btn btn-primary">${isNew ? 'Add badge' : 'Save badge'}</button>
+</form>`, { scripts: ['/js/badge-form.js'] });
+}
+
+export function adminModeration({ queue, csrf }) {
+  const back = '/admin/moderation';
+  const toggle = (url, hidden, what) => html`<form method="post" action="${url}">${csrfField(csrf)}
+    <input type="hidden" name="hidden" value="${hidden ? '0' : '1'}"><input type="hidden" name="back" value="${back}">
+    <button type="submit" class="btn btn-small${hidden ? '' : ' btn-danger'}">${hidden ? `Unhide ${what}` : `Hide ${what}`}</button></form>`;
+  return page('Moderation', html`${crumb}<h1>Moderation</h1>
+<p>The newest photos and reviews shared with pals or the public. Hidden items stay visible to their owner, labeled "Hidden by moderator".</p>
+<h2>Photos</h2>
+${queue.photos.length ? html`<ul class="mod-list">${queue.photos.map((p) => html`<li${p.hidden ? html` class="is-hidden"` : ''}>
+  <a href="/photos/${p.id}/full"><img src="/photos/${p.id}/thumb" alt="${p.caption || 'Photo'}" width="96" height="96" loading="lazy"></a>
+  <div><p>${p.caption || html`<span class="muted">No caption</span>`}</p>
+    <p class="muted">${p.display_name} (${p.email}) · <a href="/parks/${p.park_slug}">${p.park_name}</a> · ${p.visibility} · ${dateOf(p.created_at)}${p.hidden ? html` · <strong>Hidden</strong>` : ''}</p>
+    ${toggle(`/admin/photos/${p.id}/hidden`, p.hidden, 'photo')}</div>
+</li>`)}</ul>` : html`<p>No shared photos.</p>`}
+<h2>Reviews</h2>
+${queue.reviews.length ? html`<ul class="mod-list">${queue.reviews.map((r) => html`<li${r.comment_hidden ? html` class="is-hidden"` : ''}>
+  <div><p class="review-text">${r.comment}</p>
+    <p class="muted">${r.stars}★ · ${r.display_name} (${r.email}) · <a href="/parks/${r.park_slug}">${r.park_name}</a> · ${r.visibility} · ${dateOf(r.updated_at)}${r.comment_hidden ? html` · <strong>Hidden</strong>` : ''}</p>
+    ${toggle(`/admin/reviews/${r.id}/hidden`, r.comment_hidden, 'comment')}</div>
+</li>`)}</ul>` : html`<p>No shared reviews with comments.</p>`}`);
+}
+
+export function adminUsers({ users, csrf, me, error, notice }) {
+  return page('Members', html`${crumb}<h1>Members</h1>
+${error ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${error}</p>` : ''}
+${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${notice}</p>` : ''}
+<div class="table-wrap"><table class="admin-table">
+  <caption class="visually-hidden">Members</caption>
+  <thead><tr><th scope="col">Member</th><th scope="col">Parks</th><th scope="col">Joined</th><th scope="col">Admin</th></tr></thead>
+  <tbody>${users.map((u) => html`<tr>
+    <td>${u.display_name} <span class="muted">@${u.handle}</span><br><span class="muted">${u.email}</span></td>
+    <td>${u.parks}</td>
+    <td>${dateOf(u.created_at)}</td>
+    <td>${u.id === me.id ? html`Admin (you)` : html`<form method="post" action="/admin/users/${u.id}/admin">${csrfField(csrf)}
+      <input type="hidden" name="admin" value="${u.is_admin ? '0' : '1'}">
+      <button type="submit" class="btn btn-small" aria-label="${u.is_admin ? `Remove admin (${u.display_name})` : `Make admin (${u.display_name})`}">${u.is_admin ? 'Remove admin' : 'Make admin'}</button></form>`}</td>
+  </tr>`)}</tbody>
+</table></div>`);
+}

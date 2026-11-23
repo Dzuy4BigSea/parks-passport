@@ -1,4 +1,5 @@
 import { html } from './html.js';
+import { badgeArt } from './badge-art.js';
 
 /**
  * Page shell. `head` adds per-page tags (e.g. Leaflet CSS); `scripts` are module URLs loaded with defer.
@@ -9,7 +10,7 @@ function announcementsBlock(a) {
   return html`<div class="announcements" role="status" tabindex="-1" data-announce>
   ${a.levelUp ? html`<div class="announce announce-level"><span class="announce-art" aria-hidden="true">⬆️</span>
     <p><strong>Level up! You're now ${/^[AEIOU]/.test(a.levelUp.name) ? 'an' : 'a'} ${a.levelUp.name}.</strong></p></div>` : ''}
-  ${a.badges.map((b) => html`<div class="announce"><span class="announce-art" aria-hidden="true">${b.art}</span>
+  ${a.badges.map((b) => html`<div class="announce">${badgeArt(b.art, 'announce-art')}
     <p><strong>New badge: ${b.name}</strong>${b.description ? html`<br>${b.description}` : ''}</p></div>`)}
   <p class="announce-more"><a href="/passport#badges">See your badges</a></p>
 </div>`;
@@ -17,7 +18,8 @@ function announcementsBlock(a) {
 
 export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null, nudge = null }) {
   const nav = user
-    ? [['/parks', 'Parks', 'parks'], ['/passport', 'Passport', 'passport'], ['/pals', 'Pals', 'pals'], ['/account', 'Account', 'account']]
+    ? [['/parks', 'Parks', 'parks'], ['/passport', 'Passport', 'passport'], ['/pals', 'Pals', 'pals'], ['/account', 'Account', 'account'],
+      ...(user.is_admin ? [['/admin', 'Admin', 'admin']] : [])]
     : [['/parks', 'Parks', 'parks'], ['/login', 'Log in', 'login']];
   return html`<!doctype html>
 <html lang="en">

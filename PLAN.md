@@ -124,9 +124,11 @@ HTTP, hidden items, feed, account deletion removes files), `test/e2e/photos-rati
 
 ### M8 — Admin (Flow 9)
 Outcome: every Flow 9 criterion, plus the hide criteria from Flows 4 and 5.
-Checks: `test/e2e/admin.spec.js` (404 for non-admins, park CRUD and deactivate, CSV upload
-twice is idempotent, badge CRUD and disable, moderation hide/unhide, promote/demote, can't
-demote self).
+Checks: `test/unit/admin.test.js` (404 for members and signed-out on every page and POST,
+park edit/create/validation/deactivate, CSV upload twice is idempotent with invalid rows listed,
+badge CRUD and validation, disable stops awards but keeps earned, SVG art rasterized,
+moderation hide/unhide, promote/demote, can't demote self), `test/e2e/admin.spec.js` (pin
+picker map click, rule settings show/hide, axe and 375 px on every admin page).
 
 ### M9 — Analytics and consent (Flow 10)
 Outcome: every Flow 10 criterion. Consent banner, Consent Mode v2, configurable GTM loader,
