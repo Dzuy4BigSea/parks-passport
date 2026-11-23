@@ -91,7 +91,7 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
     title: park.name,
     current: 'parks',
     offerShare: Boolean(stamped),
-    head: hasPin ? html`<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">` : null,
+    head: hasPin ? html`<link rel="stylesheet" href="/vendor/leaflet/leaflet.css"><link rel="preconnect" href="https://tile.openstreetmap.org">` : null,
     scripts,
     body: html`
 <p class="breadcrumb"><a href="/parks">All parks</a></p>

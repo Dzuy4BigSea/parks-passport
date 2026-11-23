@@ -162,3 +162,22 @@ test('withdrawing analytics consent clears _ga cookies', async () => {
   const keep = await c.post('/consent', { choice: 'accept', back: '/' });
   assert.ok(!keep.cookies.some((x) => x.name.startsWith('_ga')));
 });
+
+test('/privacy names Umami, GA4 via GTM and every cookie', async () => {
+  const { app } = setup();
+  const body = (await client(app).get('/privacy')).body;
+  for (const text of ['Umami', 'Google Analytics 4', 'Google Tag Manager', 'pp_consent', 'pp_session', 'pp_csrf', '_ga']) {
+    assert.ok(body.includes(text), text);
+  }
+});
+
+test('a photo stamp records photo_upload as well as check_in', async () => {
+  const { app } = setup();
+  const sharp = (await import('sharp')).default;
+  const c = client(app);
+  await c.post('/signup', { display_name: 'Ana', email: 'ana@example.com', password: 'correct horse battery' });
+  const jpeg = await sharp({ create: { width: 300, height: 200, channels: 3, background: '#2f6f4e' } }).jpeg().toBuffer();
+  const res = await c.postMultipart('/parks/a-park/stamp', {}, { photo: { buffer: jpeg, filename: 'a.jpg', type: 'image/jpeg' } });
+  const evs = pageEvents((await c.get(res.headers.location)).body).map((e) => e.event);
+  assert.ok(evs.includes('check_in') && evs.includes('photo_upload'), evs.join(','));
+});

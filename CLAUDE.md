@@ -12,6 +12,8 @@ HTML, SQLite at `/data/app.db`.
 - Lint: `npm run lint`
 - All checks (what CI runs): `npm test`
 - Seed parks: `npm run seed:scrape` (dev only; writes `seed/parks.csv`)
+- Budgets (CI `budgets` job): `npm run lighthouse` (mobile Performance ≥ 90), `npm run check:memory`
+- Backups on aster: `scripts/backup.sh` nightly from root's cron; see `docs/backup-restore.md`
 
 ## Working rules
 - Think before coding: state assumptions; ask when the spec is ambiguous instead of guessing.

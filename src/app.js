@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import formbody from '@fastify/formbody';
 import cookie from '@fastify/cookie';
+import compress from '@fastify/compress';
 import { removePhotoFiles } from './lib/images.js';
 import { fileKeysForUser } from './domain/photos.js';
 import path from 'node:path';
@@ -69,6 +70,8 @@ export function buildApp({
   app.decorate('mailIdle', () => Promise.all(inflight));
   app.addHook('onClose', async () => db.close());
 
+  // gzip/brotli for text responses (HTML, CSS, JS; Leaflet's ESM build is 424 KB uncompressed).
+  app.register(compress, { global: true, threshold: 1024, encodings: ['br', 'gzip'] });
   app.register(formbody);
   // Multipart (uploads) is registered only around the photo routes: see lib/uploads.js.
   app.register(cookie);

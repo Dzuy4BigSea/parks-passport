@@ -338,6 +338,7 @@ CSV import) and the Playwright suite against a fresh SQLite DB with the seed par
 Playwright suite covers every flow above, mocks geolocation for inside, outside and denied
 check-ins, checks consent gating and every dataLayer event, runs axe on every page with zero
 violations, and takes 375/768/1440 screenshots.
-Lighthouse CI on the four key pages meets the Performance ≥ 90 budget. After a deploy,
+Lighthouse (`npm run lighthouse`, in CI) on the four key pages meets the Performance ≥ 90 budget,
+and `npm run check:memory` keeps the server's peak memory under load below 400 MB. After a deploy,
 `curl -fsS https://parkspassport.dzuynguyen.com/healthz` returns `ok`, and a manual phone test
 (sign up, GPS check-in at a real park, photo, rating, badge, invite a pal) succeeds.

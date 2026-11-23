@@ -290,3 +290,13 @@ test('photos from another day do not attach to a stamp', async () => {
   assert.equal(db.prepare('SELECT visit_id FROM photos').pluck().get(), null);
   assert.equal(totalPoints(db, people.ana.id), 15);
 });
+
+test('admins can open a private photo; captions are cut to 200 characters', async () => {
+  const { db, people } = await world();
+  await upload(people.ana.c, { visibility: 'private', caption: 'x'.repeat(250) });
+  const photo = db.prepare('SELECT * FROM photos').get();
+  assert.equal(photo.caption.length, 200);
+  assert.equal((await people.cat.c.get(`/photos/${photo.id}/full`)).statusCode, 404);
+  db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(people.cat.id);
+  assert.equal((await people.cat.c.get(`/photos/${photo.id}/full`)).statusCode, 200);
+});
