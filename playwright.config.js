@@ -15,12 +15,20 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
-  use: { baseURL: `http://127.0.0.1:${PORT}`, trace: 'off' },
+  use: {
+    baseURL: `http://127.0.0.1:${PORT}`,
+    trace: 'off',
+    // Most tests start with cookies already rejected so the consent banner stays out of the way;
+    // the consent specs clear this.
+    storageState: { cookies: [{ name: 'pp_consent', value: 'v1.a0.d0', domain: '127.0.0.1', path: '/', expires: -1, httpOnly: true, secure: false, sameSite: 'Lax' }], origins: [] },
+  },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     command: 'node src/server.js',
     url: `http://127.0.0.1:${PORT}/healthz`,
     reuseExistingServer: false,
-    env: { PORT: String(PORT), HOST: '127.0.0.1', DATA_DIR, NODE_ENV: 'test', MAIL_TRANSPORT: 'outbox', BASE_URL: `http://127.0.0.1:${PORT}` },
+    env: { PORT: String(PORT), HOST: '127.0.0.1', DATA_DIR, NODE_ENV: 'test', MAIL_TRANSPORT: 'outbox', BASE_URL: `http://127.0.0.1:${PORT}`,
+      // A fake GTM container served by the tests (see test/e2e/analytics.js); Umami stays off.
+      GTM_ID: 'GTM-TEST123', GTM_SCRIPT_ORIGIN: 'https://gtm.test.invalid' },
   },
 });

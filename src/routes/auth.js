@@ -60,6 +60,7 @@ export default async function authRoutes(app) {
       return reply.page(signupPage({ csrf: req.csrfToken(), values, errors, next: str(req.body.next) }));
     }
     startSession(req, reply, user.id);
+    app.track(user.id, 'sign_up', { method: 'password' });
     return reply.redirect(safeNext(req.body.next), 303);
   });
 
@@ -89,6 +90,7 @@ export default async function authRoutes(app) {
     db.prepare('DELETE FROM login_failures WHERE rowid = ?').run(attemptId);
     clearLoginFailures(db, email);
     startSession(req, reply, user.id);
+    app.track(user.id, 'login', { method: 'password' });
     return reply.redirect(safeNext(next), 303);
   });
 
@@ -116,6 +118,7 @@ export default async function authRoutes(app) {
     const row = consumeAuthToken(db, str(req.body.token), 'magic_link', { now: now() });
     if (!row) return reply.page(linkExpiredPage());
     startSession(req, reply, row.user_id);
+    app.track(row.user_id, 'login', { method: 'magic_link' });
     return reply.redirect(safeNext(req.body.next), 303);
   });
 

@@ -35,6 +35,7 @@ export default async function photoRoutes(app) {
       throw err;
     }
     awardBadges(db, req.user.id, { type: 'photo', id: photo.id }, badgeOpts());
+    app.track(req.user.id, 'photo_upload', { park_slug: park.slug });
     return reply.redirect(`/parks/${park.slug}?photo=added#photos`, 303);
   }));
 
@@ -78,6 +79,7 @@ export default async function photoRoutes(app) {
       return renderParkPage(app, req, reply, park, { problem: { text: result.error, area: 'rating', values: { comment: str(req.body.comment, 2000) } } });
     }
     awardBadges(db, req.user.id, { type: 'rating', id: result.rating.id }, badgeOpts());
+    app.track(req.user.id, 'rating_submit', { park_slug: park.slug, stars: result.rating.stars });
     return reply.redirect(`/parks/${park.slug}?rated=1#ratings`, 303);
   });
 

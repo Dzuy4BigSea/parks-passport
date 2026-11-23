@@ -27,6 +27,7 @@ const app = buildApp({
   config: {
     baseUrl: config.baseUrl, secureCookies: config.secureCookies, uploadsDir: path.join(config.dataDir, 'uploads'),
     mailTransport: config.mail.transport, mailFrom: config.mail.from, sendgridEnvKey: config.mail.sendgridApiKey,
+    analytics: config.analytics,
   },
 });
 

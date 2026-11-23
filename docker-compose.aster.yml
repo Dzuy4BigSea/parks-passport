@@ -1,6 +1,10 @@
 # Deploy config for aster: joins the shared bigsea-internal network so the
 # front nginx container reaches this app as http://parks-passport:8080.
 #   docker compose -f docker-compose.aster.yml up -d --build
+#
+# Umami (cookieless analytics) is in the "analytics" profile: it only starts once the server's
+# .env has COMPOSE_PROFILES=analytics plus UMAMI_DB_PASSWORD and UMAMI_APP_SECRET. Its database is
+# on a private network, and neither publishes a host port.
 services:
   parks-passport:
     build: .
@@ -18,9 +22,51 @@ services:
     networks:
       - bigsea-internal
 
+  umami:
+    profiles: [analytics]
+    image: ${UMAMI_IMAGE:-ghcr.io/umami-software/umami:postgresql-latest}   # pin a version in .env
+    container_name: parks-passport-umami
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:-}@parks-passport-umami-db:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET:-}
+      DISABLE_TELEMETRY: "1"
+    expose:
+      - "3000"
+    mem_limit: 256m
+    depends_on:
+      umami-db:
+        condition: service_healthy
+    networks:
+      - bigsea-internal              # nginx proxies /stats/ to http://parks-passport-umami:3000
+      - umami-private
+
+  umami-db:
+    profiles: [analytics]
+    image: postgres:16-alpine
+    container_name: parks-passport-umami-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD:-}
+    volumes:
+      - parks-passport-umami-db:/var/lib/postgresql/data
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami -d umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - umami-private                # not reachable from other apps' containers
+
 volumes:
   parks-passport-data:
+  parks-passport-umami-db:
 
 networks:
   bigsea-internal:
     external: true
+  umami-private:
+    name: parks-passport-umami-private

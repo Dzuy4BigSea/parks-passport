@@ -1,4 +1,5 @@
-import { html } from './html.js';
+import { html, raw } from './html.js';
+import { inlineJson } from '../lib/analytics.js';
 import { badgeArt } from './badge-art.js';
 
 /**
@@ -16,7 +17,46 @@ function announcementsBlock(a) {
 </div>`;
 }
 
-export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null, nudge = null }) {
+// Consent Mode v2 defaults (all denied) are set before GTM loads, then the saved choice is
+// applied; queued events go to dataLayer (and to Umami via /js/analytics.js).
+function analyticsHead(a, consent, events) {
+  const gtm = Boolean(a?.gtmId);
+  const umami = Boolean(a?.umamiWebsiteId);
+  return html`<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('consent', 'default', {analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', wait_for_update: 500});
+(function (c) {
+  if (c.analytics) gtag('consent', 'update', {analytics_storage: 'granted'});
+  if (c.ads) gtag('consent', 'update', {ad_storage: 'granted', ad_user_data: 'granted', ad_personalization: 'granted'});
+})(${raw(inlineJson({ analytics: consent.analytics, ads: consent.ads }))});
+window.__ppEvents = ${raw(inlineJson(events))};
+window.__ppEvents.forEach(function (e) { dataLayer.push(e); });
+${gtm ? raw("dataLayer.push({'gtm.start': new Date().getTime(), event: 'gtm.js'});") : ''}
+</script>
+${gtm ? html`<script async src="${a.gtmScriptOrigin}/gtm.js?id=${a.gtmId}"></script>` : ''}
+${umami ? html`<script defer src="${a.umamiScriptUrl}" data-website-id="${a.umamiWebsiteId}" data-host-url="${a.umamiHostUrl}"></script>` : ''}
+<script type="module" src="/js/analytics.js"></script>
+${gtm ? html`<script type="module" src="/js/consent.js"></script>` : ''}`;
+}
+
+// First-party consent banner, in the page flow (never covering content). Accept and Reject are
+// equally prominent; Settings opens the full choices.
+function consentBanner(csrf, back) {
+  const form = (choice, label, cls) => html`<form method="post" action="/consent" class="consent-form">
+    <input type="hidden" name="_csrf" value="${csrf}"><input type="hidden" name="choice" value="${choice}"><input type="hidden" name="back" value="${back}">
+    <button type="submit" class="btn ${cls}">${label}</button></form>`;
+  return html`<section class="consent-banner wrap" aria-labelledby="consent-h" id="consent-banner">
+  <h2 id="consent-h">Cookies</h2>
+  <p>We use Google Analytics cookies to see how the site is used, only if you agree. Privacy-friendly counts without cookies run either way.
+  <a href="/privacy#analytics">Details</a></p>
+  <div class="actions">${form('accept', 'Accept', 'btn-primary')}${form('reject', 'Reject', 'btn-primary')}
+    <a class="btn btn-quiet" href="/consent?back=${encodeURIComponent(back)}">Settings</a></div>
+</section>`;
+}
+
+export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null, nudge = null,
+  analytics = null, consent = { chosen: true, analytics: false, ads: false }, events = [], showConsentBanner = false, path = '/' }) {
   const nav = user
     ? [['/parks', 'Parks', 'parks'], ['/passport', 'Passport', 'passport'], ['/pals', 'Pals', 'pals'], ['/account', 'Account', 'account'],
       ...(user.is_admin ? [['/admin', 'Admin', 'admin']] : [])]
@@ -33,6 +73,7 @@ export function layout({ title, body, head = null, scripts = [], current = '', u
 <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
 <link rel="stylesheet" href="/css/app.css">
+${analyticsHead(analytics, consent, events)}
 ${head}
 ${scripts.map((src) => html`<script type="module" src="${src}"></script>`)}
 <script type="module" src="/js/announce.js"></script>
@@ -50,11 +91,12 @@ ${scripts.map((src) => html`<script type="module" src="${src}"></script>`)}
     </nav>
   </div>
 </header>
+${showConsentBanner ? consentBanner(csrf, path) : ''}
 <main id="main" class="wrap" tabindex="-1">${announcementsBlock(announcements)}${nudge}${body}</main>
 <footer class="site-footer">
   <div class="wrap">
     <p>An independent project. Not affiliated with the City of St. Petersburg.</p>
-    <p><a href="/privacy">Privacy</a></p>
+    <p><a href="/privacy">Privacy</a>${analytics?.gtmId ? html` · <a href="/consent?back=${encodeURIComponent(path)}" id="cookie-settings">Cookie settings</a>` : ''}</p>
   </div>
 </footer>
 </body>

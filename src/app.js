@@ -12,6 +12,8 @@ import { homePage, privacyPage } from './views/pages/static.js';
 import { countActiveParks } from './domain/parks.js';
 import { takeUnseenBadges } from './domain/badges/index.js';
 import { emailSettings } from './domain/settings.js';
+import { buildEvent, queueEvent, takeEvents, parseConsent, CONSENT_COOKIE } from './lib/analytics.js';
+import consentRoutes from './routes/consent.js';
 import { totalPoints } from './domain/points.js';
 import { levelFor } from './domain/levels.js';
 import { authPlugin } from './lib/auth.js';
@@ -44,6 +46,8 @@ export function buildApp({
   app.decorate('random', random); // injectable for lucky badges in tests
   app.decorate('config', config);
   app.decorate('secretBox', secretBox); // encrypts the admin-saved SendGrid key
+  // app.track(userId, name, params): an analytics event for the user's next page (see lib/analytics.js).
+  app.decorate('track', (userId, name, params = {}) => queueEvent(db, userId, name, params, { now: now(), log: app.log }));
   app.decorate('emailSettings', () => emailSettings(db, { envFrom: config.mailFrom || '' }));
   // Removes a user's photo files before their rows are deleted (rows cascade).
   app.decorate('beforeUserDelete', async (userId) => {
@@ -94,9 +98,23 @@ export function buildApp({
     // After a stamp or a new badge, nudge a private passport towards sharing (until dismissed 3 times).
     const nudge = req.user && (announcements || view.offerShare) && req.user.default_visibility === 'private'
       && req.user.share_nudge_dismissals < 3 ? shareNudge({ csrf: req.csrfToken(), back: req.url }) : null;
+    // Analytics: page events, events queued by earlier redirects, and new badges / level-ups.
+    const events = [];
+    const add = (name, params) => { try { events.push(buildEvent(name, params)); } catch (err) { req.log.warn(err.message); } };
+    for (const [name, params] of view.events || []) add(name, params);
+    if (req.user && this.statusCode < 400) events.push(...takeEvents(db, req.user.id));
+    for (const b of announcements?.badges || []) add('badge_earned', { badge_slug: b.slug, kind: b.kind });
+    if (announcements?.levelUp) add('level_up', { level: announcements.levelUp.name });
+    const consent = parseConsent(req.cookies[CONSENT_COOKIE]);
+    const path = req.url.split('#')[0];
     return this.type('text/html; charset=utf-8')
       .header('Cache-Control', 'no-store')
-      .send(String(layout({ ...view, user: req.user, csrf: req.csrfToken(), announcements, nudge })));
+      .send(String(layout({
+        ...view, user: req.user, csrf: req.csrfToken(), announcements, nudge, events, consent, path,
+        analytics: config.analytics || null,
+        // The banner asks only when there is something to consent to (GTM) and no choice yet.
+        showConsentBanner: Boolean(config.analytics?.gtmId) && !consent.chosen && !path.startsWith('/consent'),
+      })));
   });
 
   app.get('/healthz', async (req, reply) => {
@@ -117,6 +135,7 @@ export function buildApp({
   app.register(palRoutes);
   app.register(photoRoutes);
   app.register(adminRoutes);
+  app.register(consentRoutes);
 
   // Friendly HTML errors instead of Fastify's JSON (e.g. an upload over the size limit).
   app.setErrorHandler((err, req, reply) => {

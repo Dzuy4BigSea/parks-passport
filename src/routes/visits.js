@@ -26,7 +26,8 @@ export default async function visitRoutes(app) {
     renderParkPage(app, req, reply, park, { problem: { area: 'stamp', ...problem } });
 
   // Badges for the stamper, and "Better Together" for pals who stamped here the same day.
-  function afterStamp(user, visit) {
+  function afterStamp(user, visit, park) {
+    app.track(user.id, 'check_in', { park_slug: park.slug, method: visit.method });
     const opts = { now: app.now(), random: app.random };
     // Photos already uploaded here that day count toward this stamp (+3).
     attachSameDayPhotos(db, user.id, visit, { now: app.now() });
@@ -56,7 +57,7 @@ export default async function visitRoutes(app) {
     if (!park) return reply.callNotFound();
     const result = stampVisit(db, { user: req.user, park, method: 'gps', position: parsePosition(req.body) }, { now: app.now() });
     if (result.error) return parkWithProblem(req, reply, park, problemFor(result));
-    afterStamp(req.user, result.visit);
+    afterStamp(req.user, result.visit, park);
     return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
   });
 
@@ -89,7 +90,7 @@ export default async function visitRoutes(app) {
       if (stored) await removePhotoFiles(app.config.uploadsDir, stored.fileKey);
       return parkWithProblem(req, reply, park, problemFor(result));
     }
-    afterStamp(req.user, result.visit);
+    afterStamp(req.user, result.visit, park);
     return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
   }));
 

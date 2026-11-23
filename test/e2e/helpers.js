@@ -29,6 +29,6 @@ export async function signUp(page, { email = uniqueEmail(), name = 'Sam Explorer
 
 // A page in a fresh browser context (separate cookies), with the project's baseURL.
 export async function freshPage(browser, testInfo) {
-  const context = await browser.newContext({ baseURL: testInfo.project.use.baseURL });
+  const context = await browser.newContext({ baseURL: testInfo.project.use.baseURL, storageState: testInfo.project.use.storageState });
   return context.newPage();
 }

@@ -321,12 +321,10 @@ aster behind the shared nginx at `https://parkspassport.dzuynguyen.com`, with da
   distinct value.
 - **SendGrid:** Dzuy sets up the account, the sender address on `dzuynguyen.com`, and domain
   authentication (DNS CNAMEs).
-- **Umami hosting:** Umami needs Postgres. The proposal is `parks-passport-umami` and
-  `parks-passport-umami-db` containers in this app's compose file on `bigsea-internal`, with
-  no host ports, the DB in its own named volume, and memory limits of about 256 MB each.
-  nginx proxies `/stats/` (script, collect and dashboard) inside this app's server block.
-  This needs Dzuy's go-ahead because it adds two containers to the shared box (disk about 75%
-  full).
+- **Umami hosting (decided):** `parks-passport-umami` + `parks-passport-umami-db` in this app's
+  compose file under the `analytics` profile (off until enabled in `.env`), no host ports, the DB
+  on a private network, 256 MB each. nginx serves only `/stats/script.js` and `/stats/api/send`;
+  the dashboard is reached through an SSH tunnel. Setup steps: `docs/umami-setup-prompt.md`.
 - **sGTM (later):** the first-party host name (e.g. `sgtm.parkspassport.dzuynguyen.com`) and
   where it runs. v1 only makes this a config switch (Flow 10).
 - **Check-in radius:** the 150 m default may be too small for large parks such as Boyd Hill
