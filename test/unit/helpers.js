@@ -23,8 +23,8 @@ export function testClock(start = '2026-06-01T12:00:00Z') {
   return now;
 }
 
-export function makeApp({ db = openDb(':memory:'), mailer = memoryMailer(), now = testClock(), secureCookies = false } = {}) {
-  const app = buildApp({ db, mailer, now, config: { baseUrl: 'http://test.local', secureCookies } });
+export function makeApp({ db = openDb(':memory:'), mailer = memoryMailer(), now = testClock(), random = () => 0.99, secureCookies = false } = {}) {
+  const app = buildApp({ db, mailer, now, random, config: { baseUrl: 'http://test.local', secureCookies } });
   return { app, db, mailer, now };
 }
 

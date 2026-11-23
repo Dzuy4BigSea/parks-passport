@@ -4,7 +4,18 @@ import { html } from './html.js';
  * Page shell. `head` adds per-page tags (e.g. Leaflet CSS); `scripts` are module URLs loaded with defer.
  * `current` marks the active nav item.
  */
-export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '' }) {
+function announcementsBlock(a) {
+  if (!a) return '';
+  return html`<div class="announcements" role="status">
+  ${a.levelUp ? html`<div class="announce announce-level"><span class="announce-art" aria-hidden="true">⬆️</span>
+    <p><strong>Level up! You're now ${/^[AEIOU]/.test(a.levelUp.name) ? 'an' : 'a'} ${a.levelUp.name}.</strong></p></div>` : ''}
+  ${a.badges.map((b) => html`<div class="announce"><span class="announce-art" aria-hidden="true">${b.art}</span>
+    <p><strong>New badge: ${b.name}</strong>${b.description ? html`<br>${b.description}` : ''}</p></div>`)}
+  <p class="announce-more"><a href="/passport#badges">See your badges</a></p>
+</div>`;
+}
+
+export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null }) {
   const nav = user
     ? [['/parks', 'Parks', 'parks'], ['/passport', 'Passport', 'passport'], ['/account', 'Account', 'account']]
     : [['/parks', 'Parks', 'parks'], ['/login', 'Log in', 'login']];
@@ -36,7 +47,7 @@ ${scripts.map((src) => html`<script type="module" src="${src}"></script>`)}
     </nav>
   </div>
 </header>
-<main id="main" class="wrap" tabindex="-1">${body}</main>
+<main id="main" class="wrap" tabindex="-1">${announcementsBlock(announcements)}${body}</main>
 <footer class="site-footer">
   <div class="wrap">
     <p>An independent project. Not affiliated with the City of St. Petersburg.</p>

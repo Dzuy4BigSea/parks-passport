@@ -2,6 +2,7 @@ import { requireUser } from '../lib/auth.js';
 import { getParkBySlug } from '../domain/parks.js';
 import { parsePosition } from '../domain/checkin.js';
 import { stampVisit, deleteVisit, visitsAtPark } from '../domain/visits.js';
+import { awardBadges, revokeUnmetBadges } from '../domain/badges/index.js';
 import { formatMiles } from '../domain/geo.js';
 import { formatDate, localDate } from '../domain/time.js';
 import { parkPage } from '../views/pages/park.js';
@@ -46,6 +47,7 @@ export default async function visitRoutes(app) {
     if (!park) return reply.callNotFound();
     const result = stampVisit(db, { user: req.user, park, method: 'gps', position: parsePosition(req.body) }, { now: app.now() });
     if (result.error) return parkWithProblem(req, reply, park, problemFor(result));
+    awardBadges(db, req.user.id, { type: 'visit', id: result.visit.id }, { now: app.now(), random: app.random });
     return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
   });
 
@@ -55,12 +57,14 @@ export default async function visitRoutes(app) {
     const visitedOn = typeof req.body.visited_on === 'string' && req.body.visited_on ? req.body.visited_on : null;
     const result = stampVisit(db, { user: req.user, park, method: 'honor', visitedOn }, { now: app.now() });
     if (result.error) return parkWithProblem(req, reply, park, problemFor(result));
+    awardBadges(db, req.user.id, { type: 'visit', id: result.visit.id }, { now: app.now(), random: app.random });
     return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
   });
 
   app.post('/visits/:id/delete', { preHandler: requireUser }, async (req, reply) => {
     const visit = deleteVisit(db, { user: req.user, visitId: Number(req.params.id) }, { now: app.now() });
     if (!visit) return reply.callNotFound();
+    revokeUnmetBadges(db, req.user.id);
     const back = typeof req.body.back === 'string' && /^\/[a-z0-9/-]*$/.test(req.body.back) ? req.body.back : '/passport';
     return reply.redirect(back, 303);
   });

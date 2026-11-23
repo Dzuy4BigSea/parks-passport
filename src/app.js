@@ -8,10 +8,14 @@ import { html } from './views/html.js';
 import { layout } from './views/layout.js';
 import { homePage, privacyPage } from './views/pages/static.js';
 import { countActiveParks } from './domain/parks.js';
-import { authPlugin, requireUser } from './lib/auth.js';
+import { takeUnseenBadges } from './domain/badges/index.js';
+import { totalPoints } from './domain/points.js';
+import { levelFor } from './domain/levels.js';
+import { authPlugin } from './lib/auth.js';
 import parkRoutes from './routes/parks.js';
 import authRoutes from './routes/auth.js';
 import visitRoutes from './routes/visits.js';
+import passportRoutes from './routes/passport.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -20,7 +24,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
  * config: { baseUrl, secureCookies }
  */
 export function buildApp({
-  db, mailer, now = () => new Date(), logger = false,
+  db, mailer, now = () => new Date(), random = Math.random, logger = false,
   config = { baseUrl: 'http://localhost:8080', secureCookies: false },
 } = {}) {
   if (!db) throw new Error('buildApp needs a db');
@@ -30,6 +34,7 @@ export function buildApp({
   app.decorate('db', db);
   app.decorate('mailer', mailer);
   app.decorate('now', now);
+  app.decorate('random', random); // injectable for lucky badges in tests
   app.decorate('config', config);
   // Hook for removing a user's stored files before their rows are deleted (photos, M7).
   app.decorate('beforeUserDelete', async () => {});
@@ -57,13 +62,26 @@ export function buildApp({
     decorateReply: false, maxAge: '30d', immutable: true,
   });
 
+  // New badges and level-ups, announced once on the next page the user sees.
+  function takeAnnouncements(user) {
+    const badges = takeUnseenBadges(db, user.id, { now: now() });
+    const level = levelFor(totalPoints(db, user.id));
+    let levelUp = null;
+    if (level.index > user.level_seen) {
+      db.prepare('UPDATE users SET level_seen = ? WHERE id = ?').run(level.index, user.id);
+      levelUp = level;
+    }
+    return badges.length || levelUp ? { badges, levelUp } : null;
+  }
+
   // reply.page({ title, body, status?, ... }) renders a full HTML page in the layout.
   app.decorateReply('page', function page(view) {
     if (view.status) this.code(view.status);
     const req = this.request;
+    const announcements = req.user && this.statusCode < 400 ? takeAnnouncements(req.user) : null;
     return this.type('text/html; charset=utf-8')
       .header('Cache-Control', 'no-store')
-      .send(String(layout({ ...view, user: req.user, csrf: req.csrfToken() })));
+      .send(String(layout({ ...view, user: req.user, csrf: req.csrfToken(), announcements })));
   });
 
   app.get('/healthz', async (req, reply) => {
@@ -77,14 +95,10 @@ export function buildApp({
 
   app.get('/', async (req, reply) => reply.page(homePage({ total: countActiveParks(db) })));
   app.get('/privacy', async (req, reply) => reply.page(privacyPage()));
-  // Placeholder until M5 builds the passport page.
-  app.get('/passport', { preHandler: requireUser }, async (req, reply) => reply.page({
-    title: 'My passport', current: 'passport',
-    body: html`<h1>${req.user.display_name}'s passport</h1><p>Your stamps will appear here.</p>`,
-  }));
   app.register(parkRoutes);
   app.register(authRoutes);
   app.register(visitRoutes);
+  app.register(passportRoutes);
 
   app.setNotFoundHandler((req, reply) => {
     reply.code(404);
