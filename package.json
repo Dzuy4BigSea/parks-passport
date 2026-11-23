@@ -16,7 +16,8 @@
     "@fastify/formbody": "^9.0.2",
     "@fastify/static": "^10.1.12",
     "better-sqlite3": "^13.2.0",
-    "fastify": "^5.12.8"
+    "fastify": "^5.12.8",
+    "leaflet": "^1.9.4"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

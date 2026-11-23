@@ -6,8 +6,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { html } from './views/html.js';
 import { layout } from './views/layout.js';
+import { homePage, privacyPage } from './views/pages/static.js';
+import { countActiveParks } from './domain/parks.js';
+import parkRoutes from './routes/parks.js';
 
-const PUBLIC_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // Builds the app with injected dependencies so tests can supply a temp DB, clock, etc.
 export function buildApp({ db, logger = false } = {}) {
@@ -16,12 +19,22 @@ export function buildApp({ db, logger = false } = {}) {
 
   app.register(formbody);
   app.register(cookie);
-  app.register(fastifyStatic, { root: PUBLIC_DIR, prefix: '/', index: false, wildcard: false });
+  app.register(fastifyStatic, {
+    root: path.join(ROOT, 'public'), prefix: '/', index: false, wildcard: false,
+    maxAge: '1h',
+  });
+  app.register(fastifyStatic, {
+    root: path.join(ROOT, 'node_modules', 'leaflet', 'dist'), prefix: '/vendor/leaflet/',
+    decorateReply: false, maxAge: '30d', immutable: true,
+  });
 
   app.decorate('db', db);
   app.addHook('onClose', async () => db.close());
 
-  const sendPage = (reply, page) => reply.type('text/html; charset=utf-8').send(String(layout(page)));
+  // reply.page({ title, body, ... }) renders a full HTML page in the layout.
+  app.decorateReply('page', function page(view) {
+    return this.type('text/html; charset=utf-8').send(String(layout(view)));
+  });
 
   app.get('/healthz', async (req, reply) => {
     try {
@@ -32,17 +45,13 @@ export function buildApp({ db, logger = false } = {}) {
     }
   });
 
-  app.get('/', async (req, reply) => sendPage(reply, {
-    title: null,
-    body: html`<section class="hero">
-  <h1>Your passport to St. Pete parks</h1>
-  <p>Stamp every park you visit, collect badges, and explore with your Park Pals.</p>
-</section>`,
-  }));
+  app.get('/', async (req, reply) => reply.page(homePage({ total: countActiveParks(db) })));
+  app.get('/privacy', async (req, reply) => reply.page(privacyPage()));
+  app.register(parkRoutes);
 
   app.setNotFoundHandler((req, reply) => {
     reply.code(404);
-    return sendPage(reply, { title: 'Not found', body: html`<h1>Page not found</h1><p><a href="/">Go home</a></p>` });
+    return reply.page({ title: 'Not found', body: html`<h1>Page not found</h1><p><a href="/parks">Browse all parks</a></p>` });
   });
 
   return app;

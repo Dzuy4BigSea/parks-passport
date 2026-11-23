@@ -37,7 +37,7 @@ const slugify = (s) => s.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]
 
 const titleCase = (s) => s.toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase())
   .replace(/\b(Of|And|The|At)\b/g, (w) => w.toLowerCase()).replace(/^./, (c) => c.toUpperCase())
-  .replace(/\bMlk\b/g, 'MLK').replace(/\b(N|S|E|W|Ne|Nw|Se|Sw)\b\.?/g, (w) => w.toUpperCase());
+  .replace(/\bMlk\b/g, 'MLK').replace(/, Fl\b/g, ', FL').replace(/\b(N|S|E|W|Ne|Nw|Se|Sw)\b\.?/g, (w) => w.toUpperCase());
 
 const inBounds = (lat, lng) => lat >= ST_PETE_BOUNDS.minLat && lat <= ST_PETE_BOUNDS.maxLat &&
   lng >= ST_PETE_BOUNDS.minLng && lng <= ST_PETE_BOUNDS.maxLng;

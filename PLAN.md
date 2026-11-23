@@ -66,7 +66,8 @@ Checks: `test/unit/csv-import.test.js` (valid, invalid and idempotent re-import)
 Dzuy reviews the category list and the flagged rows.
 
 ### M2 — Browse and search parks (Flow 2) + visual foundation
-Outcome: every Flow 2 criterion. Passport look, design tokens, footer disclaimer, `/privacy`
+Outcome: every Flow 2 criterion except the two signed-in ones (stamped marks and the
+"Not visited yet" filter), which move to M4 because they need stamps. Passport look, design tokens, footer disclaimer, `/privacy`
 stub, PWA manifest.
 Checks: `test/e2e/parks.spec.js` (list, search with and without JS, filters, near-me with
 mocked geolocation, denied geolocation, 404 slug, axe on each page),
@@ -80,7 +81,7 @@ Checks: `test/unit/auth-tokens.test.js`, `test/unit/csrf.test.js`,
 single-use and expiry, reset, logout, delete, cookie flags).
 
 ### M4 — Stamp a visit (Flow 3)
-Outcome: every Flow 3 criterion. GPS, honor and photo-method plumbing (photo upload itself in
+Outcome: every Flow 3 criterion, plus Flow 2's stamped marks and "Not visited yet" filter. GPS, honor and photo-method plumbing (photo upload itself in
 M7), one stamp per day, backdating rules, delete visit. Writes to the points ledger.
 Checks: `test/unit/checkin.test.js` (radius plus accuracy cap, America/New_York day boundary),
 `test/e2e/stamp.spec.js` (inside, outside then honor, denied, duplicate day, future date

@@ -1,25 +1,6 @@
 // Maps a raw City "Park Features" value to zero or more category slugs, by keyword.
 // See seed/park-features.txt for every raw value and what it maps to.
-export const CATEGORIES = {
-  'playground': 'Playground',
-  'dog-park': 'Dog park',
-  'restrooms': 'Restrooms',
-  'picnic-shelter': 'Picnic shelter',
-  'trails': 'Trails',
-  'tennis': 'Tennis',
-  'pickleball': 'Pickleball',
-  'basketball': 'Basketball',
-  'ball-fields': 'Ball fields',
-  'water-access': 'Boat & kayak access',
-  'beach': 'Beach',
-  'lake': 'Lake',
-  'scenic-view': 'Scenic view',
-  'pool': 'Pool & splash pad',
-  'fitness': 'Fitness',
-  'recreation-center': 'Recreation center',
-  'history-nature': 'History & nature',
-  'skatepark': 'Skatepark',
-};
+export { CATEGORIES } from '../src/domain/categories.js';
 
 const RULES = [
   [/playground|playlot|swing/, 'playground'],
