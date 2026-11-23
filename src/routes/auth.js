@@ -1,4 +1,5 @@
 import { requireUser, safeNext } from '../lib/auth.js';
+import { magicLinkEmail, passwordResetEmail, deleteAccountEmail } from '../views/email.js';
 import { verifyPassword, burnPasswordCheck } from '../lib/crypto.js';
 import {
   createUser, findUserByEmail, findUserById, createSession, deleteSession, deleteAllSessions,
@@ -17,6 +18,8 @@ export default async function authRoutes(app) {
   const { db, mailer } = app;
   const now = () => app.now();
   const link = (path, token) => `${app.config.baseUrl}${path}?token=${encodeURIComponent(token)}`;
+  // Shared fields for the branded email templates (views/email.js).
+  const brand = () => ({ baseUrl: app.config.baseUrl, tagline: app.theme().tagline });
 
   // Signing in replaces any session the browser already had.
   const startSession = (req, reply, userId) => {
@@ -101,8 +104,8 @@ export default async function authRoutes(app) {
     if (user) {
       emailLink(user, 'magic_link', (token) => ({
         to: user.email,
-        subject: app.emailSettings().subject_magic_link,
-        text: `Hi ${user.display_name},\n\nSign in to Parks Passport:\n${link('/auth/magic', token)}${next ? `&next=${encodeURIComponent(next)}` : ''}\n\nThis link works once and expires in 15 minutes. If you didn't ask for it, ignore this email.\n`,
+        ...magicLinkEmail({ ...brand(), subject: app.emailSettings().subject_magic_link, name: user.display_name,
+          url: `${link('/auth/magic', token)}${next ? `&next=${encodeURIComponent(next)}` : ''}` }),
       }));
     }
     return reply.page(checkEmailPage());
@@ -130,8 +133,7 @@ export default async function authRoutes(app) {
     if (user) {
       emailLink(user, 'password_reset', (token) => ({
         to: user.email,
-        subject: app.emailSettings().subject_password_reset,
-        text: `Hi ${user.display_name},\n\nChoose a new password:\n${link('/reset', token)}\n\nThis link works once and expires in 15 minutes. If you didn't ask for it, ignore this email; your password hasn't changed.\n`,
+        ...passwordResetEmail({ ...brand(), subject: app.emailSettings().subject_password_reset, name: user.display_name, url: link('/reset', token) }),
       }));
     }
     return reply.page(checkEmailPage({ what: 'a password reset link' }));
@@ -203,8 +205,7 @@ export default async function authRoutes(app) {
     const token = createAuthToken(db, req.user.id, 'delete_account', { now: now() });
     return sendOrFail(reply, {
       to: req.user.email,
-      subject: app.emailSettings().subject_delete_account,
-      text: `Hi ${req.user.display_name},\n\nTo permanently delete your account and everything in it, open:\n${link('/account/delete/confirm', token)}\n\nThis link works once and expires in 15 minutes. If you didn't ask for this, ignore this email.\n`,
+      ...deleteAccountEmail({ ...brand(), subject: app.emailSettings().subject_delete_account, name: req.user.display_name, url: link('/account/delete/confirm', token) }),
     }, page);
   });
 
