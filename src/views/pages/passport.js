@@ -1,4 +1,5 @@
 import { html } from '../html.js';
+import { badgeArt } from '../badge-art.js';
 import { csrfField } from '../forms.js';
 import { METHOD_LABELS } from '../../domain/visits.js';
 import { formatDate, localDate } from '../../domain/time.js';
@@ -12,7 +13,7 @@ const shortDate = (ymd) => {
 function badgeCard(b) {
   if (b.state === 'earned') {
     return html`<li class="badge earned">
-  <span class="badge-art" aria-hidden="true">${b.art}</span>
+  ${badgeArt(b.art)}
   <span class="badge-name">${b.name}</span>
   <span class="badge-meta">Earned ${formatDate(localDate(new Date(b.awarded_at)))}</span>
   ${b.description ? html`<span class="badge-desc">${b.description}</span>` : ''}
@@ -21,7 +22,7 @@ function badgeCard(b) {
   if (b.state === 'known') {
     const pct = b.target ? Math.round((b.progress / b.target) * 100) : 0;
     return html`<li class="badge known">
-  <span class="badge-art" aria-hidden="true">${b.art}</span>
+  ${badgeArt(b.art)}
   <span class="badge-name">${b.name}</span>
   <span class="badge-desc">${b.description}</span>
   ${b.target ? html`<span class="badge-meta">${b.progress} / ${b.target} ${b.unit}</span>

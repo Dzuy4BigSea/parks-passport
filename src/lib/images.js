@@ -80,3 +80,37 @@ function isHeic(buf) {
   if (buf.length < 12 || buf.toString('ascii', 4, 8) !== 'ftyp') return false;
   return ['heic', 'heix', 'hevc', 'heim', 'heis', 'mif1', 'msf1'].includes(buf.toString('ascii', 8, 12));
 }
+
+// Badge art: an uploaded SVG or PNG is rasterized to a 128 px PNG. Re-rendering means an
+// uploaded SVG can never carry script. Returns { key } or { error }.
+export const BADGE_ART_MAX_BYTES = 512 * 1024;
+export async function storeBadgeArt(buffer, uploadsDir) {
+  if (!buffer?.length) return { error: 'Choose an image.' };
+  if (buffer.length > BADGE_ART_MAX_BYTES) return { error: 'Badge art must be under 512 KB.' };
+  let meta;
+  try {
+    meta = await sharp(buffer, { failOn: 'error', limitInputPixels: false }).metadata();
+  } catch {
+    return { error: 'Use an SVG or PNG image.' };
+  }
+  if (!['svg', 'png'].includes(meta.format)) return { error: 'Use an SVG or PNG image.' };
+  if ((meta.width || 0) * (meta.height || 0) > 16_000_000) return { error: 'That image is too large.' };
+  const key = crypto.randomBytes(12).toString('hex');
+  const file = path.join(uploadsDir, 'badges', `${key}.png`);
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  try {
+    await sharp(buffer, SHARP_OPTS).resize(128, 128, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toFile(file);
+  } catch {
+    await fs.rm(file, { force: true });
+    return { error: 'Use an SVG or PNG image.' };
+  }
+  return { key };
+}
+
+export const badgeArtPath = (uploadsDir, key) => path.join(uploadsDir, 'badges', `${key}.png`);
+
+// art is "upload:<key>"; anything else (an emoji) has no file.
+export async function removeBadgeArt(uploadsDir, art) {
+  const m = /^upload:([a-f0-9]{24})$/.exec(String(art || ''));
+  if (m) await fs.rm(badgeArtPath(uploadsDir, m[1]), { force: true });
+}

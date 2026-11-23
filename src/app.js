@@ -20,6 +20,7 @@ import visitRoutes from './routes/visits.js';
 import passportRoutes from './routes/passport.js';
 import palRoutes from './routes/pals.js';
 import photoRoutes from './routes/photos.js';
+import adminRoutes from './routes/admin.js';
 import { shareNudge } from './views/pages/pals.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -112,6 +113,7 @@ export function buildApp({
   app.register(passportRoutes);
   app.register(palRoutes);
   app.register(photoRoutes);
+  app.register(adminRoutes);
 
   // Friendly HTML errors instead of Fastify's JSON (e.g. an upload over the size limit).
   app.setErrorHandler((err, req, reply) => {

@@ -47,12 +47,13 @@ export function awardBadges(db, userId, trigger, { now = new Date(), random = Ma
     (SELECT 1 FROM user_badges ub WHERE ub.user_id = ? AND ub.badge_id = b.id) ORDER BY b.sort, b.id`).all(userId);
   if (!candidates.length) return [];
   const ctx = buildContext(db, userId, { trigger, random });
-  const insert = db.prepare(`INSERT OR IGNORE INTO user_badges (user_id, badge_id, awarded_at, source_type, source_id)
-    VALUES (?, ?, ?, ?, ?)`);
+  const insert = db.prepare(`INSERT OR IGNORE INTO user_badges (user_id, badge_id, awarded_at, source_type, source_id, rule_snapshot)
+    VALUES (?, ?, ?, ?, ?, ?)`);
   const awarded = [];
   for (const badge of candidates) {
     if (evaluateRule(badge, ctx).earned) {
-      if (insert.run(userId, badge.id, now.toISOString(), trigger?.type || 'recheck', trigger?.id ?? null).changes) {
+      const snapshot = JSON.stringify({ rule_type: badge.rule_type, rule_params: badge.rule_params });
+      if (insert.run(userId, badge.id, now.toISOString(), trigger?.type || 'recheck', trigger?.id ?? null, snapshot).changes) {
         awarded.push(badge);
       }
     }
@@ -61,16 +62,22 @@ export function awardBadges(db, userId, trigger, { now = new Date(), random = Ma
 }
 
 /**
- * After something is deleted: removes earned badges whose criteria are no longer met.
- * Lucky drops are kept.
+ * After something is deleted: removes earned badges whose criteria are no longer met, judged by
+ * the rule as it was when the badge was awarded (an admin editing the rule later never takes it
+ * away). Lucky drops and disabled badges are kept.
  */
 export function revokeUnmetBadges(db, userId) {
-  const earned = db.prepare(`SELECT b.* FROM user_badges ub JOIN badges b ON b.id = ub.badge_id
-    WHERE ub.user_id = ? AND b.rule_type != 'lucky'`).all(userId);
-  if (!earned.length) return [];
+  const earned = db.prepare(`SELECT b.*, ub.rule_snapshot FROM user_badges ub JOIN badges b ON b.id = ub.badge_id
+    WHERE ub.user_id = ? AND b.enabled = 1`).all(userId);
+  const asAwarded = earned.map((b) => {
+    let snap;
+    try { snap = b.rule_snapshot ? JSON.parse(b.rule_snapshot) : null; } catch { snap = null; }
+    return snap ? { ...b, rule_type: snap.rule_type, rule_params: snap.rule_params } : b;
+  }).filter((b) => b.rule_type !== 'lucky');
+  if (!asAwarded.length) return [];
   const ctx = buildContext(db, userId);
   const del = db.prepare('DELETE FROM user_badges WHERE user_id = ? AND badge_id = ?');
-  const revoked = earned.filter((b) => !evaluateRule(b, ctx).earned);
+  const revoked = asAwarded.filter((b) => !evaluateRule(b, ctx).earned);
   for (const b of revoked) del.run(userId, b.id);
   return revoked;
 }
