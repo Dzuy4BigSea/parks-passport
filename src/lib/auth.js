@@ -47,6 +47,7 @@ export const authPlugin = fp(async function auth(app, { db, now, secureCookies }
 
   app.addHook('preHandler', async (req, reply) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return;
+    if (req.is404) return; // the 404 page changes nothing (and its body may be unread)
     const sent = req.body && typeof req.body === 'object' ? req.body._csrf : undefined;
     const cookie = req.cookies[CSRF_COOKIE];
     if (!cookie || !sent || !safeEqual(sent, cookie)) {

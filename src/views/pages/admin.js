@@ -36,9 +36,9 @@ export function adminParks({ parks, filter }) {
   <caption class="visually-hidden">Parks</caption>
   <thead><tr><th scope="col">Park</th><th scope="col">Status</th><th scope="col">Visits</th></tr></thead>
   <tbody>${parks.map((p) => html`<tr>
-    <td><a href="/admin/parks/${p.id}">${p.name}</a><br><span class="muted">${p.slug}</span></td>
-    <td>${p.active ? 'Active' : html`<strong>Inactive</strong>`}${p.needs_pin ? html`<br><span class="flag">Pin to check</span>` : ''}${p.lat == null ? html`<br><span class="flag">No location</span>` : ''}</td>
-    <td>${p.visit_count}</td>
+    <td data-label="Park"><a href="/admin/parks/${p.id}">${p.name}</a><br><span class="muted">${p.slug}</span></td>
+    <td data-label="Status">${p.active ? 'Active' : html`<strong>Inactive</strong>`}${p.needs_pin ? html`<br><span class="flag">Pin to check</span>` : ''}${p.lat == null ? html`<br><span class="flag">No location</span>` : ''}</td>
+    <td data-label="Visits">${p.visit_count}</td>
   </tr>`)}</tbody>
 </table></div>
 ${parks.length ? '' : html`<p>No parks here.</p>`}`);
@@ -111,10 +111,10 @@ export function adminBadges({ badges }) {
   <caption class="visually-hidden">Badges</caption>
   <thead><tr><th scope="col">Badge</th><th scope="col">Rule</th><th scope="col">Shows as</th><th scope="col">Earned</th></tr></thead>
   <tbody>${badges.map((b) => html`<tr${b.enabled ? '' : html` class="disabled"`}>
-    <td>${badgeArt(b.art, 'table-art')} <a href="/admin/badges/${b.id}">${b.name}</a>${b.enabled ? '' : html` <span class="flag">Disabled</span>`}</td>
-    <td>${RULES[b.rule_type]?.label || b.rule_type}<br><span class="muted">${b.rule_params}</span></td>
-    <td>${b.kind}</td>
-    <td>${b.earned_count}</td>
+    <td data-label="Badge">${badgeArt(b.art, 'table-art')} <a href="/admin/badges/${b.id}">${b.name}</a>${b.enabled ? '' : html` <span class="flag">Disabled</span>`}</td>
+    <td data-label="Rule">${RULES[b.rule_type]?.label || b.rule_type}<br><span class="muted">${b.rule_params}</span></td>
+    <td data-label="Shows as">${b.kind}</td>
+    <td data-label="Earned">${b.earned_count}</td>
   </tr>`)}</tbody>
 </table></div>`);
 }
@@ -206,10 +206,10 @@ ${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${no
   <caption class="visually-hidden">Members</caption>
   <thead><tr><th scope="col">Member</th><th scope="col">Parks</th><th scope="col">Joined</th><th scope="col">Admin</th></tr></thead>
   <tbody>${users.map((u) => html`<tr>
-    <td>${u.display_name} <span class="muted">@${u.handle}</span><br><span class="muted">${u.email}</span></td>
-    <td>${u.parks}</td>
-    <td>${dateOf(u.created_at)}</td>
-    <td>${u.id === me.id ? html`Admin (you)` : html`<form method="post" action="/admin/users/${u.id}/admin">${csrfField(csrf)}
+    <td data-label="Member">${u.display_name} <span class="muted">@${u.handle}</span><br><span class="muted">${u.email}</span></td>
+    <td data-label="Parks">${u.parks}</td>
+    <td data-label="Joined">${dateOf(u.created_at)}</td>
+    <td data-label="Admin">${u.id === me.id ? html`Admin (you)` : html`<form method="post" action="/admin/users/${u.id}/admin">${csrfField(csrf)}
       <input type="hidden" name="admin" value="${u.is_admin ? '0' : '1'}">
       <button type="submit" class="btn btn-small" aria-label="${u.is_admin ? `Remove admin (${u.display_name})` : `Make admin (${u.display_name})`}">${u.is_admin ? 'Remove admin' : 'Make admin'}</button></form>`}</td>
   </tr>`)}</tbody>

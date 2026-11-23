@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { withUploads } from '../lib/uploads.js';
 import { safeNext } from '../lib/auth.js';
-import { storeBadgeArt, badgeArtPath } from '../lib/images.js';
+import { storeBadgeArt, badgeArtPath, removeBadgeArt } from '../lib/images.js';
 import { importParksCsv } from '../domain/csv-import.js';
 import { SEED_PARKS_CSV } from '../db/seed.js';
 import {
@@ -18,9 +18,10 @@ export default async function adminRoutes(app) {
   const { db } = app;
   const now = () => app.now();
 
-  // Everything here is admins-only and 404s for everyone else (never 403).
+  // Everything here is admins-only and 404s for everyone else (never 403). onRequest runs before
+  // the body (uploads included) is read and before the CSRF check; req.user is already set.
   app.register(async (admin) => {
-    admin.addHook('preHandler', async (req, reply) => {
+    admin.addHook('onRequest', async (req, reply) => {
       if (!req.user?.is_admin) return reply.callNotFound();
     });
     routes(admin);
@@ -138,8 +139,12 @@ export default async function adminRoutes(app) {
       delete values.art_file;
       const { badge, errors = {} } = validateBadgeForm(values, { isNew });
       const artFile = Buffer.isBuffer(req.body.art_file) && req.body.art_file.length ? req.body.art_file : null;
+      if (isNew && badge && db.prepare('SELECT 1 FROM badges WHERE slug = ?').get(badge.slug)) {
+        errors.slug = 'Another badge already uses that slug.';
+      }
+      // Store uploaded art only once the rest of the form is valid, so a 422 leaves no file.
       let art = null;
-      if (artFile) {
+      if (artFile && badge && !Object.keys(errors).length) {
         const stored = await storeBadgeArt(artFile, app.config.uploadsDir);
         if (stored.error) errors.art_file = stored.error;
         else art = `upload:${stored.key}`;
@@ -153,9 +158,12 @@ export default async function adminRoutes(app) {
       else if (!String(values.art || '').trim() && existing?.art?.startsWith('upload:')) badge.art = existing.art;
       const saved = saveBadge(db, existing?.id ?? null, badge, { now: now() });
       if (saved.error === 'slug_taken') {
+        if (art) await removeBadgeArt(app.config.uploadsDir, art);
         reply.code(422);
         return reply.page(adminBadgeForm({ csrf: req.csrfToken(), isNew, badge: existing, errors: { slug: 'Another badge already uses that slug.' }, values }));
       }
+      // Replaced art: remove the old file.
+      if (existing?.art?.startsWith('upload:') && saved.art !== existing.art) await removeBadgeArt(app.config.uploadsDir, existing.art);
       return reply.redirect(`/admin/badges/${saved.id}?saved=1`, 303);
     };
     r.post('/badges/new', async (req, reply) => saveBadgeRoute(req, reply, null));

@@ -31,16 +31,26 @@ const ADMIN_PAGES = ['/admin', '/admin/parks', '/admin/parks/new', '/admin/parks
   '/admin/badges', '/admin/badges/new', '/admin/badges/1', '/admin/moderation', '/admin/users'];
 
 test('admin pages are 404 for members and signed-out visitors, 200 for admins', async () => {
-  const { app, admin, member } = await world();
+  const { app, db, admin, member } = await world();
   for (const url of ADMIN_PAGES) {
     assert.equal((await member.get(url)).statusCode, 404, `member ${url}`);
     assert.equal((await client(app).get(url)).statusCode, 404, `anon ${url}`);
     assert.equal((await admin.get(url)).statusCode, 200, `admin ${url}`);
   }
-  // POSTs too (with a valid CSRF token).
-  assert.equal((await member.post('/admin/parks/1', { name: 'Hacked', slug: 'a-park' })).statusCode, 404);
-  assert.equal((await member.post('/admin/users/1/admin', { admin: '1' })).statusCode, 404);
-  assert.equal((await member.postMultipart('/admin/import', {}, { csv: { buffer: Buffer.from(CSV), filename: 'p.csv' } })).statusCode, 404);
+  // Every POST too, for a member (valid CSRF token) and a signed-out visitor, before any body is read.
+  const anon = client(app);
+  for (const url of ['/admin/parks/new', '/admin/parks/1', '/admin/import/seed', '/admin/photos/1/hidden',
+    '/admin/reviews/1/hidden', '/admin/users/1/admin']) {
+    assert.equal((await member.post(url, { name: 'Hacked', slug: 'a-park', admin: '1', hidden: '1' })).statusCode, 404, `member POST ${url}`);
+    assert.equal((await anon.post(url, { admin: '1' })).statusCode, 404, `anon POST ${url}`);
+  }
+  for (const url of ['/admin/import', '/admin/badges/new', '/admin/badges/1']) {
+    const file = { csv: { buffer: Buffer.from(CSV), filename: 'p.csv' } };
+    assert.equal((await member.postMultipart(url, { name: 'x' }, file)).statusCode, 404, `member upload ${url}`);
+    assert.equal((await anon.postMultipart(url, { name: 'x' }, file)).statusCode, 404, `anon upload ${url}`);
+  }
+  assert.equal(db.prepare("SELECT name FROM parks WHERE slug = 'a-park'").pluck().get(), 'A Park');
+  assert.equal(db.prepare('SELECT is_admin FROM users WHERE id = 1').pluck().get(), 1);
   assert.match((await admin.get('/parks')).body, /href="\/admin"/);
   assert.ok(!(await member.get('/parks')).body.includes('href="/admin"'));
 });
@@ -225,4 +235,59 @@ test('promote and demote members; an admin cannot demote themselves', async () =
   assert.equal(db.prepare('SELECT is_admin FROM users WHERE id = ?').pluck().get(people.admin.id), 1);
   await admin.post(`/admin/users/${people.member.id}/admin`, { admin: '0' });
   assert.equal((await people.member.c.get('/admin')).statusCode, 404);
+});
+
+test('editing a badge rule never takes it from people who already earned it', async () => {
+  const { db, admin, people } = await world();
+  await people.member.c.post('/parks/a-park/stamp', {});
+  await people.member.c.post('/parks/b-park/stamp', {});
+  const first = db.prepare("SELECT * FROM badges WHERE slug = 'first'").get();
+  // Raise the bar to 3 parks; the member has 2 and earned it at n = 1.
+  await admin.postMultipart(`/admin/badges/${first.id}`, { name: first.name, art: '🌱', rule_type: 'parks_count', param_n: '3', kind: 'known', enabled: '1' });
+  const visit = db.prepare('SELECT id FROM visits WHERE user_id = ? ORDER BY id DESC').pluck().get(people.member.id);
+  await people.member.c.post(`/visits/${visit}/delete`, {});
+  const has = () => db.prepare('SELECT COUNT(*) FROM user_badges WHERE user_id = ? AND badge_id = ?').pluck().get(people.member.id, first.id);
+  assert.equal(has(), 1, 'still met under the rule as awarded (1 park)');
+  // Deleting the last visit does make it unmet, even under the old rule.
+  const last = db.prepare('SELECT id FROM visits WHERE user_id = ?').pluck().get(people.member.id);
+  await people.member.c.post(`/visits/${last}/delete`, {});
+  assert.equal(has(), 0);
+});
+
+test('disabled badges are never revoked', async () => {
+  const { db, people } = await world();
+  await people.member.c.post('/parks/a-park/stamp', {});
+  db.prepare("UPDATE badges SET enabled = 0 WHERE slug = 'first'").run();
+  const visit = db.prepare('SELECT id FROM visits WHERE user_id = ?').pluck().get(people.member.id);
+  await people.member.c.post(`/visits/${visit}/delete`, {});
+  assert.equal(db.prepare('SELECT COUNT(*) FROM user_badges WHERE user_id = ?').pluck().get(people.member.id), 1);
+});
+
+test('a rejected badge form leaves no art file; replacing art removes the old file', async () => {
+  const { db, admin, uploadsDir } = await world();
+  const png = await sharp({ create: { width: 64, height: 64, channels: 4, background: '#f2c14e' } }).png().toBuffer();
+  const files = () => (fs.existsSync(`${uploadsDir}/badges`) ? fs.readdirSync(`${uploadsDir}/badges`) : []);
+  const bad = await admin.postMultipart('/admin/badges/new', { name: '', slug: 'x-y', rule_type: 'parks_count', param_n: '2', kind: 'known' },
+    { art_file: { buffer: png, filename: 'a.png', type: 'image/png' } });
+  assert.equal(bad.statusCode, 422);
+  assert.deepEqual(files(), []);
+  await admin.postMultipart('/admin/badges/new', { name: 'Art', slug: 'art', rule_type: 'parks_count', param_n: '2', kind: 'known', enabled: '1' },
+    { art_file: { buffer: png, filename: 'a.png', type: 'image/png' } });
+  const [firstFile] = files();
+  const id = db.prepare("SELECT id FROM badges WHERE slug = 'art'").pluck().get();
+  await admin.postMultipart(`/admin/badges/${id}`, { name: 'Art', rule_type: 'parks_count', param_n: '2', kind: 'known', enabled: '1' },
+    { art_file: { buffer: png, filename: 'b.png', type: 'image/png' } });
+  assert.equal(files().length, 1);
+  assert.notEqual(files()[0], firstFile);
+});
+
+test('the last admin can never be demoted, and repeated form fields are refused cleanly', async () => {
+  const { db, admin, people } = await world();
+  await admin.post(`/admin/users/${people.member.id}/admin`, { admin: '1' });
+  // member (now admin) demotes the original admin: allowed, one admin remains.
+  await people.member.c.post(`/admin/users/${people.admin.id}/admin`, { admin: '0' });
+  assert.equal(db.prepare('SELECT COUNT(*) FROM users WHERE is_admin = 1').pluck().get(), 1);
+  // Repeated fields (name=a&name=b) arrive as arrays: refused, not a crash.
+  const { saveParkFromForm } = await import('../../src/domain/admin.js');
+  assert.match(saveParkFromForm(db, 1, { name: ['a', 'b'], slug: 'a-park' }).error, /Name is required/);
 });

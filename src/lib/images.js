@@ -108,3 +108,9 @@ export async function storeBadgeArt(buffer, uploadsDir) {
 }
 
 export const badgeArtPath = (uploadsDir, key) => path.join(uploadsDir, 'badges', `${key}.png`);
+
+// art is "upload:<key>"; anything else (an emoji) has no file.
+export async function removeBadgeArt(uploadsDir, art) {
+  const m = /^upload:([a-f0-9]{24})$/.exec(String(art || ''));
+  if (m) await fs.rm(badgeArtPath(uploadsDir, m[1]), { force: true });
+}

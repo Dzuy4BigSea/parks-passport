@@ -23,11 +23,12 @@ export function parkForAdmin(db, id) {
  */
 export function saveParkFromForm(db, id, form, { now = new Date() } = {}) {
   const cats = [].concat(form.categories || []).map(String).filter((c) => Object.hasOwn(CATEGORIES, c));
+  // Repeated fields arrive as arrays; only plain strings are accepted.
+  const f = (k) => (typeof form[k] === 'string' ? form[k] : '');
   const { park, error } = validateParkRow({
-    slug: String(form.slug || '').trim(), name: form.name, address: form.address, phone: form.phone,
-    lat: String(form.lat ?? '').trim(), lng: String(form.lng ?? '').trim(),
-    checkin_radius_m: String(form.checkin_radius_m ?? '').trim(), categories: cats.join('|'),
-    city_url: form.city_url, needs_pin: form.needs_pin === '1' ? '1' : '0',
+    slug: f('slug').trim(), name: f('name'), address: f('address'), phone: f('phone'),
+    lat: f('lat').trim(), lng: f('lng').trim(), checkin_radius_m: f('checkin_radius_m').trim(),
+    categories: cats.join('|'), city_url: f('city_url'), needs_pin: form.needs_pin === '1' ? '1' : '0',
   });
   if (error) return { error: error.charAt(0).toUpperCase() + error.slice(1) + '.' };
   const clash = db.prepare('SELECT id FROM parks WHERE slug = ? AND id IS NOT ?').get(park.slug, id);
@@ -157,6 +158,11 @@ export const allUsersForAdmin = (db) => db.prepare(`SELECT u.id, u.display_name,
 /** Promotes or demotes a member. Admins can't demote themselves. Returns { ok } or { error }. */
 export function setAdminFlag(db, actor, targetId, makeAdmin) {
   if (!makeAdmin && actor.id === targetId) return { error: "You can't remove your own admin access." };
-  const changes = db.prepare('UPDATE users SET is_admin = ? WHERE id = ?').run(makeAdmin ? 1 : 0, targetId).changes;
-  return changes ? { ok: true } : { error: 'not_found' };
+  if (!db.prepare('SELECT 1 FROM users WHERE id = ?').get(targetId)) return { error: 'not_found' };
+  // Demoting checks the count in the same statement, so two admins demoting each other at once
+  // can't leave the app with none.
+  const changes = makeAdmin
+    ? db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(targetId).changes
+    : db.prepare('UPDATE users SET is_admin = 0 WHERE id = ? AND (SELECT COUNT(*) FROM users WHERE is_admin = 1) > 1').run(targetId).changes;
+  return changes || makeAdmin ? { ok: true } : { error: "There must always be at least one admin." };
 }
