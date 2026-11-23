@@ -1,4 +1,5 @@
 // Lighthouse budget (SPEC: mobile Performance >= 90 on /, /parks, /parks/:slug, /passport).
+// Each page is audited RUNS times (default 3) and judged on the median, as Lighthouse recommends.
 //   npm run lighthouse
 // Starts the app on a temp database with GTM enabled (served by a local stand-in, consent
 // denied: the banner shows), signs up a user for /passport, and runs Lighthouse's default mobile
@@ -14,6 +15,7 @@ import puppeteer from 'puppeteer-core'; // ships with lighthouse
 import { chromium } from '@playwright/test';
 
 const BUDGET = Number(process.env.LH_BUDGET || 0.9);
+const RUNS = Number(process.env.LH_RUNS || 3);
 const PORT = 8231;
 const BASE = `http://127.0.0.1:${PORT}`;
 const OUT = path.join(process.cwd(), 'lighthouse-report');
@@ -79,21 +81,28 @@ try {
   });
   fs.mkdirSync(OUT, { recursive: true });
   for (const [name, url, auth] of pages) {
-    // Signed-in pages: put the session cookie in the browser and keep it (Lighthouse otherwise
-    // clears storage, and Chrome ignores a Cookie passed as an extra header).
-    let browser;
-    let page;
-    if (auth) {
-      browser = await puppeteer.connect({ browserURL: `http://127.0.0.1:${chrome.port}` });
-      page = await browser.newPage();
-      await page.setCookie(...[...jar].map(([name, value]) => ({ name, value, url: BASE })));
+    const runs = [];
+    for (let i = 0; i < RUNS; i++) {
+      // Signed-in pages: put the session cookie in the browser and keep it (Lighthouse otherwise
+      // clears storage, and Chrome ignores a Cookie passed as an extra header).
+      let browser;
+      let page;
+      if (auth) {
+        browser = await puppeteer.connect({ browserURL: `http://127.0.0.1:${chrome.port}` });
+        page = await browser.newPage();
+        await page.setCookie(...[...jar].map(([n, value]) => ({ name: n, value, url: BASE })));
+      }
+      const result = await lighthouse(`${BASE}${url}`, {
+        port: chrome.port, output: 'html', logLevel: 'error',
+        onlyCategories: ['performance', 'accessibility', 'best-practices'],
+        ...(auth ? { disableStorageReset: true } : {}),
+      }, undefined, page);
+      if (page) { await page.close(); browser.disconnect(); }
+      runs.push(result);
     }
-    const result = await lighthouse(`${BASE}${url}`, {
-      port: chrome.port, output: 'html', logLevel: 'error',
-      onlyCategories: ['performance', 'accessibility', 'best-practices'],
-      ...(auth ? { disableStorageReset: true } : {}),
-    }, undefined, page);
-    if (page) { await page.close(); browser.disconnect(); }
+    // Median by performance score; its report is the one saved.
+    runs.sort((x, y) => x.lhr.categories.performance.score - y.lhr.categories.performance.score);
+    const result = runs[Math.floor(runs.length / 2)];
     fs.writeFileSync(path.join(OUT, `${name}.html`), result.report);
     // A redirect (e.g. /passport to /login) would audit the wrong page.
     const landed = new URL(result.lhr.finalDisplayedUrl).pathname;
@@ -101,7 +110,8 @@ try {
     const c = result.lhr.categories;
     const perf = c.performance.score;
     const a = result.lhr.audits;
-    console.log(`${url.padEnd(26)} performance ${Math.round(perf * 100)}  accessibility ${Math.round(c.accessibility.score * 100)}  best-practices ${Math.round(c['best-practices'].score * 100)}  (LCP ${a['largest-contentful-paint'].displayValue}, TBT ${a['total-blocking-time'].displayValue}, CLS ${a['cumulative-layout-shift'].displayValue})`);
+    const all = runs.map((r) => Math.round(r.lhr.categories.performance.score * 100)).join('/');
+    console.log(`${url.padEnd(26)} performance ${Math.round(perf * 100)} (runs ${all})  accessibility ${Math.round(c.accessibility.score * 100)}  best-practices ${Math.round(c['best-practices'].score * 100)}  (LCP ${a['largest-contentful-paint'].displayValue}, TBT ${a['total-blocking-time'].displayValue}, CLS ${a['cumulative-layout-shift'].displayValue})`);
     if (perf < BUDGET) { failed = true; console.error(`  ✘ ${url} performance ${Math.round(perf * 100)} is under ${BUDGET * 100}`); }
   }
 } finally {

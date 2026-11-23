@@ -1,8 +1,11 @@
 // Memory under load (PLAN M10): the app must stay well inside its 512 MB container limit.
 //   npm run check:memory
-// Starts the app on a temp database, then runs bursts of concurrent page views, stamps and
-// photo uploads (2000x1500 JPEGs, the heaviest work) while sampling the server's resident
-// memory. Fails if the peak goes over LIMIT_MB (default 400, leaving headroom under 512).
+// Starts the app on a temp database (with MALLOC_ARENA_MAX=2, as in the Dockerfile), then runs
+// bursts of concurrent page views, stamps and photo uploads of realistic phone photos (12 MP,
+// noisy, about 7 MB: the heaviest work) while sampling the server's resident memory. Uploads
+// refused as busy (503) are retried, like a person would. Fails if the peak goes over LIMIT_MB
+// (default 400, leaving headroom under the 512 MB container limit), if any photo is missing, or
+// if any page or stamp fails.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -14,7 +17,7 @@ const PORT = 8233;
 const BASE = `http://127.0.0.1:${PORT}`;
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-load-'));
 const server = spawn(process.execPath, ['src/server.js'], {
-  env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1', DATA_DIR: dataDir, NODE_ENV: 'test', MAIL_TRANSPORT: 'outbox', BASE_URL: BASE },
+  env: { ...process.env, MALLOC_ARENA_MAX: '2', PORT: String(PORT), HOST: '127.0.0.1', DATA_DIR: dataDir, NODE_ENV: 'test', MAIL_TRANSPORT: 'outbox', BASE_URL: BASE },
   stdio: 'ignore',
 });
 
@@ -23,6 +26,9 @@ const rssMb = () => {
   return m ? Number(m[1]) / 1024 : 0;
 };
 let peak = 0;
+let busyRetries = 0;
+let failures = 0;
+const failed = [];
 const sampler = setInterval(() => { try { peak = Math.max(peak, rssMb()); } catch { /* exited */ } }, 50);
 
 async function waitUp() {
@@ -41,13 +47,19 @@ async function user(i) {
   const form = (fields) => ({ method: 'POST', redirect: 'manual', headers: { cookie: cookie(), 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ _csrf: jar.get('pp_csrf'), ...fields }) });
   keep(await fetch(`${BASE}/signup`, form({ display_name: `Load ${i}`, email: `load${i}@example.com`, password: 'correct horse battery' })));
   return {
-    get: (url) => fetch(`${BASE}${url}`, { headers: { cookie: cookie() } }).then((r) => r.arrayBuffer()),
-    post: (url, fields) => fetch(`${BASE}${url}`, form(fields)),
-    upload: (url, buf) => {
-      const fd = new FormData();
-      fd.append('_csrf', jar.get('pp_csrf'));
-      fd.append('photo', new Blob([buf], { type: 'image/jpeg' }), 'load.jpg');
-      return fetch(`${BASE}${url}`, { method: 'POST', redirect: 'manual', headers: { cookie: cookie() }, body: fd });
+    get: (url) => fetch(`${BASE}${url}`, { headers: { cookie: cookie() } }).then((r) => { if (r.status !== 200) { failures++; failed.push(`GET ${url} ${r.status}`); } return r.arrayBuffer(); }),
+    post: (url, fields) => fetch(`${BASE}${url}`, form(fields)).then((r) => { if (r.status !== 303) { failures++; failed.push(`POST ${url} ${r.status}`); } return r; }),
+    async upload(url, buf) {
+      for (let attempt = 0; attempt < 60; attempt++) {
+        const fd = new FormData();
+        fd.append('_csrf', jar.get('pp_csrf'));
+        fd.append('photo', new Blob([buf], { type: 'image/jpeg' }), 'load.jpg');
+        const res = await fetch(`${BASE}${url}`, { method: 'POST', redirect: 'manual', headers: { cookie: cookie() }, body: fd });
+        await res.arrayBuffer();
+        if (res.status !== 503) { busyRetries += attempt; return res; }
+        await new Promise((r) => setTimeout(r, 250));
+      }
+      throw new Error('upload kept getting 503');
     },
   };
 }
@@ -57,9 +69,13 @@ try {
   await waitUp();
   const idle = rssMb();
   const users = await Promise.all(Array.from({ length: 10 }, (_, i) => user(i)));
-  const photo = await sharp({ create: { width: 2000, height: 1500, channels: 3, background: '#2f6f4e' } })
-    .composite([{ input: Buffer.from('<svg width="2000" height="1500"><rect x="100" y="100" width="1800" height="1300" fill="#f2c14e" opacity="0.5"/></svg>') }])
-    .jpeg({ quality: 95 }).toBuffer();
+  // A 12 MP phone-like photo: random noise compresses badly, like real detail does.
+  const W = 4032;
+  const H = 3024;
+  const noise = Buffer.alloc(W * H * 3);
+  for (let i = 0; i < noise.length; i++) noise[i] = (Math.random() * 256) | 0;
+  const photo = await sharp(noise, { raw: { width: W, height: H, channels: 3 } }).jpeg({ quality: 88 }).toBuffer();
+  console.log(`test photo: ${W}x${H}, ${(photo.length / 1048576).toFixed(1)} MB`);
   const parks = ['abercrombie-park', 'crescent-lake-park', 'lake-vista-park', 'north-shore-park', 'bartlett-park'];
   const t0 = Date.now();
   for (let round = 0; round < 3; round++) {
@@ -72,7 +88,8 @@ try {
   }
   const photos = fs.readdirSync(path.join(dataDir, 'uploads'), { recursive: true }).filter((f) => String(f).endsWith('.jpg') && !String(f).includes('thumb')).length;
   console.log(`idle ${idle.toFixed(0)} MB, peak ${peak.toFixed(0)} MB under load (limit ${LIMIT_MB} MB, container 512 MB)`);
-  console.log(`${users.length} users, 3 rounds: ${3 * users.length * 6} page views, ${3 * users.length} stamps, ${photos} photos stored, ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  console.log(`${users.length} users, 3 rounds: ${3 * users.length * 6} page views, ${3 * users.length} stamps, ${photos} photos stored (${busyRetries} busy retries), ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  if (failures) { console.error(`✘ ${failures} page views or stamps failed, e.g. ${[...new Set(failed)].slice(0, 5).join('; ')}`); exitCode = 1; }
   if (photos !== 3 * users.length * 2) { console.error(`✘ expected ${3 * users.length * 2} photos, got ${photos}`); exitCode = 1; }
   if (peak > LIMIT_MB) { console.error(`✘ peak memory ${peak.toFixed(0)} MB is over ${LIMIT_MB} MB`); exitCode = 1; }
 } catch (err) {

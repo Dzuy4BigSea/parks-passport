@@ -2,6 +2,8 @@
 FROM node:22-slim
 WORKDIR /app
 ENV NODE_ENV=production
+# Fewer glibc malloc arenas: keeps sharp's memory use in check (sharp's recommendation on glibc).
+ENV MALLOC_ARENA_MAX=2
 COPY package*.json ./
 # --ignore-scripts: native deps ship prebuilt binaries; skip node-gyp (no Python in the image).
 RUN npm ci --omit=dev --no-audit --no-fund --ignore-scripts && npm cache clean --force

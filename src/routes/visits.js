@@ -91,6 +91,7 @@ export default async function visitRoutes(app) {
       return parkWithProblem(req, reply, park, problemFor(result));
     }
     afterStamp(req.user, result.visit, park);
+    if (stored) app.track(req.user.id, 'photo_upload', { park_slug: park.slug });
     return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
   }));
 

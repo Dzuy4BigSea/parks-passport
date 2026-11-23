@@ -21,8 +21,8 @@ merged and deployed:
 > 1. Run it once by hand: `ssh aster "bash /opt/claude-sync/parks-passport/scripts/backup.sh"`.
 >    Show the output and `ls -lh /root/backups/parks-passport/`. Stop if it fails.
 > 2. Check it restores: copy the newest `app-*.db.gz` to `/tmp` on aster, `gunzip` it, and run
->    `docker run --rm -v /tmp:/b parks-passport:latest node -e "const D=require('better-sqlite3');const d=new D('/b/<file>.db',{readonly:true});console.log(d.pragma('integrity_check',{simple:true}), d.prepare('select count(*) n from parks').get())"`.
->    Expect `ok` and about 102 parks. Delete the temp copy afterwards.
+>    `docker run --rm --user root -v /tmp:/b parks-passport:latest node -e "const D=require('better-sqlite3');const d=new D('/b/<file>.db',{readonly:true});console.log(d.pragma('integrity_check',{simple:true}), d.prepare('select count(*) n from parks').get())"`.
+>    Expect `ok` and about 102 parks (`--user root` because backups are root-only, mode 600). Delete the temp copy afterwards.
 > 3. Add to root's crontab, next to the existing `0 2 * * *` and `15 3 * * *` entries:
 >    `40 2 * * * bash /opt/claude-sync/parks-passport/scripts/backup.sh >> /var/log/parks-passport-backup.log 2>&1`.
 >    Show me `crontab -l` before and after.

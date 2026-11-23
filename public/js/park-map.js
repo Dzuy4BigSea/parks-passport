@@ -37,11 +37,13 @@ async function init() {
 // Start the map only when it scrolls into view: map tiles are large third-party images, and
 // loading them up front made one the page's Largest Contentful Paint on phones.
 const start = () => init().catch(() => { el.textContent = 'Map unavailable.'; });
-if (el) {
+// Wait for the page to finish loading first, so Leaflet never competes with the page's own content.
+const whenLoaded = (fn) => (document.readyState === 'complete' ? fn() : window.addEventListener('load', fn, { once: true }));
+if (el) whenLoaded(() => {
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver((entries) => {
       if (entries.some((e) => e.isIntersecting)) { io.disconnect(); start(); }
     }, { rootMargin: '200px' });
     io.observe(el);
   } else start();
-}
+});

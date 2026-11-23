@@ -150,9 +150,16 @@ Outcome: SPEC "End-to-end verification" and the Ops NFRs.
 - `npm run lighthouse` (`scripts/lighthouse.js`): Lighthouse's default mobile audit of `/`,
   `/parks`, `/parks/:slug` and `/passport` (signed in), with GTM on and consent denied; fails
   under 90 or if a page redirects.
-- `npm run check:memory` (`scripts/load-check.js`): concurrent page views, stamps and 2000 px
-  photo uploads; fails if the server's peak memory is over 400 MB (container limit 512 MB).
+- `npm run lighthouse` judges the median of 3 runs per page. Limits: GTM is a tiny stand-in
+  (re-run Lighthouse against production once the real GTM container is set), and the park page's
+  map tiles are drawn on canvas, so they aren't the LCP; the map still appears a moment later.
+- `npm run check:memory` (`scripts/load-check.js`): 10 users at once doing page views, stamps and
+  12 MP / ~9 MB photo uploads, with MALLOC_ARENA_MAX=2 as in the Dockerfile; fails if the server's
+  peak memory is over 400 MB (container limit 512 MB). At most 3 uploads are in progress at once;
+  more get a "busy, try again" page (503).
 - `test/e2e/pages.spec.js`: axe and no sideways scroll at 375 px on every page.
+- `test/e2e/flows.spec.js`: login/photo_upload/level_up events to dataLayer and Umami, keyboard-only
+  stamp and rate, passport and Pals at 375/768/1440 px.
 
 Checks: `npm test`, `npm run lighthouse` and `npm run check:memory` pass in CI (the `budgets`
 job). A reviewer finds no SPEC gaps. After merge to `main`,
