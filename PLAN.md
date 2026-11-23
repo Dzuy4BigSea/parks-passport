@@ -108,8 +108,10 @@ levels, award once / revoke / lucky kept, announcements once), `test/unit/visits
 ### M6 — Privacy and Park Pals (Flow 8)
 Outcome: every Flow 8 criterion. Visibility levels, account default, share nudge, invite
 links, pals feed, leaderboard, `/u/:handle`, 404 rules, the `pal_same_day` badge wired in.
-Checks: `test/unit/visibility.test.js` (the full owner/pal/stranger/anonymous ×
-private/pals/public matrix per content type), `test/e2e/pals.spec.js`.
+Checks: `test/unit/pals.test.js` (`canSee` for every visibility × owner/pal/stranger/signed-out;
+the same matrix over HTTP for passport, visits and badges; invites, regenerate, remove,
+Better Together in either order, leaderboard, 20-item feed pages, nudge, account deletion),
+`test/e2e/pals.spec.js`. Photo and review-comment rows of the matrix are added over HTTP in M7.
 
 ### M7 — Photos and ratings (Flows 4 and 5)
 Outcome: every Flow 4 and Flow 5 criterion except admin hiding (M8). Upload validation by file

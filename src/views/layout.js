@@ -15,9 +15,9 @@ function announcementsBlock(a) {
 </div>`;
 }
 
-export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null }) {
+export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null, nudge = null }) {
   const nav = user
-    ? [['/parks', 'Parks', 'parks'], ['/passport', 'Passport', 'passport'], ['/account', 'Account', 'account']]
+    ? [['/parks', 'Parks', 'parks'], ['/passport', 'Passport', 'passport'], ['/pals', 'Pals', 'pals'], ['/account', 'Account', 'account']]
     : [['/parks', 'Parks', 'parks'], ['/login', 'Log in', 'login']];
   return html`<!doctype html>
 <html lang="en">
@@ -48,7 +48,7 @@ ${scripts.map((src) => html`<script type="module" src="${src}"></script>`)}
     </nav>
   </div>
 </header>
-<main id="main" class="wrap" tabindex="-1">${announcementsBlock(announcements)}${body}</main>
+<main id="main" class="wrap" tabindex="-1">${announcementsBlock(announcements)}${nudge}${body}</main>
 <footer class="site-footer">
   <div class="wrap">
     <p>An independent project. Not affiliated with the City of St. Petersburg.</p>

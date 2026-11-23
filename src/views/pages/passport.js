@@ -2,6 +2,7 @@ import { html } from '../html.js';
 import { csrfField } from '../forms.js';
 import { METHOD_LABELS } from '../../domain/visits.js';
 import { formatDate, localDate } from '../../domain/time.js';
+import { VISIBILITY_LABELS } from '../../domain/visibility.js';
 
 const shortDate = (ymd) => {
   const [y, m, d] = ymd.split('-').map(Number);
@@ -34,7 +35,7 @@ function badgeCard(b) {
 </li>`;
 }
 
-export function passportPage({ user, csrf, parks, history, points, level, badges }) {
+export function passportPage({ user, csrf, parks, history, points, level, badges, readOnly = false }) {
   const stamped = parks.filter((p) => p.first_visit);
   const total = parks.length;
   const mapData = parks.filter((p) => p.lat != null).map((p) => ({
@@ -44,8 +45,8 @@ export function passportPage({ user, csrf, parks, history, points, level, badges
   const levelPct = Math.round(level.progress * 100);
 
   return {
-    title: 'My passport',
-    current: 'passport',
+    title: readOnly ? `${user.display_name}'s passport` : 'My passport',
+    current: readOnly ? '' : 'passport',
     head: html`<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">`,
     scripts: ['/js/passport-map.js'],
     body: html`
@@ -53,6 +54,7 @@ export function passportPage({ user, csrf, parks, history, points, level, badges
   <p class="eyebrow">Parks Passport</p>
   <h1>${user.display_name}'s passport</h1>
   <p class="passport-count"><strong>${stamped.length} of ${total} parks stamped</strong></p>
+  ${readOnly ? '' : html`<p class="passport-visibility">Visible to: ${VISIBILITY_LABELS[user.default_visibility]} · <a href="/account#visibility">Change</a></p>`}
   <div class="level">
     <p><span class="level-name">${level.name}</span> · <span class="points">${points} points</span></p>
     <span class="bar bar-level" role="progressbar" aria-label="Progress to ${level.next ? level.next.name : 'the top level'}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${levelPct}"><span style="width:${levelPct}%"></span></span>
@@ -90,12 +92,12 @@ export function passportPage({ user, csrf, parks, history, points, level, badges
     ${history.map((v) => html`<li>
       <span><a href="/parks/${v.park_slug}">${v.park_name}</a><br>
         <span class="muted">${formatDate(v.visited_on)} · ${METHOD_LABELS[v.method]} · ${v.points} pts</span></span>
-      <form method="post" action="/visits/${v.id}/delete">
+      ${readOnly ? '' : html`<form method="post" action="/visits/${v.id}/delete">
         ${csrfField(csrf)}<input type="hidden" name="back" value="/passport">
         <button type="submit" class="btn btn-quiet btn-small" aria-label="Delete visit to ${v.park_name} on ${formatDate(v.visited_on)}">Delete</button>
-      </form>
+      </form>`}
     </li>`)}
-  </ul>` : html`<p>No visits yet. <a href="/parks">Find a park</a> and stamp it.</p>`}
+  </ul>` : html`<p>${readOnly ? 'No visits yet.' : html`No visits yet. <a href="/parks">Find a park</a> and stamp it.`}</p>`}
 </section>`,
   };
 }

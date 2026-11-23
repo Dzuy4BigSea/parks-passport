@@ -72,6 +72,7 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
   return {
     title: park.name,
     current: 'parks',
+    offerShare: Boolean(stamped),
     head: hasPin ? html`<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">` : null,
     scripts,
     body: html`

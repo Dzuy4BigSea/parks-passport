@@ -22,8 +22,12 @@ export function buildContext(db, userId, { trigger = null, random = Math.random,
   };
 }
 
-// Whether a Park Pal stamped the same park on the same day. Park Pals arrive in M6.
-const hasPalSameDay = (_db, _userId) => false;
+// Whether a Park Pal stamped the same park on the same day as one of this user's stamps.
+const hasPalSameDay = (db, userId) => Boolean(db.prepare(`SELECT 1 FROM visits mine
+  JOIN visits theirs ON theirs.park_id = mine.park_id AND theirs.visited_on = mine.visited_on
+  WHERE mine.user_id = ? AND theirs.user_id IN
+    (SELECT user_b FROM pal_links WHERE user_a = ? UNION SELECT user_a FROM pal_links WHERE user_b = ?)
+  LIMIT 1`).get(userId, userId, userId));
 
 export function evaluateRule(badge, ctx) {
   const rule = RULES[badge.rule_type];

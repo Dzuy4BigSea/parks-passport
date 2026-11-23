@@ -16,6 +16,8 @@ import parkRoutes from './routes/parks.js';
 import authRoutes from './routes/auth.js';
 import visitRoutes from './routes/visits.js';
 import passportRoutes from './routes/passport.js';
+import palRoutes from './routes/pals.js';
+import { shareNudge } from './views/pages/pals.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -79,9 +81,12 @@ export function buildApp({
     if (view.status) this.code(view.status);
     const req = this.request;
     const announcements = req.user && this.statusCode < 400 ? takeAnnouncements(req.user) : null;
+    // After a stamp or a new badge, nudge a private passport towards sharing (until dismissed 3 times).
+    const nudge = req.user && (announcements || view.offerShare) && req.user.default_visibility === 'private'
+      && req.user.share_nudge_dismissals < 3 ? shareNudge({ csrf: req.csrfToken(), back: req.url }) : null;
     return this.type('text/html; charset=utf-8')
       .header('Cache-Control', 'no-store')
-      .send(String(layout({ ...view, user: req.user, csrf: req.csrfToken(), announcements })));
+      .send(String(layout({ ...view, user: req.user, csrf: req.csrfToken(), announcements, nudge })));
   });
 
   app.get('/healthz', async (req, reply) => {
@@ -99,6 +104,7 @@ export function buildApp({
   app.register(authRoutes);
   app.register(visitRoutes);
   app.register(passportRoutes);
+  app.register(palRoutes);
 
   app.setNotFoundHandler((req, reply) => {
     reply.code(404);
