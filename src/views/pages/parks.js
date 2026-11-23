@@ -6,8 +6,8 @@ const chips = (cats) => cats.length
   ? html`<ul class="chips" aria-label="Amenities">${cats.map((c) => html`<li>${categoryLabel(c)}</li>`)}</ul>`
   : '';
 
-export function parksPage({ parks, total, q, selected, categories, near }) {
-  const filtered = q || selected.length;
+export function parksPage({ parks, total, q, selected, categories, near, unvisited = false, stamped = null, signedIn = false }) {
+  const filtered = q || selected.length || unvisited;
   const countText = filtered
     ? `${parks.length} of ${total} parks match`
     : `${total} parks`;
@@ -31,6 +31,7 @@ export function parksPage({ parks, total, q, selected, categories, near }) {
       </div>
     </fieldset>
   </details>
+  ${signedIn ? html`<label class="check"><input type="checkbox" name="unvisited" value="1"${unvisited ? html` checked` : ''}> Not visited yet</label>` : ''}
   ${near ? html`<input type="hidden" name="lat" value="${near.lat}"><input type="hidden" name="lng" value="${near.lng}">` : ''}
   <div class="actions">
     <button type="submit" class="btn btn-primary">Search</button>
@@ -42,8 +43,11 @@ export function parksPage({ parks, total, q, selected, categories, near }) {
 
 <p class="result-count" role="status">${countText}${near ? ', nearest first' : ''}</p>
 ${parks.length ? html`<ul class="park-list">
-  ${parks.map((p) => html`<li class="park-card">
+  ${parks.map((p) => html`<li class="park-card${stamped?.has(p.id) ? ' is-stamped' : ''}">
     <h2><a href="/parks/${p.slug}">${p.name}</a></h2>
+    ${stamped ? (stamped.has(p.id)
+      ? html`<p class="stamp-badge"><span aria-hidden="true">✓ </span>Stamped</p>`
+      : html`<p class="stamp-badge unstamped">Not visited yet</p>`) : ''}
     ${near && p.distance_m != null ? html`<p class="distance">${formatMiles(p.distance_m)} away</p>` : ''}
     ${p.address ? html`<p class="address">${p.address}</p>` : ''}
     ${chips(p.categories)}

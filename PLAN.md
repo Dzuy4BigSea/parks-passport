@@ -76,9 +76,12 @@ mocked geolocation, denied geolocation, 404 slug, axe on each page),
 ### M3 — Accounts (Flow 1)
 Outcome: every Flow 1 criterion. Sessions, CSRF, scrypt, magic links, reset, rate limit,
 delete account, `make-admin` CLI, SendGrid and outbox transports.
-Checks: `test/unit/auth-tokens.test.js`, `test/unit/csrf.test.js`,
-`test/e2e/auth.spec.js` (sign up, duplicate, validation, login, generic error, 429, magic link
-single-use and expiry, reset, logout, delete, cookie flags).
+Checks: `test/unit/auth.test.js` (tokens: single use and expiry; lockout incl. spread-out
+and parallel attempts; email throttle; CSRF on every POST route; cookie flags and `__Host-`
+names; enumeration-safe link requests; redirect safety), `test/e2e/auth.spec.js` (sign up,
+duplicate, validation, login, generic error, magic link single use, reset, logout, delete).
+Account deletion of visits, photos, ratings, badges and pal links is re-checked as each of those
+tables lands (M4–M7), and the `/u/:handle` 404 in M6.
 
 ### M4 — Stamp a visit (Flow 3)
 Outcome: every Flow 3 criterion, plus Flow 2's stamped marks and "Not visited yet" filter. GPS, honor and photo-method plumbing (photo upload itself in

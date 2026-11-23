@@ -11,6 +11,7 @@ import { countActiveParks } from './domain/parks.js';
 import { authPlugin, requireUser } from './lib/auth.js';
 import parkRoutes from './routes/parks.js';
 import authRoutes from './routes/auth.js';
+import visitRoutes from './routes/visits.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -32,6 +33,17 @@ export function buildApp({
   app.decorate('config', config);
   // Hook for removing a user's stored files before their rows are deleted (photos, M7).
   app.decorate('beforeUserDelete', async () => {});
+
+  // Fire-and-forget email; errors are logged. Tests await app.mailIdle().
+  const inflight = new Set();
+  app.decorate('sendMailInBackground', (message) => {
+    const p = Promise.resolve()
+      .then(() => mailer.send(message))
+      .catch((err) => app.log.error({ err: err.message }, 'email send failed'))
+      .finally(() => inflight.delete(p));
+    inflight.add(p);
+  });
+  app.decorate('mailIdle', () => Promise.all(inflight));
   app.addHook('onClose', async () => db.close());
 
   app.register(formbody);
@@ -72,6 +84,7 @@ export function buildApp({
   }));
   app.register(parkRoutes);
   app.register(authRoutes);
+  app.register(visitRoutes);
 
   app.setNotFoundHandler((req, reply) => {
     reply.code(404);
