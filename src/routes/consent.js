@@ -18,6 +18,17 @@ export default async function consentRoutes(app) {
     reply.setCookie(CONSENT_COOKIE, serializeConsent(consent), {
       path: '/', maxAge: CONSENT_MAX_AGE, sameSite: 'lax', secure: app.config.secureCookies, httpOnly: true,
     });
+    // Withdrawing analytics consent removes Google Analytics cookies already set (GA sets them on
+    // the host and on the parent domain).
+    if (!consent.analytics) {
+      const host = String(req.hostname || '').split(':')[0];
+      const parent = host.split('.').slice(-2).join('.');
+      for (const name of Object.keys(req.cookies).filter((n) => n === '_ga' || n.startsWith('_ga_'))) {
+        reply.clearCookie(name, { path: '/' });
+        if (parent && parent.includes('.')) reply.clearCookie(name, { path: '/', domain: `.${parent}` });
+        if (host && host.includes('.')) reply.clearCookie(name, { path: '/', domain: `.${host}` });
+      }
+    }
     // With JS the page records consent_update itself; the no-JS path queues it for the next page.
     if ((req.headers.accept || '').includes('application/json')) return reply.code(204).send();
     if (req.user) app.track(req.user.id, 'consent_update', consent);

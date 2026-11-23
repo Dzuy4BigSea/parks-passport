@@ -29,6 +29,8 @@ export function createMailer({ transport, outboxDir, resolve, fetchImpl = fetch 
       async send({ to, subject, text }) {
         const { apiKey, fromAddress, fromName, replyTo } = resolve();
         if (!apiKey) throw new Error('No SendGrid API key: add one in Admin › Email or SENDGRID_API_KEY in .env');
+        // Checked here so a malformed key can't end up quoted in a fetch error, page or log.
+        if (!/^[\x21-\x7e]+$/.test(apiKey)) throw new Error('The SendGrid API key has invalid characters: re-enter it');
         if (!fromAddress) throw new Error('No sender address: set it in Admin › Email or MAIL_FROM in .env');
         const res = await fetchImpl('https://api.sendgrid.com/v3/mail/send', {
           method: 'POST',

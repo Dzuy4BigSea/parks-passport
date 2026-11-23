@@ -46,13 +46,13 @@ function consentBanner(csrf, back) {
   const form = (choice, label, cls) => html`<form method="post" action="/consent" class="consent-form">
     <input type="hidden" name="_csrf" value="${csrf}"><input type="hidden" name="choice" value="${choice}"><input type="hidden" name="back" value="${back}">
     <button type="submit" class="btn ${cls}">${label}</button></form>`;
-  return html`<section class="consent-banner wrap" aria-labelledby="consent-h" id="consent-banner">
+  return html`<div class="wrap"><section class="consent-banner" aria-labelledby="consent-h" id="consent-banner">
   <h2 id="consent-h">Cookies</h2>
   <p>We use Google Analytics cookies to see how the site is used, only if you agree. Privacy-friendly counts without cookies run either way.
   <a href="/privacy#analytics">Details</a></p>
   <div class="actions">${form('accept', 'Accept', 'btn-primary')}${form('reject', 'Reject', 'btn-primary')}
     <a class="btn btn-quiet" href="/consent?back=${encodeURIComponent(back)}">Settings</a></div>
-</section>`;
+</section></div>`;
 }
 
 export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null, nudge = null,

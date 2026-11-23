@@ -133,3 +133,32 @@ test('Pals and share-prompt events', async () => {
   assert.deepEqual(pageEvents((await a.get('/parks')).body), [{ event: 'share_prompt_action', action: 'share' }]);
   assert.equal(db.prepare('SELECT COUNT(*) FROM analytics_events').pluck().get(), 0);
 });
+
+test('pages with tokens or handles in the URL load no analytics and leak no query string', async () => {
+  const { app, db } = setup();
+  const c = client(app);
+  await c.post('/signup', { display_name: 'Ana', email: 'ana@example.com', password: 'correct horse battery' });
+  db.prepare("UPDATE users SET default_visibility = 'public'").run();
+  const invite = (await c.get('/pals')).body.match(/\/pals\/invite\/[A-Za-z0-9_-]+/)[0];
+  const anon = client(app);
+  for (const url of ['/reset?token=SECRET123', '/auth/magic?token=SECRET123', '/account/delete/confirm?token=SECRET123', invite, '/u/ana']) {
+    const body = (await anon.get(url)).body;
+    assert.ok(!body.includes('gtm.js') && !body.includes('data-website-id'), `no analytics on ${url}`);
+    assert.ok(!body.includes('consent-banner'), `no banner on ${url}`);
+    assert.ok(!/consent\?back=[^"]*token/.test(body), `no token in consent links on ${url}`);
+  }
+  assert.match((await anon.get('/parks')).body, /gtm\.js/);
+});
+
+test('withdrawing analytics consent clears _ga cookies', async () => {
+  const { app } = setup();
+  const c = client(app);
+  await c.get('/');
+  c.jar.set('_ga', 'GA1.1.123');
+  c.jar.set('_ga_ABC123', 'GS1.1.456');
+  const res = await c.post('/consent', { choice: 'custom', back: '/' });
+  const cleared = res.cookies.filter((x) => x.name.startsWith('_ga') && (x.value === '' || x.maxAge === 0 || x.expires?.getTime() === 0));
+  assert.deepEqual([...new Set(cleared.map((x) => x.name))].sort(), ['_ga', '_ga_ABC123']);
+  const keep = await c.post('/consent', { choice: 'accept', back: '/' });
+  assert.ok(!keep.cookies.some((x) => x.name.startsWith('_ga')));
+});

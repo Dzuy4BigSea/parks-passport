@@ -26,6 +26,9 @@ import photoRoutes from './routes/photos.js';
 import adminRoutes from './routes/admin.js';
 import { shareNudge } from './views/pages/pals.js';
 
+// Paths with tokens or handles in the URL: no analytics scripts there (see reply.page).
+const NO_ANALYTICS = [/^\/reset$/, /^\/auth\/magic$/, /^\/account\/delete\/confirm$/, /^\/pals\/invite\//, /^\/u\//];
+
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
@@ -106,14 +109,18 @@ export function buildApp({
     for (const b of announcements?.badges || []) add('badge_earned', { badge_slug: b.slug, kind: b.kind });
     if (announcements?.levelUp) add('level_up', { level: announcements.levelUp.name });
     const consent = parseConsent(req.cookies[CONSENT_COOKIE]);
-    const path = req.url.split('#')[0];
+    // Pages whose URL carries a secret (one-time or invite tokens) or a person's handle never load
+    // GTM/Umami, and nothing copies their query string into other links.
+    const pathname = req.url.split(/[?#]/)[0];
+    const private_ = NO_ANALYTICS.some((re) => re.test(pathname));
+    const path = private_ ? pathname : req.url.split('#')[0];
     return this.type('text/html; charset=utf-8')
       .header('Cache-Control', 'no-store')
       .send(String(layout({
         ...view, user: req.user, csrf: req.csrfToken(), announcements, nudge, events, consent, path,
-        analytics: config.analytics || null,
+        analytics: private_ ? null : config.analytics || null,
         // The banner asks only when there is something to consent to (GTM) and no choice yet.
-        showConsentBanner: Boolean(config.analytics?.gtmId) && !consent.chosen && !path.startsWith('/consent'),
+        showConsentBanner: !private_ && Boolean(config.analytics?.gtmId) && !consent.chosen && !path.startsWith('/consent'),
       })));
   });
 

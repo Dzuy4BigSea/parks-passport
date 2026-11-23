@@ -15,7 +15,8 @@ Context:
   on the shared Docker network `bigsea-internal`. Its `.env` is next to the code (mode 600).
 - `docker-compose.aster.yml` already defines two services in the `analytics` compose profile:
   `parks-passport-umami` (Umami, port 3000, on `bigsea-internal` + a private network) and
-  `parks-passport-umami-db` (Postgres 16, private network only, volume `parks-passport-umami-db`).
+  `parks-passport-umami-db` (Postgres 16, private network only; compose names its volume
+  `parks-passport_parks-passport-umami-db`, with the project-name prefix).
   Neither publishes a host port. They start only when the profile is enabled.
 - The app loads the tracker from `https://parkspassport.dzuynguyen.com/stats/script.js` and sends
   events to `https://parkspassport.dzuynguyen.com/stats/api/send`, so nginx must serve exactly those
@@ -25,7 +26,9 @@ Steps:
 1. **Check room.** `ssh aster "df -h / && free -m"`. Umami + Postgres need about 512 MB RAM total and
    ~1 GB disk to start. Stop and tell me if the disk is above 85% or free memory is under 1 GB.
 2. **Pick the Umami image.** Find the current stable Umami release that supports PostgreSQL
-   (https://github.com/umami-software/umami/releases). Use its pinned GHCR tag, not `latest`.
+   (https://github.com/umami-software/umami/releases) and use the exact GHCR tag its release notes
+   give for PostgreSQL (v2 used `postgresql-vX.Y.Z`; newer releases may use plain `vX.Y.Z`).
+   Pin it; never `latest`.
 3. **Add to `/opt/claude-sync/parks-passport/.env`** (keep mode 600, don't print secrets in chat):
    ```
    COMPOSE_PROFILES=analytics
@@ -87,7 +90,8 @@ Steps:
 9. **Verify.** Load https://parkspassport.dzuynguyen.com/parks in a browser. The page source has
    `data-website-id="<the UUID>"`, the Network tab shows a 2xx POST to `/stats/api/send`, and the
    Umami dashboard's Realtime view shows the visit. No cookies are set by Umami.
-10. **Backups.** Add a nightly `pg_dump` of the Umami database to root's crontab in the same style as
+10. **Backups.** First `ssh aster "mkdir -p /root/backups/parks-passport-umami && chmod 700 /root/backups/parks-passport-umami"`.
+    Then add a nightly `pg_dump` of the Umami database to root's crontab in the same style as
     the existing `0 2 * * *` and `15 3 * * *` entries, writing to a folder outside the code tree and
     keeping 14 days, e.g.
     `docker exec parks-passport-umami-db pg_dump -U umami umami | gzip > /root/backups/parks-passport-umami/umami-$(date +\%F).sql.gz`

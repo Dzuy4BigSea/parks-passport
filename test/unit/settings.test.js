@@ -110,3 +110,19 @@ test('test email goes to the admin, and a failure is shown', async () => {
   assert.equal(bad.statusCode, 502);
   assert.match(bad.body, /Sending failed: mail down/);
 });
+
+test('a SendGrid key with invalid characters is refused before fetch and never echoed', async () => {
+  const { createMailer } = await import('../../src/lib/mail.js');
+  let called = false;
+  const m = createMailer({ transport: 'sendgrid', resolve: () => ({ apiKey: 'SG.abc.def\nSECRETPART', fromAddress: 'a@b.co' }),
+    fetchImpl: async () => { called = true; return { ok: true }; } });
+  await assert.rejects(m.send({ to: 'x@y.co', subject: 's', text: 't' }), (err) => !err.message.includes('SECRETPART') && /invalid characters/.test(err.message));
+  assert.equal(called, false);
+});
+
+test('secret box refuses truncated auth tags', () => {
+  const box = createSecretBox({ envKey: 'k' });
+  const [v, iv, tag, data] = box.seal('hello').split(':');
+  const short = Buffer.from(tag, 'base64').subarray(0, 4).toString('base64');
+  assert.equal(box.open([v, iv, short, data].join(':')), null);
+});
