@@ -1,9 +1,8 @@
 import { listParks, getParkBySlug, countActiveParks, categoriesInUse, cleanCategories } from '../domain/parks.js';
 import { parseLatLng } from '../domain/geo.js';
-import { stampedParkIds, visitsAtPark } from '../domain/visits.js';
-import { localDate } from '../domain/time.js';
+import { stampedParkIds } from '../domain/visits.js';
 import { parksPage } from '../views/pages/parks.js';
-import { parkPage } from '../views/pages/park.js';
+import { renderParkPage } from './park-view.js';
 
 export default async function parkRoutes(app) {
   const { db } = app;
@@ -36,9 +35,7 @@ export default async function parkRoutes(app) {
         stamped = { visit, parts };
       }
     }
-    return reply.page(parkPage({
-      park, user, csrf: req.csrfToken(), today: localDate(app.now()),
-      myVisits: user ? visitsAtPark(db, user.id, park.id) : [], stamped,
-    }));
+    const flash = { added: 'Photo added.' }[req.query.photo] || (req.query.rated ? 'Rating saved.' : null);
+    return renderParkPage(app, req, reply, park, { stamped, flash });
   });
 }

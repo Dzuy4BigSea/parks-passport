@@ -89,7 +89,8 @@ Done when:
 ### Flow 4: Photos
 As a member, I can add photos of a park so that I can remember the visit and show friends.
 Done when:
-- [ ] I can upload JPEG, PNG, WebP or HEIC up to 10 MB, from a park page or while stamping,
+- [ ] I can upload JPEG, PNG or WebP up to 10 MB (iPhone browsers convert HEIC photos to JPEG
+      on upload; a raw HEIC file gets a clear message, since the server can't decode HEVC), from a park page or while stamping,
       with an optional caption of up to 200 characters. Other types or larger files show an
       inline error, and nothing is saved.
 - [ ] Stored images are re-encoded at a 2000 px maximum on the long edge, plus a 400 px

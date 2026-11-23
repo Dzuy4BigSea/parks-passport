@@ -36,6 +36,13 @@ test/unit/   *.test.js          (node --test)
 test/e2e/    *.spec.js          (Playwright + @axe-core/playwright)
 ```
 
+## How each milestone is finished
+1. Build it until its listed checks pass (`npm test`).
+2. Run the **qa-reviewer** agent (`.claude/agents/qa-reviewer.md`) on the milestone's diff. It
+   checks the SPEC acceptance criteria, looks for correctness and security bugs, runs the tests,
+   and walks the flows in a browser at 375 px and 1440 px.
+3. Fix what it reports (or record why not), re-run `npm test`, commit, push, and check CI.
+
 ## Milestones
 
 ### M0 — Scaffold and test harness
@@ -94,22 +101,26 @@ rejected, no coordinates in other users' HTML or JSON).
 Outcome: every Flow 7 and Flow 6 criterion. Points rules, levels config, badge rule types,
 known/hidden/lucky, seed badges, recalculation on delete, passport page, map, history,
 `role="status"` announcements.
-Checks: `test/unit/points.test.js`, `test/unit/levels.test.js`,
-`test/unit/badges/*.test.js` (one per rule type, fixture visits, seeded RNG),
-`test/e2e/passport.spec.js`.
+Checks: `test/unit/badges.test.js` (one test per rule type with fixture visits, seeded RNG,
+levels, award once / revoke / lucky kept, announcements once), `test/unit/visits.test.js`
+(points rules), `test/e2e/passport.spec.js`.
 
 ### M6 — Privacy and Park Pals (Flow 8)
 Outcome: every Flow 8 criterion. Visibility levels, account default, share nudge, invite
 links, pals feed, leaderboard, `/u/:handle`, 404 rules, the `pal_same_day` badge wired in.
-Checks: `test/unit/visibility.test.js` (the full owner/pal/stranger/anonymous ×
-private/pals/public matrix per content type), `test/e2e/pals.spec.js`.
+Checks: `test/unit/pals.test.js` (`canSee` for every visibility × owner/pal/stranger/signed-out;
+the same matrix over HTTP for passport, visits and badges; invites, regenerate, remove,
+Better Together in either order, leaderboard, 20-item feed pages, nudge, account deletion),
+`test/e2e/pals.spec.js`. Photo and review-comment rows of the matrix are added over HTTP in M7.
 
 ### M7 — Photos and ratings (Flows 4 and 5)
 Outcome: every Flow 4 and Flow 5 criterion except admin hiding (M8). Upload validation by file
 content, re-encoding, EXIF stripping, thumbnails, visibility-checked serving, ratings and the
 anonymous aggregate.
-Checks: `test/unit/images.test.js` (fixture with GPS EXIF → stored file has none),
-`test/unit/ratings.test.js`, `test/e2e/photos.spec.js`, `test/e2e/ratings.spec.js`.
+Checks: `test/unit/photos-ratings.test.js` (re-encode and EXIF/GPS strip on a phone-style
+fixture, content-based validation, upload/edit/delete with files, photo stamp bonus, ratings
+and the anonymous average, the photo and review-comment rows of the permissions matrix over
+HTTP, hidden items, feed, account deletion removes files), `test/e2e/photos-ratings.spec.js`.
 
 ### M8 — Admin (Flow 9)
 Outcome: every Flow 9 criterion, plus the hide criteria from Flows 4 and 5.

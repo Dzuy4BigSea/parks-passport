@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { loadConfig } from './config.js';
 import { openDb } from './db/index.js';
-import { seedParksIfEmpty } from './db/seed.js';
+import { seedParksIfEmpty, seedBadges } from './db/seed.js';
 import { createMailer } from './lib/mail.js';
 import { buildApp } from './app.js';
 
@@ -10,11 +10,13 @@ const db = openDb(path.join(config.dataDir, 'app.db'));
 const mailer = createMailer(config.mail);
 const app = buildApp({
   db, mailer, logger: config.nodeEnv !== 'test',
-  config: { baseUrl: config.baseUrl, secureCookies: config.secureCookies },
+  config: { baseUrl: config.baseUrl, secureCookies: config.secureCookies, uploadsDir: path.join(config.dataDir, 'uploads') },
 });
 
 const seeded = seedParksIfEmpty(db);
 if (seeded) app.log.info({ ...seeded, invalid: seeded.invalid.length }, 'seeded parks from seed/parks.csv');
+const badgeCount = seedBadges(db);
+if (badgeCount) app.log.info({ badges: badgeCount }, 'seeded badges from seed/badges.json');
 
 try {
   await app.listen({ port: config.port, host: config.host });

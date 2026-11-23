@@ -168,8 +168,12 @@ export default async function authRoutes(app) {
   });
 
   // Account and deletion
+  const VISIBILITY_SAVED = { private: 'only you', pals: 'your Park Pals', public: 'anyone with the link' };
   app.get('/account', { preHandler: requireUser }, async (req, reply) =>
-    reply.page(accountPage({ csrf: req.csrfToken(), user: req.user })));
+    reply.page(accountPage({
+      csrf: req.csrfToken(), user: req.user,
+      notice: req.query.done === 'visibility' ? `Saved. Your passport is now visible to ${VISIBILITY_SAVED[req.user.default_visibility]}.` : null,
+    })));
 
   const removeAccount = async (reply, userId) => {
     await app.beforeUserDelete(userId); // removes stored files (photos) before rows cascade

@@ -1,5 +1,6 @@
 import { html } from '../html.js';
 import { csrfField, errorSummary, field } from '../forms.js';
+import { visibilityForm } from './pals.js';
 
 const nextField = (next) => (next ? html`<input type="hidden" name="next" value="${next}">` : '');
 const withNext = (path, next) => (next ? `${path}?next=${encodeURIComponent(next)}` : path);
@@ -144,6 +145,8 @@ ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
   ${csrfField(csrf)}
   <button type="submit" class="btn">Log out</button>
 </form>
+
+${visibilityForm({ csrf, user })}
 
 <h2>Delete my account</h2>
 <p>This permanently removes your account and everything in it: visits, photos, ratings, badges and Park Pals.</p>
