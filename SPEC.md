@@ -191,6 +191,42 @@ Done when:
       unhide actions.
 - [ ] I can promote or demote another member to admin, but I can't demote myself.
 
+### Flow 10: Analytics and consent
+As the owner, I can see how the app is used without tracking anyone who hasn't agreed, and
+the setup is ready for first-party server-side GTM later.
+Done when:
+- [ ] **Umami (cookieless)** loads on every page for everyone, sets no cookies, and records
+      page views plus the custom events below. It is served first-party under
+      `parkspassport.dzuynguyen.com` (script and collect endpoint), so blockers that target
+      third-party hosts don't drop it.
+- [ ] **Consent banner** (first-party, no vendor) shows on first visit with equally prominent
+      "Accept" and "Reject", plus "Settings" for analytics/ads toggles. The choice is stored in
+      a first-party `pp_consent` cookie for 6 months. A "Cookie settings" link in the footer
+      reopens it. The banner passes axe, can be operated by keyboard, and doesn't cover the
+      page's main action at 375 px.
+- [ ] **Google Consent Mode v2:** before GTM loads, `gtag('consent','default',…)` sets
+      `analytics_storage`, `ad_storage`, `ad_user_data` and `ad_personalization` to `denied`.
+      Accepting sends `consent update` with `analytics_storage: granted`, and ads stay denied
+      unless toggled on. A Playwright test checks that no `_ga*` cookie exists before Accept
+      and that one exists after.
+- [ ] **GTM** loads only when `GTM_ID` is set in `.env`. Its loader URL comes from
+      `GTM_SCRIPT_ORIGIN` (default `https://www.googletagmanager.com`), so pointing it at a
+      first-party sGTM host later is a config change with no code edits. GA4 is configured
+      inside GTM, not hard-coded.
+- [ ] **dataLayer events** are pushed with these exact names and parameters, with no email,
+      name, handle, free text or coordinates in any event: `sign_up {method}`,
+      `login {method}`, `park_view {park_slug}`, `park_search {has_query, filter_count}`,
+      `check_in {park_slug, method}`, `photo_upload {park_slug}`,
+      `rating_submit {park_slug, stars}`, `badge_earned {badge_slug, kind}`,
+      `level_up {level}`, `pal_invite_created`, `pal_accepted`, `share_prompt_action {action}`,
+      `consent_update {analytics, ads}`. The same events go to Umami. A Playwright test checks
+      each event's name and keys, and a unit test fails if a payload contains an `@` or a
+      value longer than 100 characters.
+- [ ] `/privacy` lists Umami, GA4 (via GTM) and the consent cookie, and says what each
+      collects.
+- [ ] With consent denied, Lighthouse mobile Performance on the four key pages stays at 90
+      or above.
+
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.
 - **users**: id, email (unique, lower-cased), password_hash (scrypt, nullable for magic-link-only
@@ -220,10 +256,13 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 ## Integrations
 | Service | Direction | Auth | Failure behavior |
 |---|---|---|---|
-| Email sending (SMTP, provider TBD) | write | SMTP credentials in `.env` | The sign-up still succeeds. Sending magic or reset links shows "Couldn't send email, try again" and logs the error. In dev/test, mail goes to `/data/outbox/*.eml` instead. |
+| SendGrid (magic links, password resets) | write | API key `SENDGRID_API_KEY` in `.env`. Sender on `dzuynguyen.com`, domain-authenticated with CNAME records Dzuy adds. | The sign-up still succeeds. Sending magic or reset links shows "Couldn't send email, try again" and logs the error. When `MAIL_TRANSPORT=outbox` (dev/test), mail goes to `/data/outbox/*.eml` instead. |
+| Umami (self-hosted on aster) | write (client + server events) | Website ID in `.env`, no cookies | If Umami is down, the page still works and events are dropped silently. |
+| Google Tag Manager / GA4 | write (client) | `GTM_ID` and `GTM_SCRIPT_ORIGIN` in `.env` | Not loaded when `GTM_ID` is empty. Gated by Consent Mode v2. |
 | Browser Geolocation API | read (client) | user permission | Falls back to the honor system with an explanation. |
 | Map tiles (OpenStreetMap tiles via Leaflet) | read (client) | none (attribution shown) | The map area shows "Map unavailable" and the list still works. |
-| St. Pete Parks & Rec website | one-time import | none | Used only to build `seed/parks.csv` by hand or script, never called at runtime. |
+| Geocoder (US Census Geocoder, falling back to OSM Nominatim at 1 request/s) | one-time read | none | Used only by the seed script. Parks it can't place are flagged `needs_pin` for an admin to place on a map. |
+| St. Pete Parks & Rec website | one-time import | none | Used only by `npm run seed:scrape` to build `seed/parks.csv`, never called at runtime. |
 
 ## Non-functional requirements
 - **Accessibility:** WCAG 2.2 AA. The automated axe check (`@axe-core/playwright`) reports zero
@@ -240,8 +279,9 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
   protection on all POSTs. Uploads are validated by file content, not just the extension.
   EXIF is stripped. Visit coordinates are never shown to others. Secrets live only in `.env`
   and GitHub secrets. A `/privacy` page says what's collected (email, visits incl. GPS,
-  photos, ratings), who can see it, and how to delete it. The only cookie is the essential
-  session cookie.
+  photos, ratings), who can see it, and how to delete it. Without consent, the only cookies are
+  the essential session cookie and `pp_consent`. GA4 cookies are set only after Accept
+  (Flow 10).
 - **Not official:** the footer says it's an independent project, not affiliated with the City
   of St. Petersburg. No City logo.
 - **Ops:** `/healthz` returns 200 once the DB is reachable. The app runs within `mem_limit:
@@ -263,19 +303,31 @@ aster behind the shared nginx at `https://parkspassport.dzuynguyen.com`, with da
 - Offline stamping
 - User search and public user directory
 - Comments/likes on other people's photos or stamps
+- A live server-side GTM container (v1 only prepares for it)
+- Ads and remarketing tags (Consent Mode ad signals stay denied unless the user opts in)
 
 ## Open questions
-- **Park data source:** the list is on https://www.stpeteparksrec.org/parks___facilities/_parks.php.
-  It's unclear whether it includes addresses, coordinates and amenities, or whether the City
-  has an open-data/ArcGIS export. That host isn't reachable from the cloud session that wrote
-  this spec. Someone needs to build `seed/parks.csv` (slug, name, address, lat, lng,
-  categories, city_url) and check the coordinates. Missing coordinates can be geocoded, or
-  pinned in the admin UI.
-- **Category list:** which amenities to filter on depends on what the source data has.
-- **Email provider:** which SMTP service (e.g. Postmark, Resend, Amazon SES) and the sending
-  address on `dzuynguyen.com`. It needs SPF/DKIM DNS records, which Dzuy adds.
-- **Analytics:** none is planned for v1. Is privacy-friendly, cookieless analytics
-  (e.g. self-hosted Plausible/Umami) wanted later?
+- **Park coordinates:** the City directory
+  (https://www.stpeteparksrec.org/parks___facilities/_parks.php) lists **103 parks** with name,
+  address (often an intersection such as "Park St. and 38th Ave. N."), phone, and a link to an
+  info page. The info page has "Park Features" (e.g. Scenic View, Picnic Tables), hours and a
+  description. **It has no coordinates.** `npm run seed:scrape` builds `seed/parks.csv`
+  (slug, name, address, phone, lat, lng, categories, city_url, needs_pin) and geocodes each
+  address. Dzuy reviews any flagged pins in the admin before launch. The CSV is committed, and
+  the scrape is never run in production.
+- **Categories:** filters come from the "Park Features" values, normalized (e.g. "Dog Park",
+  "Off-Leash Dog Area" → `dog-park`). The final list is fixed once the scrape shows every
+  distinct value.
+- **SendGrid:** Dzuy sets up the account, the sender address on `dzuynguyen.com`, and domain
+  authentication (DNS CNAMEs).
+- **Umami hosting:** Umami needs Postgres. The proposal is `parks-passport-umami` and
+  `parks-passport-umami-db` containers in this app's compose file on `bigsea-internal`, with
+  no host ports, the DB in its own named volume, and memory limits of about 256 MB each.
+  nginx proxies `/stats/` (script, collect and dashboard) inside this app's server block.
+  This needs Dzuy's go-ahead because it adds two containers to the shared box (disk about 75%
+  full).
+- **sGTM (later):** the first-party host name (e.g. `sgtm.parkspassport.dzuynguyen.com`) and
+  where it runs. v1 only makes this a config switch (Flow 10).
 - **Check-in radius:** the 150 m default may be too small for large parks such as Boyd Hill
   or Weedon Island. Per-park overrides exist, but the right values need a walk-test.
 - **Assumption:** account deletion is in v1 because we store GPS and photos. Say if not.
@@ -285,7 +337,8 @@ aster behind the shared nginx at `https://parkspassport.dzuynguyen.com`, with da
 covering auth tokens, points, levels, every badge rule type, the visibility matrix, and the
 CSV import) and the Playwright suite against a fresh SQLite DB with the seed parks. The
 Playwright suite covers every flow above, mocks geolocation for inside, outside and denied
-check-ins, runs axe on every page with zero violations, and takes 375/768/1440 screenshots.
+check-ins, checks consent gating and every dataLayer event, runs axe on every page with zero
+violations, and takes 375/768/1440 screenshots.
 Lighthouse CI on the four key pages meets the Performance ≥ 90 budget. After a deploy,
 `curl -fsS https://parkspassport.dzuynguyen.com/healthz` returns `ok`, and a manual phone test
 (sign up, GPS check-in at a real park, photo, rating, badge, invite a pal) succeeds.

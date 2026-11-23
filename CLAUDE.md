@@ -1,15 +1,38 @@
-# CLAUDE.md
+# Parks Passport
 
-## This project
+Spec: see SPEC.md. Plan: see PLAN.md. A personal passport of St. Pete parks: GPS check-ins,
+photos, ratings, badges, Park Pals. App key `parks-passport`, domain
+`parkspassport.dzuynguyen.com`, container port 8080. Node 22 + Fastify, server-rendered
+HTML, SQLite at `/data/app.db`.
 
-Parks Passport. Right now a placeholder Node 22 server (`server.js`, no dependencies)
-with a `/healthz` route, so the container can be deployed before the real app exists.
-App key `parks-passport`, domain `parkspassport.dzuynguyen.com`, container port 8080.
+## Commands (created in PLAN.md Milestone 0)
+- Dev: `npm run dev` (http://localhost:8080; `MAIL_TRANSPORT=outbox`)
+- Test (unit): `npm run test:unit` (`node --test`)
+- Test (e2e/browser): `npm run test:e2e -- --trace off` (Playwright + axe)
+- Lint: `npm run lint`
+- All checks (what CI runs): `npm test`
+- Seed parks: `npm run seed:scrape` (dev only; writes `seed/parks.csv`)
 
-- **Pushing to `main` deploys to production** (`.github/workflows/deploy.yml`).
-  Don't push unless asked; branch for anything that isn't ready to go live.
-- Secrets live only in the server's `.env` and in GitHub Actions secrets.
-  Never in the repo, a commit, a test or a chat.
+## Working rules
+- Think before coding: state assumptions; ask when the spec is ambiguous instead of guessing.
+- Simplicity first: minimum code that meets the acceptance criteria; no speculative features.
+- Surgical changes: touch only what the task needs; mention unrelated issues instead of fixing them.
+- Done means verified: a task is complete only when its checks in PLAN.md pass. Run them; don't assume.
+
+## Project gotchas
+- **Pushing to `main` deploys to production** (`.github/workflows/deploy.yml`). Work on a
+  branch and open a PR. Merge only when Dzuy asks.
+- Secrets live only in the server's `.env` and GitHub Actions secrets: never in the repo,
+  a commit, a test or a chat. Every new variable goes in `.env.example` with a dummy value.
+- Keep `/healthz`. The deploy checks it.
+- Data lives in `/data` (Docker volume). Never write inside the code folder, because the
+  deploy's `rsync --delete` wipes it. Seed files go in `seed/`, not `data/` (`data` is
+  excluded from the rsync and the Docker build).
+- Visit coordinates and EXIF must never reach another user. No PII in dataLayer/Umami events.
+- Visibility returns 404, not 403, so it doesn't reveal that an account exists.
+- Container limit is 512 MB on a shared box. Prefer small deps.
+- Dzuy's machine has no Python and no `gh`. Tests run in CI (or in this cloud session).
+- Files may have CRLF endings. Prefer the Edit tool over sed for replacements.
 
 ## Hosting on aster
 
