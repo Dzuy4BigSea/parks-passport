@@ -6,3 +6,4 @@ data
 dist
 playwright-report
 test-results
+.claude

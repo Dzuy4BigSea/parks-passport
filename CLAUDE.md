@@ -18,6 +18,7 @@ HTML, SQLite at `/data/app.db`.
 - Simplicity first: minimum code that meets the acceptance criteria; no speculative features.
 - Surgical changes: touch only what the task needs; mention unrelated issues instead of fixing them.
 - Done means verified: a task is complete only when its checks in PLAN.md pass. Run them; don't assume.
+- After each milestone, run the `qa-reviewer` agent on its diff and fix what it finds before committing.
 
 ## Project gotchas
 - **Pushing to `main` deploys to production** (`.github/workflows/deploy.yml`). Work on a

@@ -36,6 +36,13 @@ test/unit/   *.test.js          (node --test)
 test/e2e/    *.spec.js          (Playwright + @axe-core/playwright)
 ```
 
+## How each milestone is finished
+1. Build it until its listed checks pass (`npm test`).
+2. Run the **qa-reviewer** agent (`.claude/agents/qa-reviewer.md`) on the milestone's diff. It
+   checks the SPEC acceptance criteria, looks for correctness and security bugs, runs the tests,
+   and walks the flows in a browser at 375 px and 1440 px.
+3. Fix what it reports (or record why not), re-run `npm test`, commit, push, and check CI.
+
 ## Milestones
 
 ### M0 — Scaffold and test harness
