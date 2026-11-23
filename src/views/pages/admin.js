@@ -24,6 +24,7 @@ export function adminHome({ counts }) {
   <li><a href="/admin/badges"><strong>Badges</strong><span>${counts.badges} badges</span></a></li>
   <li><a href="/admin/moderation"><strong>Moderation</strong><span>${counts.shared} shared photos and reviews</span></a></li>
   <li><a href="/admin/users"><strong>Members</strong><span>${counts.users} members · ${counts.admins} admins</span></a></li>
+  <li><a href="/admin/email"><strong>Email</strong><span>Sender, subject lines, SendGrid key</span></a></li>
 </ul>`);
 }
 
@@ -214,4 +215,57 @@ ${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${no
       <button type="submit" class="btn btn-small" aria-label="${u.is_admin ? `Remove admin (${u.display_name})` : `Make admin (${u.display_name})`}">${u.is_admin ? 'Remove admin' : 'Make admin'}</button></form>`}</td>
   </tr>`)}</tbody>
 </table></div>`);
+}
+
+export function adminEmail({ csrf, settings, values = null, errors = {}, key, transport, me, notice, keyError, testError }) {
+  const v = values || settings;
+  const keyStatus = {
+    admin: html`A key ending in <strong>…${key.hint}</strong> is saved here (encrypted). It's used instead of any key in <code>.env</code>.`,
+    env: html`Using <code>SENDGRID_API_KEY</code> from the server's <code>.env</code> (ends in …${key.hint}). A key saved here would replace it.`,
+    unreadable: html`<strong>A saved key can't be decrypted</strong> (the encryption key changed). Save the key again.`,
+  }[key.source] || html`<strong>No SendGrid key yet.</strong> Sign-in links and password resets can't be sent until one is saved.`;
+  return page('Email', html`${crumb}<h1>Email</h1>
+${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${notice}</p>` : ''}
+${transport !== 'sendgrid' ? html`<p class="notice">This server writes emails to its outbox folder (<code>MAIL_TRANSPORT=${transport}</code>), so nothing is actually sent.</p>` : ''}
+
+<section aria-labelledby="sender-h">
+<h2 id="sender-h">Sender and subject lines</h2>
+${errorSummary(errors)}
+<form method="post" action="/admin/email" class="card-form admin-form">
+  ${csrfField(csrf)}
+  ${input('mail_from_name', 'From name', v.mail_from_name, { required: true, error: errors.mail_from_name })}
+  ${input('mail_from_address', 'From address', v.mail_from_address, { type: 'email', required: true, error: errors.mail_from_address, hint: 'Must be a sender (or domain) verified in SendGrid.' })}
+  ${input('mail_reply_to', 'Reply-to address (optional)', v.mail_reply_to, { type: 'email', error: errors.mail_reply_to })}
+  ${input('subject_magic_link', 'Subject: sign-in link', v.subject_magic_link, { required: true, error: errors.subject_magic_link })}
+  ${input('subject_password_reset', 'Subject: password reset', v.subject_password_reset, { required: true, error: errors.subject_password_reset })}
+  ${input('subject_delete_account', 'Subject: confirm account deletion', v.subject_delete_account, { required: true, error: errors.subject_delete_account })}
+  <button type="submit" class="btn btn-primary">Save email settings</button>
+</form>
+</section>
+
+<section aria-labelledby="key-h">
+<h2 id="key-h">SendGrid API key</h2>
+<p>${keyStatus}</p>
+${keyError ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${keyError}</p>` : ''}
+<form method="post" action="/admin/email/key" class="card-form admin-form">
+  ${csrfField(csrf)}
+  ${input('sendgrid_key', key.source === 'admin' ? 'Replace the key' : 'API key', '', {
+    type: 'password', required: true, attrs: html`autocomplete="off" spellcheck="false"`,
+    hint: 'In SendGrid: Settings › API Keys › Create API Key, with "Mail Send" access. It is stored encrypted and never shown again.',
+  })}
+  <button type="submit" class="btn btn-primary">Save key</button>
+</form>
+${key.source === 'admin' || key.source === 'unreadable' ? html`<form method="post" action="/admin/email/key/delete" class="inline-form">${csrfField(csrf)}
+  <button type="submit" class="btn btn-quiet btn-small">Remove the saved key</button></form>` : ''}
+</section>
+
+<section aria-labelledby="test-h">
+<h2 id="test-h">Send a test email</h2>
+${testError ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${testError}</p>` : ''}
+<form method="post" action="/admin/email/test" class="card-form">
+  ${csrfField(csrf)}
+  <p>Sends a test message to your address, <strong>${me.email}</strong>, with the settings above.</p>
+  <button type="submit" class="btn">Send test email</button>
+</form>
+</section>`);
 }

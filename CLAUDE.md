@@ -23,8 +23,9 @@ HTML, SQLite at `/data/app.db`.
 ## Project gotchas
 - **Pushing to `main` deploys to production** (`.github/workflows/deploy.yml`). Work on a
   branch and open a PR. Merge only when Dzuy asks.
-- Secrets live only in the server's `.env` and GitHub Actions secrets: never in the repo,
-  a commit, a test or a chat. Every new variable goes in `.env.example` with a dummy value.
+- Secrets live only in the server's `.env`, GitHub Actions secrets, or (the SendGrid key only)
+  encrypted in the database via Admin › Email: never in the repo, a commit, a test or a chat.
+  Every new variable goes in `.env.example` with a dummy value.
 - Keep `/healthz`. The deploy checks it.
 - Data lives in `/data` (Docker volume). Never write inside the code folder, because the
   deploy's `rsync --delete` wipes it. Seed files go in `seed/`, not `data/` (`data` is

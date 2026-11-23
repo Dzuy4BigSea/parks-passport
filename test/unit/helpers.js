@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { openDb } from '../../src/db/index.js';
 import { buildApp } from '../../src/app.js';
+import { createSecretBox } from '../../src/lib/secret-box.js';
 
 // In-memory mailer that records messages.
 export function memoryMailer() {
@@ -28,7 +29,8 @@ export function testClock(start = '2026-06-01T12:00:00Z') {
 
 export function makeApp({ db = openDb(':memory:'), mailer = memoryMailer(), now = testClock(), random = () => 0.99, secureCookies = false } = {}) {
   const uploadsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-uploads-'));
-  const app = buildApp({ db, mailer, now, random, config: { baseUrl: 'http://test.local', secureCookies, uploadsDir } });
+  const secretBox = createSecretBox({ envKey: 'test-settings-key' });
+  const app = buildApp({ db, mailer, secretBox, now, random, config: { baseUrl: 'http://test.local', secureCookies, uploadsDir, mailTransport: 'outbox', mailFrom: 'hello@example.com' } });
   return { app, db, mailer, now, uploadsDir };
 }
 

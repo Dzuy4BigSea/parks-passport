@@ -3,14 +3,31 @@ import { loadConfig } from './config.js';
 import { openDb } from './db/index.js';
 import { seedParksIfEmpty, seedBadges } from './db/seed.js';
 import { createMailer } from './lib/mail.js';
+import { createSecretBox } from './lib/secret-box.js';
+import { emailSettings, sendgridKey } from './domain/settings.js';
 import { buildApp } from './app.js';
 
 const config = loadConfig();
 const db = openDb(path.join(config.dataDir, 'app.db'));
-const mailer = createMailer(config.mail);
+const secretBox = createSecretBox({ envKey: process.env.SETTINGS_KEY || '', keyFile: path.join(config.dataDir, 'settings.key') });
+const mailer = createMailer({
+  transport: config.mail.transport,
+  outboxDir: config.mail.outboxDir,
+  // Admin-saved settings win over .env, read on every send.
+  resolve: () => {
+    const s = emailSettings(db, { envFrom: config.mail.from });
+    return {
+      apiKey: sendgridKey(db, secretBox, { envKey: config.mail.sendgridApiKey }).key,
+      fromAddress: s.mail_from_address, fromName: s.mail_from_name, replyTo: s.mail_reply_to,
+    };
+  },
+});
 const app = buildApp({
-  db, mailer, logger: config.nodeEnv !== 'test',
-  config: { baseUrl: config.baseUrl, secureCookies: config.secureCookies, uploadsDir: path.join(config.dataDir, 'uploads') },
+  db, mailer, secretBox, logger: config.nodeEnv !== 'test',
+  config: {
+    baseUrl: config.baseUrl, secureCookies: config.secureCookies, uploadsDir: path.join(config.dataDir, 'uploads'),
+    mailTransport: config.mail.transport, mailFrom: config.mail.from, sendgridEnvKey: config.mail.sendgridApiKey,
+  },
 });
 
 const seeded = seedParksIfEmpty(db);

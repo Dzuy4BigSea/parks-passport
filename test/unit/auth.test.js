@@ -324,13 +324,18 @@ test('post-login redirects only to local paths', () => {
 
 test('sendgrid mailer posts to the v3 API with click tracking off, and fails loudly', async () => {
   const calls = [];
-  const ok = createMailer({ transport: 'sendgrid', sendgridApiKey: 'SG.test', from: 'a@b.co',
+  const resolve = () => ({ apiKey: 'SG.test', fromAddress: 'a@b.co', fromName: 'Parks Passport', replyTo: 'r@b.co' });
+  const ok = createMailer({ transport: 'sendgrid', resolve,
     fetchImpl: async (url, init) => { calls.push({ url, init }); return { ok: true, status: 202 }; } });
   await ok.send({ to: 'x@y.co', subject: 's', text: 't' });
   assert.equal(calls[0].url, 'https://api.sendgrid.com/v3/mail/send');
   assert.equal(calls[0].init.headers.Authorization, 'Bearer SG.test');
-  assert.equal(JSON.parse(calls[0].init.body).tracking_settings.click_tracking.enable, false);
-  const bad = createMailer({ transport: 'sendgrid', sendgridApiKey: 'SG.test', from: 'a@b.co',
-    fetchImpl: async () => ({ ok: false, status: 401 }) });
+  const body = JSON.parse(calls[0].init.body);
+  assert.equal(body.tracking_settings.click_tracking.enable, false);
+  assert.deepEqual(body.from, { email: 'a@b.co', name: 'Parks Passport' });
+  assert.deepEqual(body.reply_to, { email: 'r@b.co' });
+  const bad = createMailer({ transport: 'sendgrid', resolve, fetchImpl: async () => ({ ok: false, status: 401, text: async () => 'bad key' }) });
   await assert.rejects(bad.send({ to: 'x@y.co', subject: 's', text: 't' }), /401/);
+  const noKey = createMailer({ transport: 'sendgrid', resolve: () => ({ apiKey: null, fromAddress: 'a@b.co' }) });
+  await assert.rejects(noKey.send({ to: 'x@y.co', subject: 's', text: 't' }), /No SendGrid API key/);
 });

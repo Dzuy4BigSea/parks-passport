@@ -99,7 +99,7 @@ export default async function authRoutes(app) {
     if (user) {
       emailLink(user, 'magic_link', (token) => ({
         to: user.email,
-        subject: 'Your Parks Passport sign-in link',
+        subject: app.emailSettings().subject_magic_link,
         text: `Hi ${user.display_name},\n\nSign in to Parks Passport:\n${link('/auth/magic', token)}${next ? `&next=${encodeURIComponent(next)}` : ''}\n\nThis link works once and expires in 15 minutes. If you didn't ask for it, ignore this email.\n`,
       }));
     }
@@ -127,7 +127,7 @@ export default async function authRoutes(app) {
     if (user) {
       emailLink(user, 'password_reset', (token) => ({
         to: user.email,
-        subject: 'Reset your Parks Passport password',
+        subject: app.emailSettings().subject_password_reset,
         text: `Hi ${user.display_name},\n\nChoose a new password:\n${link('/reset', token)}\n\nThis link works once and expires in 15 minutes. If you didn't ask for it, ignore this email; your password hasn't changed.\n`,
       }));
     }
@@ -200,7 +200,7 @@ export default async function authRoutes(app) {
     const token = createAuthToken(db, req.user.id, 'delete_account', { now: now() });
     return sendOrFail(reply, {
       to: req.user.email,
-      subject: 'Confirm deleting your Parks Passport account',
+      subject: app.emailSettings().subject_delete_account,
       text: `Hi ${req.user.display_name},\n\nTo permanently delete your account and everything in it, open:\n${link('/account/delete/confirm', token)}\n\nThis link works once and expires in 15 minutes. If you didn't ask for this, ignore this email.\n`,
     }, page);
   });

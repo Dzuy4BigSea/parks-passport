@@ -11,6 +11,7 @@ import { layout } from './views/layout.js';
 import { homePage, privacyPage } from './views/pages/static.js';
 import { countActiveParks } from './domain/parks.js';
 import { takeUnseenBadges } from './domain/badges/index.js';
+import { emailSettings } from './domain/settings.js';
 import { totalPoints } from './domain/points.js';
 import { levelFor } from './domain/levels.js';
 import { authPlugin } from './lib/auth.js';
@@ -30,7 +31,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
  * config: { baseUrl, secureCookies, uploadsDir }
  */
 export function buildApp({
-  db, mailer, now = () => new Date(), random = Math.random, logger = false,
+  db, mailer, secretBox = null, now = () => new Date(), random = Math.random, logger = false,
   config = { baseUrl: 'http://localhost:8080', secureCookies: false, uploadsDir: './data/uploads' },
 } = {}) {
   if (!db) throw new Error('buildApp needs a db');
@@ -42,6 +43,8 @@ export function buildApp({
   app.decorate('now', now);
   app.decorate('random', random); // injectable for lucky badges in tests
   app.decorate('config', config);
+  app.decorate('secretBox', secretBox); // encrypts the admin-saved SendGrid key
+  app.decorate('emailSettings', () => emailSettings(db, { envFrom: config.mailFrom || '' }));
   // Removes a user's photo files before their rows are deleted (rows cascade).
   app.decorate('beforeUserDelete', async (userId) => {
     for (const key of fileKeysForUser(db, userId)) await removePhotoFiles(config.uploadsDir, key);
