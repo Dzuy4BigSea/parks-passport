@@ -19,10 +19,10 @@ const count = (n, target, unit) => ({ earned: n >= target, progress: Math.min(n,
 const timeFmt = new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 
 // Days since epoch for a YYYY-MM-DD date (UTC math, no DST surprises).
-const dayNumber = (ymd) => Math.floor(Date.UTC(+ymd.slice(0, 4), +ymd.slice(5, 7) - 1, +ymd.slice(8, 10)) / 86400000);
+export const dayNumber = (ymd) => Math.floor(Date.UTC(+ymd.slice(0, 4), +ymd.slice(5, 7) - 1, +ymd.slice(8, 10)) / 86400000);
 // 1970-01-01 was a Thursday. Weeks start Monday; weekends are keyed by their Saturday.
 const weekdayOf = (day) => (day + 4) % 7; // 0 = Sunday … 6 = Saturday
-const mondayOf = (day) => day - ((weekdayOf(day) + 6) % 7);
+export const mondayOf = (day) => day - ((weekdayOf(day) + 6) % 7);
 
 export const RULES = {
   parks_count: {

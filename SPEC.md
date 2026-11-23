@@ -228,6 +228,44 @@ Done when:
 - [ ] With consent denied, Lighthouse mobile Performance on the four key pages stays at 90
       or above.
 
+### Flow 11: Engagement and city theme
+As a member, the app pulls me back with a one-tap stamp, a reason to go next and a look that
+feels like my city, so stamping becomes a habit.
+Done when:
+- [ ] **Look:** the "Gulf Pop" palette (sand, deep-sea ink, aqua, hot pink, sun, violet) with
+      every text color at WCAG AA. Bright aqua and city accent colors are decorative only.
+      Headings use a self-hosted display font (Bricolage Grotesque, OFL). Entrance animations move
+      only (never fade text), and `prefers-reduced-motion` turns every animation off.
+- [ ] **One-tap stamp:** signed in on a phone, a bottom tab bar (Parks, Passport, Stamp, Pals,
+      Account) replaces the header links. Its center Stamp button (and a Stamp button in the
+      desktop header) opens `/stamp`, which asks for the position and stamps the nearest active
+      park by GPS under the Flow 3 rules. Too far, it stamps nothing and lists the three closest
+      parks with distances. The position is never echoed back. The manifest offers a "Stamp a park"
+      home-screen shortcut.
+- [ ] **Celebration:** a stamp shows an animated stamp with the park's city motif, a points
+      count-up (decorative; the announced text is static), a confetti burst, and the next badge
+      to earn and the closest unstamped park.
+- [ ] **Next up:** the signed-in home page is a dashboard (Stamp button, parks stamped, level,
+      percent explored) with cards for the closest unstamped park (distance from the park of my
+      latest stamp, never from a GPS position), the known badge I'm closest to, and my weekly
+      streak. The passport shows the same cards. Public passports don't.
+- [ ] **Streak:** consecutive Monday-start weeks with a stamp, counted back from this week, or
+      from last week when this week has none yet ("stamp by Sunday to keep your streak"). Shown
+      as a flame pill in the phone header and on the dashboard and passport.
+- [ ] **Collections:** the passport groups all N parks by neighborhood (nearest area centroid,
+      parks without a pin last), each with a progress ring. Stamped parks show a seal with their
+      motif. Every park still appears (Flow 6).
+- [ ] **City theme:** the active city has a name, nickname, two accent colors, areas and
+      landmark motifs (name, blurb, line-icon SVG). St. Pete ships with 9 hand-drawn motifs.
+      Motifs appear on the landing page ("lore"), park cards and pages, stamps, the passport
+      cover, a daily story on the dashboard and the footer.
+- [ ] **Admin › City theme:** an admin edits the name, nickname and colors, adds, edits,
+      approves, unpublishes and deletes motifs. "Generate landmark drafts" runs a background job
+      that asks Claude (with web search) for 8–12 landmarks, facts and line icons. Results are
+      drafts that appear nowhere until approved. Every SVG, whether seeded, hand-entered or from AI, passes a strict
+      allowlist sanitizer (shapes only; no scripts, styles, links, text or event handlers) or is
+      rejected. Without `ANTHROPIC_API_KEY` the button is off. API errors show a fixed message.
+
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.
 - **users**: id, email (unique, lower-cased), password_hash (scrypt, nullable for magic-link-only
@@ -253,6 +291,10 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 - **pal_links**: user_a, user_b (a < b), created_at. **pal_invites**: user_id, token_hash,
   created_at, revoked_at
 - **feed** is a query over visits, photos and user_badges filtered by visibility, not a table.
+- **city_themes**: id, key (unique), name, tagline, accent, accent_2, areas (JSON centroids),
+  active, updated_at. **city_motifs**: id, theme_id, slug, name, blurb, svg (sanitized), status
+  (draft|approved), source (seed|ai|admin), sort, created_at. The AI job's state is the
+  `theme_ai_job` row in **settings**.
 
 ## Integrations
 | Service | Direction | Auth | Failure behavior |
@@ -262,6 +304,7 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 | Google Tag Manager / GA4 | write (client) | `GTM_ID` and `GTM_SCRIPT_ORIGIN` in `.env` | Not loaded when `GTM_ID` is empty. Gated by Consent Mode v2. |
 | Browser Geolocation API | read (client) | user permission | Falls back to the honor system with an explanation. |
 | Map tiles (OpenStreetMap tiles via Leaflet) | read (client) | none (attribution shown) | The map area shows "Map unavailable" and the list still works. |
+| Anthropic Claude API (Admin › City theme) | read (admin-triggered) | `ANTHROPIC_API_KEY` in `.env` | Optional. Without a key the Generate button is off. A failed run shows a fixed message (key rejected, rate limited, try again) and adds nothing. Output is validated and sanitized, and only becomes drafts. |
 | Geocoder (US Census Geocoder, falling back to OSM Nominatim at 1 request/s) | one-time read | none | Used only by the seed script. Parks it can't place are flagged `needs_pin` for an admin to place on a map. |
 | St. Pete Parks & Rec website | one-time import | none | Used only by `npm run seed:scrape` to build `seed/parks.csv`, never called at runtime. |
 
@@ -300,7 +343,8 @@ aster behind the shared nginx at `https://parkspassport.dzuynguyen.com`, with da
 ## Out of scope (v1)
 - Native iOS/Android apps (the web/PWA only)
 - Real-world prizes, coupons or redemption
-- Park systems other than St. Pete (the schema shouldn't prevent adding them later)
+- Park systems other than St. Pete (the schema shouldn't prevent adding them later; the city
+  theme is data-driven so another city is a new theme row, not a redesign)
 - Offline stamping
 - User search and public user directory
 - Comments/likes on other people's photos or stamps

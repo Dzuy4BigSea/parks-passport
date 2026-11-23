@@ -19,7 +19,7 @@ export default async function parkRoutes(app) {
     const events = q || filterCount ? [['park_search', { has_query: Boolean(q), filter_count: filterCount }]] : [];
     return reply.page({ events, ...parksPage({
       parks, total: countActiveParks(db), q, selected, near, unvisited, stamped,
-      categories: categoriesInUse(db), signedIn: Boolean(req.user),
+      categories: categoriesInUse(db), signedIn: Boolean(req.user), theme: app.theme(),
     }) });
   });
 

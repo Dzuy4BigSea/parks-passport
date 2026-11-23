@@ -1,12 +1,14 @@
 import { html } from '../html.js';
 import { categoryLabel } from '../../domain/categories.js';
 import { formatMiles } from '../../domain/geo.js';
+import { motifForPark } from '../../domain/city.js';
+import { motifIcon } from '../motif.js';
 
 const chips = (cats) => cats.length
   ? html`<ul class="chips" aria-label="Amenities">${cats.map((c) => html`<li>${categoryLabel(c)}</li>`)}</ul>`
   : '';
 
-export function parksPage({ parks, total, q, selected, categories, near, unvisited = false, stamped = null, signedIn = false }) {
+export function parksPage({ parks, total, q, selected, categories, near, unvisited = false, stamped = null, signedIn = false, theme = { motifs: [] } }) {
   const filtered = q || selected.length || unvisited;
   const countText = filtered
     ? `${parks.length} of ${total} parks match`
@@ -16,7 +18,8 @@ export function parksPage({ parks, total, q, selected, categories, near, unvisit
     current: 'parks',
     scripts: ['/js/near-me.js'],
     body: html`
-<h1>St. Pete parks</h1>
+<div class="page-head"><h1>St. Pete parks</h1>
+  ${stamped ? html`<p class="pill pill-stamped">${stamped.size} of ${total} stamped</p>` : ''}</div>
 <form class="park-search" method="get" action="/parks" role="search">
   <div class="field">
     <label for="q">Search by park name</label>
@@ -43,7 +46,8 @@ export function parksPage({ parks, total, q, selected, categories, near, unvisit
 
 <p class="result-count" role="status">${countText}${near ? ', nearest first' : ''}</p>
 ${parks.length ? html`<ul class="park-list">
-  ${parks.map((p) => html`<li class="park-card${stamped?.has(p.id) ? ' is-stamped' : ''}">
+  ${parks.map((p, i) => html`<li class="park-card${stamped?.has(p.id) ? ' is-stamped' : ''}" style="--i:${i}">
+    ${motifForPark(theme, p.slug) ? html`<span class="card-motif">${motifIcon(motifForPark(theme, p.slug))}</span>` : ''}
     <h2><a href="/parks/${p.slug}">${p.name}</a></h2>
     ${stamped ? (stamped.has(p.id)
       ? html`<p class="stamp-badge"><span aria-hidden="true">✓ </span>Stamped</p>`

@@ -35,9 +35,9 @@ test('signed-in pages, including admin', async ({ page }) => {
   db.prepare('UPDATE users SET is_admin = 1 WHERE email = ?').run(email);
   const handle = db.prepare('SELECT handle FROM users WHERE email = ?').pluck().get(email);
   db.close();
-  for (const url of ['/passport', '/pals', '/account', `/u/${handle}?preview=1`, '/parks?unvisited=1',
+  for (const url of ['/', '/stamp', '/passport', '/pals', '/account', `/u/${handle}?preview=1`, '/parks?unvisited=1',
     '/admin', '/admin/parks', '/admin/parks/new', '/admin/import', '/admin/badges', '/admin/badges/new',
-    '/admin/moderation', '/admin/users', '/admin/email']) {
+    '/admin/moderation', '/admin/users', '/admin/email', '/admin/city']) {
     await check(page, url);
   }
 });

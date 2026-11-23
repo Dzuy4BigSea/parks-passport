@@ -164,3 +164,21 @@ Outcome: SPEC "End-to-end verification" and the Ops NFRs.
 Checks: `npm test`, `npm run lighthouse` and `npm run check:memory` pass in CI (the `budgets`
 job). A reviewer finds no SPEC gaps. After merge to `main`,
 `curl -fsS https://parkspassport.dzuynguyen.com/healthz` returns `ok`, and Dzuy's phone test passes.
+
+### M11 — UI/UX pass: Gulf Pop, one-tap stamp, next up, city theme (Flow 11)
+Outcome: SPEC Flow 11.
+- Design system in `public/css/app.css` (tokens, contrast notes, motion, reduced motion), the
+  self-hosted display font in `public/fonts/`, UI icons in `src/views/icons.js`, new app icons.
+- Layout: sticky header with a Stamp button, a phone tab bar for members, the motif footer, the
+  city accent variables.
+- `src/domain/engagement.js` (streak, closest unstamped park, closest badge), `/stamp` in
+  `src/routes/visits.js`, the dashboard home, the park page celebration, passport collections.
+- City theme: migration 011, `seed/city-st-pete.json`, `src/domain/city.js`,
+  `src/lib/svg-sanitize.js`. Admin › City theme with `src/lib/theme-ai.js` (Claude, web search,
+  strict `save_city_theme` tool) and the background job in `src/domain/theme-job.js`.
+
+Checks: `test/unit/city.test.js` (sanitizer, areas, streak, closest badge, `/stamp`, dashboard,
+admin drafts and approval, safe error messages, generator turn handling with a fake client),
+`test/e2e/engage.spec.js` (one-tap stamp on a phone, finder when far away, reduced motion), axe
+on `/`, `/stamp` and `/admin/city` signed in, and the existing suite. `npm run lighthouse` stays
+at 90+.

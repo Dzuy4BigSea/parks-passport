@@ -4,6 +4,33 @@ import { csrfField } from '../forms.js';
 import { METHOD_LABELS } from '../../domain/visits.js';
 import { formatDate, localDate } from '../../domain/time.js';
 import { VISIBILITY_LABELS } from '../../domain/visibility.js';
+import { collections, motifForPark } from '../../domain/city.js';
+import { motifIcon } from '../motif.js';
+import { ICONS } from '../icons.js';
+import { nextUpCards, streakText } from '../nextup.js';
+
+function stampTile(p, theme, i) {
+  return html`<li class="stamp${p.first_visit ? ' is-stamped' : ''}" style="--i:${i}">
+      <a href="/parks/${p.slug}">
+        ${p.first_visit ? html`<span class="seal" aria-hidden="true">${motifIcon(motifForPark(theme, p.slug))}</span>` : ''}
+        <span class="stamp-name">${p.name}</span>
+        <span class="stamp-date">${p.first_visit ? html`<span aria-hidden="true">✓ </span>Stamped ${shortDate(p.first_visit)}` : 'Not yet'}</span>
+      </a>
+    </li>`;
+}
+
+function collectionSection(g, theme) {
+  const pct = Math.round((g.stamped / g.total) * 100);
+  const done = g.stamped === g.total;
+  return html`<section class="collection${done ? ' is-complete' : ''}" aria-labelledby="col-${g.slug}">
+  <div class="collection-head">
+    <span class="ring ring-sm" style="--p:${pct}" aria-hidden="true"><strong>${g.stamped}</strong></span>
+    <div><h3 id="col-${g.slug}">${g.name}</h3>
+    <p>${done ? 'Collection complete!' : `${g.stamped} of ${g.total} stamped · ${g.total - g.stamped} to discover`}</p></div>
+  </div>
+  <ul class="stamp-grid">${g.parks.map((p, i) => stampTile(p, theme, i))}</ul>
+</section>`;
+}
 
 const shortDate = (ymd) => {
   const [y, m, d] = ymd.split('-').map(Number);
@@ -36,7 +63,7 @@ function badgeCard(b) {
 </li>`;
 }
 
-export function passportPage({ user, csrf, parks, history, points, level, badges, readOnly = false }) {
+export function passportPage({ user, csrf, parks, history, points, level, badges, readOnly = false, theme = { motifs: [], areas: [] }, next = null }) {
   const stamped = parks.filter((p) => p.first_visit);
   const total = parks.length;
   const mapData = parks.filter((p) => p.lat != null).map((p) => ({
@@ -52,10 +79,15 @@ export function passportPage({ user, csrf, parks, history, points, level, badges
     scripts: ['/js/passport-map.js'],
     body: html`
 <header class="passport-cover">
-  <p class="eyebrow">Parks Passport</p>
-  <h1>${user.display_name}'s passport</h1>
-  <p class="passport-count"><strong>${stamped.length} of ${total} parks stamped</strong></p>
-  ${readOnly ? '' : html`<p class="passport-visibility">Visible to: ${VISIBILITY_LABELS[user.default_visibility]} · <a href="/account#visibility">Change</a></p>`}
+  ${theme.motifs.length ? html`<span class="cover-pattern" aria-hidden="true">${Array.from({ length: 24 }, (_, i) => motifIcon(theme.motifs[i % theme.motifs.length]))}</span>` : ''}
+  <div>
+    <p class="eyebrow">Parks Passport${theme.key !== 'default' && theme.name ? ` · ${theme.name}` : ''}</p>
+    <h1>${user.display_name}'s passport</h1>
+    <p class="passport-count"><strong>${stamped.length} of ${total} parks stamped</strong></p>
+    ${readOnly ? '' : html`<p class="passport-visibility">Visible to: ${VISIBILITY_LABELS[user.default_visibility]} · <a href="/account#visibility">Change</a></p>`}
+    ${next ? html`<p class="cover-pills"><span class="pill pill-streak">${ICONS.flame}${streakText(next.streak).title}</span></p>` : ''}
+  </div>
+  <div class="ring" style="--p:${total ? Math.round((stamped.length / total) * 100) : 0}" aria-hidden="true"><span><strong>${stamped.length}</strong><small>of ${total}</small></span></div>
   <div class="level">
     <p><span class="level-name">${level.name}</span> · <span class="points">${points} points</span></p>
     <span class="bar bar-level" role="progressbar" aria-label="Progress to ${level.next ? level.next.name : 'the top level'}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${levelPct}"><span style="width:${levelPct}%"></span></span>
@@ -63,16 +95,12 @@ export function passportPage({ user, csrf, parks, history, points, level, badges
   </div>
 </header>
 
+${next ? nextUpCards(next) : ''}
+
 <section aria-labelledby="stamps-h">
   <h2 id="stamps-h">Stamps</h2>
-  <ul class="stamp-grid">
-    ${parks.map((p) => html`<li class="stamp${p.first_visit ? ' is-stamped' : ''}">
-      <a href="/parks/${p.slug}">
-        <span class="stamp-name">${p.name}</span>
-        <span class="stamp-date">${p.first_visit ? html`<span aria-hidden="true">✓ </span>Stamped ${shortDate(p.first_visit)}` : 'Not yet'}</span>
-      </a>
-    </li>`)}
-  </ul>
+  <p class="muted">Parks are grouped by neighborhood. Complete a collection to fill its ring.</p>
+  ${collections(theme, parks).map((g) => collectionSection(g, theme))}
 </section>
 
 <section aria-labelledby="map-h">

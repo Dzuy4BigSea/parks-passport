@@ -11,12 +11,16 @@ import { html } from './views/html.js';
 import { layout } from './views/layout.js';
 import { homePage, privacyPage } from './views/pages/static.js';
 import { countActiveParks } from './domain/parks.js';
-import { takeUnseenBadges } from './domain/badges/index.js';
+import { takeUnseenBadges, badgeBoard } from './domain/badges/index.js';
 import { emailSettings } from './domain/settings.js';
 import { buildEvent, queueEvent, takeEvents, parseConsent, CONSENT_COOKIE } from './lib/analytics.js';
 import consentRoutes from './routes/consent.js';
 import { totalPoints } from './domain/points.js';
 import { levelFor } from './domain/levels.js';
+import { getTheme } from './domain/city.js';
+import { weeklyStreak, visitDates, nextUp } from './domain/engagement.js';
+import { stampedParkIds } from './domain/visits.js';
+import { localDate } from './domain/time.js';
 import { authPlugin } from './lib/auth.js';
 import parkRoutes from './routes/parks.js';
 import authRoutes from './routes/auth.js';
@@ -37,7 +41,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
  * config: { baseUrl, secureCookies, uploadsDir }
  */
 export function buildApp({
-  db, mailer, secretBox = null, now = () => new Date(), random = Math.random, logger = false,
+  db, mailer, secretBox = null, now = () => new Date(), random = Math.random, logger = false, themeAi = null,
   config = { baseUrl: 'http://localhost:8080', secureCookies: false, uploadsDir: './data/uploads' },
 } = {}) {
   if (!db) throw new Error('buildApp needs a db');
@@ -51,6 +55,8 @@ export function buildApp({
   app.decorate('config', config);
   app.decorate('secretBox', secretBox); // encrypts the admin-saved SendGrid key
   // app.track(userId, name, params): an analytics event for the user's next page (see lib/analytics.js).
+  app.decorate('theme', () => getTheme(db));
+  app.decorate('themeAi', themeAi); // Admin › City theme generator (lib/theme-ai.js); null = off
   app.decorate('track', (userId, name, params = {}) => queueEvent(db, userId, name, params, { now: now(), log: app.log }));
   app.decorate('emailSettings', () => emailSettings(db, { envFrom: config.mailFrom || '' }));
   // Removes a user's photo files before their rows are deleted (rows cascade).
@@ -68,6 +74,10 @@ export function buildApp({
     inflight.add(p);
   });
   app.decorate('mailIdle', () => Promise.all(inflight));
+  // Background jobs (the city theme generator); tests await app.themeJobIdle().
+  const jobs = new Set();
+  app.decorate('trackJob', (p) => { jobs.add(p); p.finally(() => jobs.delete(p)); });
+  app.decorate('themeJobIdle', () => Promise.all(jobs));
   app.addHook('onClose', async () => db.close());
 
   // gzip/brotli for text responses (HTML, CSS, JS; Leaflet's ESM build is 424 KB uncompressed).
@@ -121,6 +131,9 @@ export function buildApp({
       .header('Cache-Control', 'no-store')
       .send(String(layout({
         ...view, user: req.user, csrf: req.csrfToken(), announcements, nudge, events, consent, path,
+        theme: getTheme(db),
+        // Streak and points for the phone header (members only).
+        status: req.user ? { streak: weeklyStreak(visitDates(db, req.user.id), localDate(now())), points: totalPoints(db, req.user.id) } : null,
         analytics: private_ ? null : config.analytics || null,
         // The banner asks only when there is something to consent to (GTM) and no choice yet.
         showConsentBanner: !private_ && Boolean(config.analytics?.gtmId) && !consent.chosen && !path.startsWith('/consent'),
@@ -136,7 +149,19 @@ export function buildApp({
     }
   });
 
-  app.get('/', async (req, reply) => reply.page(homePage({ total: countActiveParks(db) })));
+  app.get('/', async (req, reply) => {
+    const total = countActiveParks(db);
+    const user = req.user;
+    let dash = null;
+    if (user) {
+      const points = totalPoints(db, user.id);
+      dash = {
+        stamped: stampedParkIds(db, user.id).size, points, level: levelFor(points),
+        next: nextUp(db, user.id, badgeBoard(db, user.id), { now: now() }),
+      };
+    }
+    return reply.page(homePage({ total, theme: getTheme(db), user, dash, today: localDate(now()) }));
+  });
   app.get('/privacy', async (req, reply) => reply.page(privacyPage()));
   app.register(parkRoutes);
   app.register(authRoutes);

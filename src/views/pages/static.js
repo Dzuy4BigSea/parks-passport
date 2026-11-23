@@ -1,14 +1,84 @@
 import { html } from '../html.js';
+import { ICONS } from '../icons.js';
+import { motifIcon } from '../motif.js';
+import { nextUpCards } from '../nextup.js';
 
-export function homePage({ total }) {
+const tiles = (motifs) => motifs.map((m, i) => html`<span class="tile" style="--i:${i}">${motifIcon(m)}</span>`);
+
+function lore(theme, { limit = 6, heading = `${theme.tagline || theme.name} lore` } = {}) {
+  if (!theme.motifs.length) return '';
+  return html`<section aria-labelledby="lore-h">
+  <h2 id="lore-h">${heading}</h2>
+  <ul class="lore">${theme.motifs.slice(0, limit).map((m, i) => html`<li class="reveal" style="--i:${i}">
+    <span class="tile">${motifIcon(m)}</span><div><h3>${m.name}</h3><p>${m.blurb}</p></div></li>`)}</ul>
+</section>`;
+}
+
+// A different piece of city lore each day, for members coming back.
+function loreOfTheDay(theme, today) {
+  if (!theme.motifs.length) return '';
+  const day = Math.floor(Date.parse(`${today}T00:00:00Z`) / 86400000);
+  const m = theme.motifs[day % theme.motifs.length];
+  return html`<section aria-labelledby="lore-h">
+  <h2 id="lore-h">Today's ${theme.tagline || theme.name} story</h2>
+  <ul class="lore"><li><span class="tile">${motifIcon(m)}</span><div><h3>${m.name}</h3><p>${m.blurb}</p></div></li></ul>
+</section>`;
+}
+
+function landing({ total, theme }) {
+  return html`<section class="hero">
+  <div>
+    <p class="eyebrow">St. Petersburg, Florida</p>
+    <h1>Your passport to St. Pete parks</h1>
+    <p class="lede">${total} parks to explore. Stamp each one you visit, collect badges, and explore with your Park Pals.</p>
+    <div class="hero-actions">
+      <a class="btn btn-pop btn-big" href="/signup">Start your passport ${ICONS.arrow}</a>
+      <a class="btn btn-big" href="/parks">Find a park</a>
+    </div>
+  </div>
+  ${theme.motifs.length ? html`<div class="hero-motifs" aria-hidden="true">${tiles(theme.motifs.slice(0, 6))}</div>` : ''}
+</section>
+
+<section aria-labelledby="how-h">
+  <h2 id="how-h">How it works</h2>
+  <ol class="steps">
+    <li class="reveal" style="--i:0"><strong>Find a park</strong><p>Search ${total} parks or sort by what's closest to you.</p></li>
+    <li class="reveal" style="--i:1"><strong>Tap Stamp</strong><p>One tap checks you in by GPS. No signal? The honor system works too.</p></li>
+    <li class="reveal" style="--i:2"><strong>Level up</strong><p>Earn points, unlock badges (some are secret) and race your Park Pals.</p></li>
+  </ol>
+</section>
+${lore(theme)}`;
+}
+
+function dashboard({ user, total, theme, dash, today }) {
+  const first = String(user.display_name).split(/\s+/)[0];
+  const pct = total ? Math.round((dash.stamped / total) * 100) : 0;
+  const levelPct = Math.round(dash.level.progress * 100);
+  return html`<div class="dash-hello">
+  <div><p class="eyebrow">${theme.tagline || 'Welcome back'}</p><h1>Hi, ${first}</h1></div>
+</div>
+<div class="dash-grid">
+  <a class="stamp-cta" href="/stamp"><span class="fab-lg">${ICONS.stamp}</span>
+    <span><strong>Stamp a park</strong><span class="sub">At a park? One tap and it's in your passport.</span></span></a>
+  <div class="passport-cover dash-progress">
+    <div>
+      <p class="eyebrow">Your passport</p>
+      <p class="passport-count"><strong>${dash.stamped} of ${total} parks stamped</strong></p>
+      <p><span class="level-name">${dash.level.name}</span> · ${dash.points} points</p>
+      <span class="bar bar-level" role="progressbar" aria-label="Progress to ${dash.level.next ? dash.level.next.name : 'the top level'}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${levelPct}"><span style="width:${levelPct}%"></span></span>
+      <p class="level-next">${dash.level.next ? `${dash.level.toNext} points to ${dash.level.next.name}` : 'Top level reached!'}</p>
+    </div>
+    <div class="ring" style="--p:${pct}" aria-hidden="true"><span><strong>${pct}%</strong><small>explored</small></span></div>
+  </div>
+</div>
+${nextUpCards(dash.next)}
+${loreOfTheDay(theme, today)}`;
+}
+
+export function homePage({ total, theme, user = null, dash = null, today = '' }) {
   return {
     title: null,
-    body: html`<section class="hero">
-  <p class="eyebrow">St. Petersburg, Florida</p>
-  <h1>Your passport to St. Pete parks</h1>
-  <p class="lede">${total} parks to explore. Stamp each one you visit, collect badges, and explore with your Park Pals.</p>
-  <p><a class="btn btn-primary" href="/parks">Find a park</a></p>
-</section>`,
+    body: user && dash ? dashboard({ user, total, theme, dash, today }) : landing({ total, theme }),
   };
 }
 
