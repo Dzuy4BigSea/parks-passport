@@ -26,7 +26,12 @@ export function renderParkPage(app, req, reply, park, { problem = null, stamped 
   let activities = null;
   if (user) {
     const visit = visitToday(db, user.id, park.id, localDate(app.now()));
-    activities = { list: activitiesForPark(db, user, park), logs: visit ? logsForVisit(db, visit.id) : [], stampedToday: Boolean(visit), flash: activityFlash };
+    const logs = visit ? logsForVisit(db, visit.id) : [];
+    const list = activitiesForPark(db, user, park);
+    // Today's logs stay listed with their Undo, even if the activity was switched off since.
+    const listed = new Set(list.map((a) => a.id));
+    for (const l of logs) if (!listed.has(l.activity_id)) list.push(db.prepare('SELECT * FROM activities WHERE id = ?').get(l.activity_id));
+    activities = { list, logs, stampedToday: Boolean(visit), flash: activityFlash };
   }
   return reply.page({ events, ...parkPage({
     activities,

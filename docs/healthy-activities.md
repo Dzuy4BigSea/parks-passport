@@ -1,7 +1,8 @@
 # Healthy activities: a second layer on top of stamps
 
-Status: **proposal, not in SPEC v1.** Nothing here is built. The questions at the end
-need answers before this goes into SPEC.md and PLAN.md.
+Status: **built in M12** (SPEC Flow 12). The lists live in `seed/activities.json` and
+`seed/activity-badges.json`. Not built yet: a pets-allowed flag (so no Paws water or beach
+activities), the Early Bird / Golden Hour and water bonuses, and "Same Time Next Week".
 
 ## The idea in one paragraph
 
@@ -276,6 +277,8 @@ These are the "come back" mechanics. All streaks are weekly and allow one grace 
 - **Honor system with caps.** The same activity counts once per park per day. Minutes are
   capped at 180 and miles at 15 per day. The points are small on purpose, so cheating isn't
   worth much.
+- **Known edge:** minutes are credited toward weekly goals when logged. If the 180-minute daily
+  cap left a later log with 0 minutes and an earlier log is undone, the later one stays at 0.
 - **No GPS tracking of walks.** Our rule is that coordinates never leave the stamp. Distance is
   entered by the user, or estimated from minutes (about 20 min per mile at a brisk walk), or
   calculated from a park's `loop_mi` once an admin sets it.

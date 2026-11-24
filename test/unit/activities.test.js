@@ -127,6 +127,10 @@ test('weekly_sum: best week for a one-week goal; runs of weeks allow one missed 
   // A second miss breaks the run.
   const twoMisses = [week('2026-06-01', 150), week('2026-06-15', 150), week('2026-06-29', 150)];
   assert.equal(run('weekly_sum', { target: 'any', metric: 'minutes', total: 120, n: 3 }, twoMisses).progress, 2);
+  // The allowance moves with the run: weeks 2, 3, 5, 6 count even after an earlier miss at week 1.
+  const w = (n) => week(['2026-06-01', '2026-06-08', '2026-06-15', '2026-06-22', '2026-06-29', '2026-07-06', '2026-07-13', '2026-07-20', '2026-07-27'][n], 150);
+  assert.equal(run('weekly_sum', { target: 'any', metric: 'minutes', total: 120, n: 4 }, [0, 2, 3, 5, 6].map(w)).earned, true);
+  assert.equal(run('weekly_sum', { target: 'any', metric: 'minutes', total: 120, n: 9 }, [0, 2, 3, 4, 6, 7, 8].map(w)).progress, 6);
   // Two missed weeks in a row also break it.
   assert.equal(run('weekly_sum', { target: 'any', metric: 'minutes', total: 120, n: 2 }, [week('2026-06-01', 150), week('2026-06-22', 150)]).progress, 1);
 });
@@ -307,6 +311,15 @@ test('park page: locked until stamped, then log, undo and errors; logs stay priv
   res = await c.post('/parks/trail-park/activities', { activity: 'park-walk', amount: '10' });
   assert.equal(res.statusCode, 422);
   assert.match(res.body, /already logged Park walk/);
+
+  // Errors for activities not on the page still show: one switched off by an admin.
+  db.prepare("UPDATE activities SET active = 0 WHERE slug IN ('breathe', 'park-walk')").run();
+  res = await c.post('/parks/trail-park/activities', { activity: 'breathe' });
+  assert.equal(res.statusCode, 422);
+  assert.match(res.body, /That activity isn&#39;t available here.|That activity isn't available here./);
+  // Today's log of a switched-off activity keeps its Undo.
+  assert.match((await c.get('/parks/trail-park')).body, /Undo<span class="visually-hidden"> Park walk/);
+  db.prepare("UPDATE activities SET active = 1").run();
 
   // Another member can't undo it.
   const logId = db.prepare('SELECT id FROM activity_logs').pluck().get();

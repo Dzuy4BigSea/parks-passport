@@ -55,10 +55,15 @@ export function activitiesPanel({ park, csrf, activities, problem }) {
   if (!activities || !activities.list.length) return '';
   const { list, stampedToday } = activities;
   const here = list.filter((a) => a.category);
+  // An error for an activity not in the list (switched off, or the stamp is from another day).
+  const ownProblem = problem?.area === 'activities' ? problem : null;
+  const loose = ownProblem && !(stampedToday && list.some((a) => a.slug === ownProblem.activity))
+    ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${ownProblem.text}</p>` : '';
   if (!stampedToday) {
     const names = here.slice(0, 3).map((a) => a.name);
     return html`<section class="activities is-locked" id="activities" aria-labelledby="act-h">
   <h2 id="act-h">Things to do here</h2>
+  ${loose}
   <p>Stamp this park today to unlock <strong>${list.length} healthy things to do</strong>, each worth bonus points${names.length ? html`, like ${names.join(', ')}` : ''}.</p>
 </section>`;
   }
@@ -70,6 +75,7 @@ export function activitiesPanel({ park, csrf, activities, problem }) {
   const facilities = [...new Set(here.map((a) => a.category))].map(categoryLabel).join(', ');
   return html`<section class="activities" id="activities" aria-labelledby="act-h">
   <h2 id="act-h">Things to do here</h2>
+  ${loose}
   ${activities.flash?.text ? html`<p class="notice" role="status" tabindex="-1" data-announce>${activities.flash.text}</p>` : ''}
   <p class="hint">Log what you do today for bonus points and health badges. Only you see your log.</p>
   ${group({ id: 'act-here', title: 'Special to this park', note: `Because it has: ${facilities}.`, list: here, ctx, open: true })}

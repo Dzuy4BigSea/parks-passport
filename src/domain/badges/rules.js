@@ -235,14 +235,18 @@ function bestWindow(days, windowDays, score) {
 // doesn't count toward it (habits survive the odd miss: Lally et al. 2010).
 function weekRun(weeks) {
   const sorted = [...new Set(weeks)].sort((a, b) => a - b);
+  // A sliding window over the weeks holding at most one two-week gap: a second gap moves the
+  // start past the first one; a longer gap starts over.
   let best = 0;
-  let run = 0;
-  let graceUsed = false;
+  let start = 0;
+  let gapAt = -1;
   for (let i = 0; i < sorted.length; i++) {
-    const gap = i > 0 ? sorted[i] - sorted[i - 1] : null;
-    if (gap === 7) run += 1;
-    else if (gap === 14 && !graceUsed) { run += 1; graceUsed = true; } else { run = 1; graceUsed = false; }
-    best = Math.max(best, run);
+    const gap = i > 0 ? sorted[i] - sorted[i - 1] : 0;
+    if (gap > 14) { start = i; gapAt = -1; } else if (gap === 14) {
+      if (gapAt >= 0) start = gapAt;
+      gapAt = i;
+    }
+    best = Math.max(best, i - start + 1);
   }
   return best;
 }

@@ -126,7 +126,7 @@ export function adminBadges({ badges }) {
 }
 
 const PARAM_LABELS = {
-  n: 'N (how many)', category: 'Amenity', start: 'From (local time)', end: 'Until (local time)', probability: 'Chance per stamp (0–1)',
+  n: 'N (how many; weeks for the weekly rules)', category: 'Amenity', start: 'From (local time)', end: 'Until (local time)', probability: 'Chance per stamp (0–1)',
   target: 'Which activities count', metric: 'Measure', total: 'Total (minutes or miles)', window_days: 'Within how many days (0 = all time)',
   per_week: 'Days per week',
 };
