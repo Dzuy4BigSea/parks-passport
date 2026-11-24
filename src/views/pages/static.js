@@ -1,7 +1,10 @@
 import { html } from '../html.js';
 import { ICONS } from '../icons.js';
 import { motifIcon } from '../motif.js';
-import { nextUpCards } from '../nextup.js';
+import { streakText } from '../nextup.js';
+import { badgeArt } from '../badge-art.js';
+import { postcard } from './parks.js';
+import { motifForPark } from '../../domain/city.js';
 
 const tiles = (motifs) => motifs.map((m, i) => html`<span class="tile" style="--i:${i}">${motifIcon(m)}</span>`);
 
@@ -11,17 +14,6 @@ function lore(theme, { limit = 6, heading = `${theme.tagline || theme.name} lore
   <h2 id="lore-h">${heading}</h2>
   <ul class="lore">${theme.motifs.slice(0, limit).map((m, i) => html`<li class="reveal" style="--i:${i}">
     <span class="tile">${motifIcon(m)}</span><div><h3>${m.name}</h3><p>${m.blurb}</p></div></li>`)}</ul>
-</section>`;
-}
-
-// A different piece of city lore each day, for members coming back.
-function loreOfTheDay(theme, today) {
-  if (!theme.motifs.length) return '';
-  const day = Math.floor(Date.parse(`${today}T00:00:00Z`) / 86400000);
-  const m = theme.motifs[day % theme.motifs.length];
-  return html`<section aria-labelledby="lore-h">
-  <h2 id="lore-h">Today's ${theme.tagline || theme.name} story</h2>
-  <ul class="lore"><li><span class="tile">${motifIcon(m)}</span><div><h3>${m.name}</h3><p>${m.blurb}</p></div></li></ul>
 </section>`;
 }
 
@@ -60,34 +52,157 @@ function landing({ total, theme }) {
 ${lore(theme)}`;
 }
 
-function dashboard({ user, total, theme, dash, today }) {
+// ---- Signed-in home: Gary's briefing, the passport spread, what's close, and progress ----
+
+const monthDay = (ymd) => {
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }).toUpperCase();
+};
+
+// A postmark for the passport spread: ring with the park's motif, its name and the date.
+const spreadStamp = (s, theme, i) => html`<li class="spread-stamp" style="--i:${i}">
+  <a href="/parks/${s.slug}"><span class="spread-seal" aria-hidden="true">${motifIcon(motifForPark(theme, s.slug))}<span class="spread-date">${monthDay(s.visited_on)}</span></span>
+  <span class="spread-name">${s.name}</span></a></li>`;
+
+// "Your St. Pete": every park as a dot on a hand-drawn plane (no map tiles), stamped ones as seals.
+function constellation(dots, areas) {
+  const pins = dots.filter((p) => p.lat != null);
+  if (!pins.length) return '';
+  const lats = pins.map((p) => p.lat);
+  const lngs = pins.map((p) => p.lng);
+  const [minLat, maxLat, minLng, maxLng] = [Math.min(...lats), Math.max(...lats), Math.min(...lngs), Math.max(...lngs)];
+  const kx = Math.cos(((minLat + maxLat) / 2) * Math.PI / 180); // keep the city's real proportions
+  const W = 300;
+  const H = Math.round((W * (maxLat - minLat)) / ((maxLng - minLng) * kx)) || 300;
+  const P = 14;
+  const x = (lng) => (P + ((lng - minLng) / (maxLng - minLng)) * (W - 2 * P)).toFixed(1);
+  const y = (lat) => (P + ((maxLat - lat) / (maxLat - minLat)) * (H - 2 * P)).toFixed(1);
+  const stampedCount = pins.filter((p) => p.stamped).length;
+  return html`<a class="constellation" href="/parks">
+  <span class="visually-hidden">Map of St. Pete parks: ${stampedCount} of ${pins.length} stamped. Open the parks map.</span>
+  <svg viewBox="0 0 ${W} ${H}" aria-hidden="true">
+    ${areas.map((a) => html`<text class="c-area" x="${x(a.lng)}" y="${y(a.lat)}" text-anchor="middle">${a.name.split(' & ')[0]}</text>`)}
+    ${pins.filter((p) => !p.stamped).map((p) => html`<circle class="c-dot${p.next ? ' is-next' : ''}" cx="${x(p.lng)}" cy="${y(p.lat)}" r="${p.next ? 4.5 : 2.6}"/>`)}
+    ${pins.filter((p) => p.stamped).map((p) => html`<g class="c-stamp" transform="translate(${x(p.lng)} ${y(p.lat)})"><circle r="6.5"/><path d="M-2.6 0.2l1.8 1.9 3.6-4"/></g>`)}
+  </svg>
+</a>`;
+}
+
+function punchCard(punches, streak) {
+  const s = streakText(streak);
+  return html`<section class="home-card punch" aria-labelledby="punch-h">
+  <h2 id="punch-h">Weekly streak</h2>
+  <p class="punch-title">${s.title}</p>
+  <ol class="punches" aria-label="Last ${punches.length} weeks">${punches.map((w) => html`<li class="${w.on ? 'on' : ''}${w.current ? ' current' : ''}"><span class="visually-hidden">Week of ${w.label}: ${w.on ? 'stamped' : 'no stamp'}</span><span aria-hidden="true">${w.on ? '✓' : ''}</span></li>`)}</ol>
+  <p class="muted">${s.meta}</p>
+</section>`;
+}
+
+function weekCard(week) {
+  const bar = (label, value, goal, unit) => {
+    const pct = Math.min(100, Math.round((value / goal) * 100));
+    return html`<div class="goal"><p><strong>${value}</strong> / ${goal} ${unit} <span class="muted">${label}</span></p>
+    <span class="bar" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="${goal}" aria-valuenow="${Math.min(value, goal)}"><span style="width:${pct}%"></span></span></div>`;
+  };
+  return html`<section class="home-card week" aria-labelledby="week-h">
+  <h2 id="week-h">This week outside</h2>
+  ${bar('moving', week.moveMinutes, 150, 'min')}
+  ${bar('in parks', week.parkMinutes, 120, 'min')}
+  <p class="muted">${week.count ? `${week.count} activities logged · ${week.miles} mi` : 'Stamp a park, then log a walk, a sit or a game there.'}</p>
+</section>`;
+}
+
+function progressCard(almost, nextBadge) {
+  return html`<section class="home-card almost" aria-labelledby="almost-h">
+  <h2 id="almost-h">Almost there</h2>
+  ${almost.length ? html`<ul class="almost-list">${almost.map((g) => html`<li>
+    <span class="ring ring-sm" style="--p:${Math.round((g.stamped / g.total) * 100)}" aria-hidden="true"><strong>${g.stamped}</strong></span>
+    <span><strong>${g.name}</strong><br><span class="muted">${g.total - g.stamped} to go of ${g.total}</span></span></li>`)}</ul>` : ''}
+  ${nextBadge ? html`<a class="almost-badge" href="/passport#badges">${badgeArt(nextBadge.art, 'almost-art')}<span><strong>${nextBadge.name}</strong><br>
+    <span class="muted">${nextBadge.progress} / ${nextBadge.target} ${nextBadge.unit}</span></span></a>` : ''}
+</section>`;
+}
+
+function palsCard(items) {
+  return html`<section class="home-card pals-mini" aria-labelledby="palsmini-h">
+  <h2 id="palsmini-h">Park Pals</h2>
+  ${items.length ? html`<ul class="feed">${items.map((i) => html`<li class="feed-item"><span class="feed-icon" aria-hidden="true">${i.type === 'badge' ? (i.badge_art || '🏅') : i.type === 'photo' ? '📷' : '📍'}</span>
+    <p><strong>${i.user.display_name}</strong> ${i.type === 'stamp' ? html`stamped <a href="/parks/${i.park_slug}">${i.park_name}</a>` : i.type === 'photo' ? html`added a photo at <a href="/parks/${i.park_slug}">${i.park_name}</a>` : html`earned ${i.badge_name}`}</p></li>`)}</ul>
+    <p><a href="/pals">See all</a></p>`
+    : html`<p>Exploring is better with friends. Share your invite link and race each other to 102.</p><p><a class="btn btn-small" href="/pals">Invite a Park Pal</a></p>`}
+</section>`;
+}
+
+function dashboard({ user, total, theme, dash }) {
   const first = String(user.display_name).split(/\s+/)[0];
   const pct = total ? Math.round((dash.stamped / total) * 100) : 0;
   const levelPct = Math.round(dash.level.progress * 100);
-  return html`<div class="dash-hello">
-  <div><p class="eyebrow">${theme.tagline || 'Welcome back'}</p><h1>Hi, ${first}</h1></div>
-</div>
-<div class="dash-grid">
-  <a class="stamp-cta" href="/stamp"><span class="fab-lg">${ICONS.stamp}</span>
-    <span><strong>Stamp a park</strong><span class="sub">At a park? One tap and it's in your passport.</span></span></a>
-  <div class="passport-cover dash-progress">
-    <div>
-      <p class="eyebrow">Your passport</p>
-      <p class="passport-count"><strong>${dash.stamped} of ${total} parks stamped</strong></p>
-      <p><span class="level-name">${dash.level.name}</span> · ${dash.points} points</p>
-      <span class="bar bar-level" role="progressbar" aria-label="Progress to ${dash.level.next ? dash.level.next.name : 'the top level'}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${levelPct}"><span style="width:${levelPct}%"></span></span>
-      <p class="level-next">${dash.level.next ? `${dash.level.toNext} points to ${dash.level.next.name}` : 'Top level reached!'}</p>
+  const tip = dash.tip;
+  const slots = Math.max(0, 4 - dash.recent.length);
+  return html`<div class="home">
+<section class="gary-brief" aria-labelledby="hello-h">
+  <img class="gary-art" src="/brand/gary.svg" alt="" width="240" height="280">
+  <div class="gary-bubble">
+    <p class="eyebrow">${theme.tagline || 'Welcome back'}</p>
+    <h1 id="hello-h">Hi, ${first}</h1>
+    <p class="gary-says"><span class="visually-hidden">Gary says: </span>${tip.text}</p>
+    <div class="actions">
+      ${tip.action ? html`<a class="btn btn-pop" href="${tip.action.href}">${tip.action.label} ${ICONS.arrow}</a>` : ''}
+      <a class="btn" href="/stamp">${ICONS.stamp}Stamp a park</a>
     </div>
-    <div class="ring" style="--p:${pct}" aria-hidden="true"><span><strong>${pct}%</strong><small>explored</small></span></div>
   </div>
+</section>
+
+<section class="spread" aria-labelledby="spread-h">
+  <h2 id="spread-h" class="visually-hidden">Your passport</h2>
+  <div class="spread-page spread-left">
+    <p class="eyebrow">Your passport</p>
+    <p class="passport-count"><strong>${dash.stamped} of ${total} parks stamped</strong></p>
+    <div class="spread-ring"><div class="ring" style="--p:${pct}" aria-hidden="true"><span><strong>${pct}%</strong><small>explored</small></span></div></div>
+    <p><span class="level-name">${dash.level.name}</span> · ${dash.points} points</p>
+    <span class="bar bar-level" role="progressbar" aria-label="Progress to ${dash.level.next ? dash.level.next.name : 'the top level'}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${levelPct}"><span style="width:${levelPct}%"></span></span>
+    <p class="level-next">${dash.level.next ? `${dash.level.toNext} points to ${dash.level.next.name}` : 'Top level reached!'}</p>
+  </div>
+  <div class="spread-page spread-right">
+    <p class="eyebrow">Latest stamps</p>
+    <ul class="spread-stamps">
+      ${dash.recent.map((s, i) => spreadStamp(s, theme, i))}
+      ${Array.from({ length: slots }, (_, i) => html`<li class="spread-stamp is-empty" aria-hidden="true"><span class="spread-seal"></span><span class="spread-name">${i === 0 && !dash.recent.length ? 'Your first stamp goes here' : ''}</span></li>`)}
+    </ul>
+    <p><a href="/passport">Open your passport ${ICONS.arrow}</a></p>
+  </div>
+</section>
+
+${dash.nearby.length ? html`<section class="home-near" aria-labelledby="near-h">
+  <div class="section-head"><div><h2 id="near-h">Closest new parks</h2>
+    <p class="muted">${dash.nearFromYou ? 'From where you are now' : dash.stamped ? 'Near your last stamp' : 'Around downtown'}</p></div>
+    <div class="actions"><button type="button" class="btn btn-small js-only" id="home-locate">${ICONS.pin}Use my location</button>
+    <a class="btn btn-small btn-quiet" href="/parks?unvisited=1">See all</a></div></div>
+  <p id="home-locate-status" class="notice" role="status" aria-live="polite"></p>
+  <ul class="park-list strip">${dash.nearby.map((p, i) => postcard(p, i, { theme, stamped: dash.stampedSet, stampDates: null, near: dash.nearFromYou ? dash.anchor : null, selected: [], extras: dash.extras }))}</ul>
+</section>` : ''}
+
+<div class="home-cards">
+  ${punchCard(dash.punches, dash.streak)}
+  ${weekCard(dash.week)}
+  ${progressCard(dash.almost, dash.nextBadge)}
 </div>
-${nextUpCards(dash.next)}
-${loreOfTheDay(theme, today)}`;
+
+<div class="home-pair">
+  <section class="home-card your-city" aria-labelledby="city-h">
+    <h2 id="city-h">Your ${theme.key !== 'default' ? theme.name.replace('St. Petersburg', 'St. Pete') : 'city'}</h2>
+    ${constellation(dash.dots, theme.areas)}
+    <p class="muted"><span class="legend-dot stamped" aria-hidden="true"></span> stamped <span class="legend-dot next" aria-hidden="true"></span> closest new <span class="legend-dot" aria-hidden="true"></span> to find</p>
+  </section>
+  ${palsCard(dash.pals)}
+</div>
+</div>`;
 }
 
 export function homePage({ total, theme, user = null, dash = null, today = '' }) {
   return {
     title: null,
+    scripts: user && dash ? ['/js/home.js'] : [],
     body: user && dash ? dashboard({ user, total, theme, dash, today }) : landing({ total, theme }),
   };
 }

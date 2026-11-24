@@ -1038,3 +1038,128 @@ html:not(.js) .js-only { display: none !important; }
 .week-goal progress::-moz-progress-bar { background: var(--aqua); border-radius: 999px; }
 .act-note { margin: -0.25rem 0 0.5rem; }
 .week-extra { margin: 0.75rem 0 0.25rem; font-weight: 700; }
+
+/* ---------- Signed-in home: Gary's briefing, passport spread, nearby strip, progress ---------- */
+.home { display: grid; gap: 1.75rem; }
+.home h2 { margin: 0 0 0.6rem; }
+.gary-brief {
+  position: relative; display: grid; grid-template-columns: 88px 1fr; align-items: end; gap: 0.75rem;
+  padding: 1rem 1rem 0; border-radius: 18px; overflow: hidden; isolation: isolate;
+  background-color: var(--sun-tint);
+  background-image: radial-gradient(rgba(214, 150, 0, 0.22) 1.1px, transparent 1.3px), radial-gradient(rgba(214, 150, 0, 0.22) 1.1px, transparent 1.3px);
+  background-size: 8px 8px; background-position: 0 0, 4px 4px; border: 1px solid #f1d58a;
+}
+.gary-brief .gary-art { width: 100%; align-self: end; margin-bottom: -4px; }
+.gary-brief .gary-bubble { align-self: center; margin-bottom: 1rem; max-width: 44rem; padding: 1rem 1.15rem; border-radius: 14px; }
+.gary-brief .gary-bubble::before { left: -8px; top: auto; bottom: 26px; margin: 0; }
+.gary-brief h1 { margin: 0.15rem 0 0.35rem; font-size: clamp(1.8rem, 5vw, 2.6rem); }
+.gary-says { margin: 0 0 0.85rem; font-size: 1.08rem; line-height: 1.5; }
+.gary-says::before { content: "“"; font: italic 700 1.6rem/0 var(--serif-accent); color: var(--pink); vertical-align: -0.35em; margin-right: 0.15rem; }
+@media (min-width: 768px) {
+  .gary-brief { grid-template-columns: 170px 1fr; gap: 1.5rem; padding: 1.5rem 2rem 0; }
+  .gary-brief .gary-bubble { margin-bottom: 1.5rem; padding: 1.25rem 1.5rem; }
+}
+
+/* The passport spread: two ruled pages with a gutter. */
+.spread {
+  display: grid; background: #fffdf8; border: 1px solid #e4d9c3; border-radius: 10px; overflow: hidden;
+  box-shadow: 0 1px 0 #e4d9c3, 0 18px 30px -24px rgba(14, 42, 51, 0.5);
+}
+.spread-page {
+  padding: 1.1rem 1.25rem 1.25rem;
+  background-image: repeating-linear-gradient(180deg, transparent 0 29px, rgba(205, 191, 165, 0.28) 29px 30px);
+}
+.spread-page p { margin: 0.25rem 0; }
+.spread-left { display: grid; gap: 0.15rem; align-content: start; }
+.spread-left .level-name { color: var(--pink-ink); }
+.spread-left .level-next { color: var(--muted); }
+.spread-left .bar-level { background: var(--sand-2); }
+.spread-ring { display: flex; justify-content: center; margin: 0.4rem 0; }
+.spread-ring .ring { --track: var(--sand-2); --fill: var(--aqua); --ring-hole: #fffdf8; color: var(--ink); }
+.spread-right { border-top: 1px dashed #d8cbb1; }
+@media (min-width: 768px) {
+  .spread { grid-template-columns: 1fr 1fr; }
+  .spread-right { border-top: 0; box-shadow: inset 14px 0 18px -14px rgba(14, 42, 51, 0.22); }
+  .spread-left { box-shadow: inset -14px 0 18px -14px rgba(14, 42, 51, 0.22); }
+}
+.spread-stamps { list-style: none; padding: 0; margin: 0.5rem 0 0.75rem; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem 0.5rem; }
+.spread-stamp a, .spread-stamp.is-empty { display: grid; justify-items: center; gap: 0.3rem; text-decoration: none; color: var(--ink); text-align: center; }
+.spread-seal {
+  position: relative; display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%;
+  border: 3px double var(--pink); color: var(--ink); background: rgba(255, 239, 244, 0.7); transform: rotate(-8deg);
+  animation: stamp-slam 0.55s var(--ease-spring) both; animation-delay: calc(var(--i, 0) * 90ms + 0.15s);
+}
+.spread-stamp:nth-child(2) .spread-seal { transform: rotate(7deg); border-color: var(--aqua); background: rgba(233, 248, 246, 0.8); }
+.spread-stamp:nth-child(3) .spread-seal { transform: rotate(-3deg); border-color: var(--violet); background: rgba(239, 237, 255, 0.8); }
+.spread-stamp:nth-child(4) .spread-seal { transform: rotate(11deg); }
+.spread-seal .motif { width: 34px; height: 34px; margin-top: -10px; }
+.spread-date { position: absolute; bottom: 12px; font: 800 0.62rem var(--sans); letter-spacing: 0.08em; color: var(--pink-ink); }
+.spread-name { font: 700 0.82rem/1.2 var(--sans); max-width: 9rem; }
+.spread-stamp a:hover .spread-name { text-decoration: underline; }
+.spread-stamp.is-empty .spread-seal { border: 2px dashed #cdbfa5; background: transparent; animation: none; }
+.spread-stamp.is-empty .spread-name { color: var(--muted); font-weight: 500; font-style: italic; font-family: var(--serif-accent); }
+
+/* Nearby postcards as a swipeable strip. */
+.section-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+.section-head h2 { margin: 0; }
+.section-head p { margin: 0.1rem 0 0; }
+.section-head .actions svg { width: 16px; height: 16px; color: var(--pink-ink); }
+.park-list.strip {
+  display: flex; gap: 1rem; overflow-x: auto; scroll-snap-type: x proximity; padding: 0.5rem 0.25rem 1.25rem;
+  margin: 0 -0.25rem; scrollbar-width: thin;
+}
+.park-list.strip > .postcard { flex: 0 0 min(17.5rem, 82vw); scroll-snap-align: start; }
+
+/* Progress cards. */
+.home-cards { display: grid; gap: 1rem; }
+@media (min-width: 900px) { .home-cards { grid-template-columns: repeat(3, 1fr); } }
+.home-card {
+  position: relative; background: #fffdf8; border: 1px solid #e4d9c3; border-radius: 8px; padding: 1rem 1.15rem 1.1rem;
+  box-shadow: 0 1px 0 #e4d9c3, 0 12px 22px -20px rgba(14, 42, 51, 0.45);
+}
+.home-card h2 { font-size: 0.8rem; font-family: var(--sans); font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.home-card p { margin: 0.35rem 0; }
+/* The streak card is a ticket: notches on both sides, punched weeks. */
+.punch::before, .punch::after {
+  content: ""; position: absolute; top: 50%; width: 18px; height: 18px; margin-top: -9px; border-radius: 50%;
+  background: var(--sand); border: 1px solid #e4d9c3;
+}
+.punch::before { left: -10px; clip-path: inset(0 0 0 50%); }
+.punch::after { right: -10px; clip-path: inset(0 50% 0 0); }
+.punch-title { font: 800 1.35rem/1.2 var(--display); margin: 0 0 0.6rem !important; }
+.punches { list-style: none; display: flex; gap: 0.35rem; padding: 0; margin: 0 0 0.6rem; flex-wrap: wrap; }
+.punches li {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 2px dashed #cdbfa5;
+  font-weight: 800; font-size: 0.8rem; color: #fff;
+}
+.punches li.on { background: var(--pink); border: 2px solid var(--pink); color: var(--ink); }
+.punches li.current { outline: 2px solid var(--ink); outline-offset: 2px; }
+.goal p { display: flex; align-items: baseline; gap: 0.3rem; margin: 0.5rem 0 0.3rem; }
+.goal strong { font: 800 1.35rem var(--display); }
+.almost-list { list-style: none; padding: 0; margin: 0 0 0.75rem; display: grid; gap: 0.6rem; }
+.almost-list li { display: flex; align-items: center; gap: 0.75rem; line-height: 1.25; }
+.almost-badge { display: flex; align-items: center; gap: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed #e4d9c3; text-decoration: none; color: var(--ink); line-height: 1.25; }
+.almost-badge:hover strong { text-decoration: underline; }
+.almost-art { font-size: 1.9rem; }
+
+.home-pair { display: grid; gap: 1rem; }
+@media (min-width: 900px) { .home-pair { grid-template-columns: 1.15fr 1fr; align-items: start; } }
+.constellation {
+  display: block; border-radius: 6px; margin: 0.25rem 0 0.5rem; padding: 0.5rem;
+  background-color: #eef7f5;
+  background-image: radial-gradient(rgba(0, 117, 108, 0.12) 1px, transparent 1.2px); background-size: 10px 10px;
+}
+.constellation svg { display: block; width: 100%; height: auto; max-height: 420px; }
+.c-area { font: italic 9px var(--serif-accent); fill: var(--muted); opacity: 0.85; }
+.c-dot { fill: #9fb1ae; }
+.c-dot.is-next { fill: var(--aqua-ink); stroke: #fff; stroke-width: 1.5; }
+.c-stamp circle { fill: var(--pink); stroke: #fff; stroke-width: 1.5; }
+.c-stamp path { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #9fb1ae; margin: 0 0.15rem 0 0.6rem; vertical-align: middle; }
+.legend-dot:first-child { margin-left: 0; }
+.legend-dot.stamped { background: var(--pink); }
+.legend-dot.next { background: var(--aqua-ink); }
+.pals-mini .feed-item { padding: 0.5rem 0; }
+.home > *, .home-cards > *, .home-pair > * { min-width: 0; } /* the postcard strip scrolls inside its column */
+.home .btn svg, .spread-right > p a svg { width: 18px; height: 18px; flex: none; vertical-align: -0.2em; }
+.spread-right > p a { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 700; }
