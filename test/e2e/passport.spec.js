@@ -35,7 +35,9 @@ test('stamping announces the badge once and fills in the passport', async ({ pag
   await page.reload();
   await expect(page.locator('.announcements')).toHaveCount(0);
 
-  await honorStamp(page, 'crescent-lake-park');
+  // Backdated, so it has no real time of day and can never earn a time_of_day badge (Early Bird,
+  // Golden Hour), whenever the test runs. A Monday, so it doesn't pair with the Saturday above.
+  await honorStamp(page, 'crescent-lake-park', '2026-03-16');
   await page.goto('/passport');
   await expect(page.locator('.passport-count')).toHaveText('2 of 102 parks stamped');
   await expect(page.locator('.points')).toHaveText('20 points');
@@ -56,11 +58,14 @@ test('stamping announces the badge once and fills in the passport', async ({ pag
   const first = page.locator('.badge.earned', { hasText: 'First Stamp' });
   await expect(first).toContainText(/Earned \w+ \d+, \d{4}/);
   await expect(page.locator('.badge.known', { hasText: 'Five Parks' })).toContainText('2 / 5 parks');
-  // Weekend Warrior needs 3 parks in one weekend, which this test never does. (Early Bird was used
-  // here before, but a stamp made between 5:00 and 7:30 am New York time really earns it.)
+  // Weekend Warrior needs 3 parks in one weekend, which this test never does.
   const hidden = page.locator('.badge.mystery', { hasText: 'Make a weekend of it.' });
   await expect(hidden).toContainText('Hidden badge');
   await expect(hidden).not.toContainText('Weekend Warrior');
+  // Both stamps are backdated, so Early Bird stays hidden at any hour.
+  const early = page.locator('.badge.mystery', { hasText: 'Some parks are best before breakfast.' });
+  await expect(early).toContainText('Hidden badge');
+  await expect(early).not.toContainText('Early Bird');
 
   // History: newest first, with date, park and method.
   const rows = page.locator('.history li');
