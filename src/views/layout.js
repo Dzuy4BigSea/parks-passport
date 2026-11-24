@@ -136,7 +136,8 @@ ${showConsentBanner ? consentBanner(csrf, path) : ''}
     ${city ? html`<p class="footer-city">Made for ${theme.tagline ? `the ${theme.tagline}` : city}.</p>` : ''}
     <p>An independent project. Not affiliated with the City of St. Petersburg.</p>
     <p><a href="/privacy">Privacy</a>${analytics?.gtmId ? html` · <a href="/consent?back=${encodeURIComponent(path)}" id="cookie-settings">Cookie settings</a>` : ''}</p>
-    <p class="credit">© ${new Date().getFullYear()} Parks Passport · Purpose built by <a class="bigsea" href="https://bigsea.co" rel="noopener" aria-label="Big Sea">big sea</a></p>
+    <p class="credit"><span>© ${new Date().getFullYear()} Parks Passport</span>
+      <a class="bigsea" href="https://bigsea.co" rel="noopener" title="Purpose built by Big Sea"><span>Purpose built by</span><img src="/brand/bigsea-logo.svg" alt="Big Sea" width="54" height="15"></a></p>
   </div>
 </footer>
 ${user ? tabBar(current) : ''}
