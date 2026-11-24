@@ -57,10 +57,12 @@ test('the magic-link email sent by the app is the branded one', async () => {
 
 test('email and site footers carry the copyright and the Big Sea credit', async () => {
   const m = testEmail({ baseUrl: BASE, fromName: 'P', fromAddress: 'p@parks.example', tagline: '' });
-  assert.match(m.html, /&copy; \d{4} Parks Passport &middot; Purpose built by <a href="https:\/\/bigsea\.co"/);
+  assert.match(m.html, /&copy; \d{4} Parks Passport &middot; <a href="https:\/\/bigsea\.co"[^>]*>Purpose built by&nbsp;<img src="https:\/\/parks\.example\/brand\/bigsea-logo\.png"[^>]*alt="Big Sea"/);
   const { app } = makeApp();
   const home = (await client(app).get('/')).body;
-  assert.match(home, /© \d{4} Parks Passport · Purpose built by <a class="bigsea" href="https:\/\/bigsea\.co"/);
+  assert.match(home, /© \d{4} Parks Passport<\/span>/);
+  assert.match(home, /<a class="bigsea" href="https:\/\/bigsea\.co"[^>]*><span>Purpose built by<\/span><img src="\/brand\/bigsea-logo\.svg" alt="Big Sea"/);
+  assert.equal((await client(app).get('/brand/bigsea-logo.png')).statusCode, 200);
 });
 
 test('production pins the public address, so email links and the logo never point at localhost', async () => {
