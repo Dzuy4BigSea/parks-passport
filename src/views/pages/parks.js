@@ -1,6 +1,6 @@
 import { html } from '../html.js';
 import { categoryLabel } from '../../domain/categories.js';
-import { formatMiles } from '../../domain/geo.js';
+import { formatMiles, travelTime } from '../../domain/geo.js';
 import { motifForPark, areaForPark } from '../../domain/city.js';
 import { motifIcon } from '../motif.js';
 import { ICONS } from '../icons.js';
@@ -13,12 +13,7 @@ import { ICONS } from '../icons.js';
 const INKS = ['aqua', 'pink', 'sun', 'violet'];
 const inkFor = (slug) => INKS[[...slug].reduce((n, c) => (n * 31 + c.charCodeAt(0)) >>> 0, 7) % INKS.length];
 
-// Walking under ~30 minutes, otherwise a rough drive time (city streets).
-export function travelTime(meters) {
-  const walk = Math.max(1, Math.round(meters / 80));
-  if (walk <= 30) return `${walk} min walk`;
-  return `${Math.max(2, Math.round(meters / 450))} min drive`;
-}
+
 
 const shortDate = (ymd) => {
   const [y, m, d] = ymd.split('-').map(Number);
@@ -41,7 +36,7 @@ function tags(categories, selected) {
   return html`<ul class="chips tags" aria-label="Amenities">${sorted.map((c, i) => html`<li${i >= 3 ? html` class="visually-hidden"` : ''}>${categoryLabel(c)}</li>`)}${extra > 0 ? html`<li class="more" aria-hidden="true">+${extra}</li>` : ''}</ul>`;
 }
 
-function postcard(p, i, { theme, stamped, stampDates, near, selected, extras }) {
+export function postcard(p, i, { theme, stamped, stampDates, near, selected, extras }) {
   const isStamped = stamped?.has(p.id);
   const area = areaForPark(theme, p);
   const motif = motifForPark(theme, p.slug);

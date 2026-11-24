@@ -22,3 +22,10 @@ export function parseLatLng(lat, lng) {
   if (!Number.isFinite(a) || !Number.isFinite(b) || Math.abs(a) > 90 || Math.abs(b) > 180) return null;
   return { lat: a, lng: b };
 }
+
+// Walking under ~30 minutes (80 m a minute), otherwise a rough city drive time.
+export function travelTime(meters) {
+  const walk = Math.max(1, Math.round(meters / 80));
+  if (walk <= 30) return `${walk} min walk`;
+  return `${Math.max(2, Math.round(meters / 450))} min drive`;
+}

@@ -12,15 +12,17 @@ import { layout } from './views/layout.js';
 import { homePage, privacyPage, creditsPage } from './views/pages/static.js';
 import { photoCredits } from './domain/city-photos.js';
 import { countActiveParks } from './domain/parks.js';
-import { takeUnseenBadges, badgeBoard } from './domain/badges/index.js';
+import { takeUnseenBadges } from './domain/badges/index.js';
 import { emailSettings } from './domain/settings.js';
 import { buildEvent, queueEvent, takeEvents, parseConsent, CONSENT_COOKIE } from './lib/analytics.js';
 import consentRoutes from './routes/consent.js';
 import { totalPoints } from './domain/points.js';
 import { levelFor } from './domain/levels.js';
 import { getTheme } from './domain/city.js';
-import { weeklyStreak, visitDates, nextUp } from './domain/engagement.js';
-import { stampedParkIds } from './domain/visits.js';
+import { weeklyStreak, visitDates } from './domain/engagement.js';
+import { homeData } from './domain/home.js';
+import { garyTip } from './views/gary.js';
+import { parseLatLng } from './domain/geo.js';
 import { localDate } from './domain/time.js';
 import { authPlugin } from './lib/auth.js';
 import parkRoutes from './routes/parks.js';
@@ -156,11 +158,9 @@ export function buildApp({
     const user = req.user;
     let dash = null;
     if (user) {
-      const points = totalPoints(db, user.id);
-      dash = {
-        stamped: stampedParkIds(db, user.id).size, points, level: levelFor(points),
-        next: nextUp(db, user.id, badgeBoard(db, user.id), { now: now() }),
-      };
+      // ?lat&lng comes from "Use my location"; it's used for this page only, never stored.
+      dash = homeData(db, user, getTheme(db), { now: now(), near: parseLatLng(req.query.lat, req.query.lng) });
+      dash.tip = garyTip(dash.tipInput);
     }
     return reply.page(homePage({ total, theme: getTheme(db), user, dash, today: localDate(now()) }));
   });

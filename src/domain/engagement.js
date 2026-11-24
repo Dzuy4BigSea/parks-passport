@@ -59,3 +59,17 @@ export function nextUp(db, userId, board, { now = new Date() } = {}) {
     nextBadge: closestBadge(board),
   };
 }
+
+/**
+ * The last `n` Monday-start weeks, oldest first, each { label: 'Nov 17', on } where `on` means
+ * at least one stamp that week. Drives the streak punch card.
+ */
+export function weekPunches(dates, today, n = 8) {
+  const weeks = new Set(dates.map((d) => mondayOf(dayNumber(d))));
+  const thisWeek = mondayOf(dayNumber(today));
+  const fmt = (day) => new Date(day * 86400000).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+  return Array.from({ length: n }, (_, i) => {
+    const day = thisWeek - (n - 1 - i) * 7;
+    return { label: fmt(day), on: weeks.has(day), current: day === thisWeek };
+  });
+}

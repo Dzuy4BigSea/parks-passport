@@ -30,7 +30,8 @@ test.describe('on a phone at a park', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hi, Sam');
     await expect(page.locator('.passport-count')).toHaveText('1 of 102 parks stamped');
     await expect(page.getByText('1 week in a row').first()).toBeVisible();
-    await expect(page.locator('.nextup')).toContainText('Closest new park');
+    await expect(page.locator('.home-near')).toContainText('Closest new parks');
+    await expect(page.locator('.gary-says')).toContainText('Crescent Lake Park'); // stamped today
     await expectNoAxeViolations(page);
 
     // The passport groups stamps into neighborhood collections.

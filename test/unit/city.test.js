@@ -342,3 +342,36 @@ test('city photos: St. Pete pages get the background photos and a credits page; 
   assert.equal((await client(bare).get('/credits')).statusCode, 404);
   assert.doesNotMatch((await client(bare).get('/')).body, /--photo-hero/);
 });
+
+test('Gary picks the most useful tip, in order, and is honest about distances', async () => {
+  const { garyTip } = await import('../../src/views/gary.js');
+  const nearest = { slug: 'pioneer-park', name: 'Pioneer Park', where: 'right downtown' };
+  const streak = { weeks: 0, activeThisWeek: false, atRisk: false };
+  assert.match(garyTip({ stamped: 2, stampedToday: { slug: 'x', name: 'Vinoy Park' }, streak, nearest }).text, /Nice work at Vinoy Park today/);
+  const first = garyTip({ stamped: 0, streak, nearest });
+  assert.match(first.text, /first stamp\. Pioneer Park is right downtown/);
+  assert.equal(first.action.href, '/parks/pioneer-park');
+  assert.match(garyTip({ stamped: 3, streak: { weeks: 3, activeThisWeek: false, atRisk: true }, nearest }).text, /3 weeks streak going/);
+  assert.match(garyTip({ stamped: 5, streak, almost: { name: 'Downtown', stamped: 22, total: 24 }, nearest }).text, /Only 2 parks left to finish Downtown/);
+  assert.match(garyTip({ stamped: 4, streak, nextBadge: { name: 'Five Parks', remaining: 1 }, nearest }).text, /One more and Five Parks is yours/);
+  assert.match(garyTip({ stamped: 4, streak, lore: { blurb: 'Pelicans dive.' }, nearest }).text, /Here's one I love: Pelicans dive\./);
+});
+
+test('home: "Use my location" measures closest parks from you, with walk times; punch card shows 8 weeks', async () => {
+  const { weekPunches } = await import('../../src/domain/engagement.js');
+  const punches = weekPunches(['2026-06-01', '2026-05-20'], '2026-06-03', 8);
+  assert.equal(punches.length, 8);
+  assert.deepEqual(punches.filter((w) => w.on).map((w) => w.label), ['May 18', 'Jun 1']);
+  assert.ok(punches.at(-1).current);
+
+  const { app } = cityApp({ now: testClock('2026-06-01T16:00:00Z') });
+  const sam = await member(app);
+  const plain = (await sam.get('/')).body;
+  assert.match(plain, /Around downtown/);
+  assert.match(plain, /is right downtown/);
+  const located = (await sam.get('/?lat=27.7880&lng=-82.6401')).body;
+  assert.match(located, /From where you are now/);
+  assert.match(located, /\d+ min walk/);
+  assert.match(located, /class="constellation"/);
+  assert.match(located, /Your first stamp goes here/);
+});
