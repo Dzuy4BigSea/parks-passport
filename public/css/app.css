@@ -285,7 +285,7 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; 
   display: grid; justify-items: center; gap: 0.5rem; margin-top: 1.5rem; padding: 1.25rem 1.25rem 1.5rem;
   background: var(--sun-tint); border-radius: 28px; box-shadow: var(--shadow);
 }
-.gary-art { width: 180px; height: auto; display: block; }
+.gary-art { width: 210px; height: auto; display: block; }
 .gary-bubble {
   position: relative; background: var(--surface); border-radius: var(--radius); padding: 1.1rem 1.25rem;
   box-shadow: var(--shadow); max-width: 36rem;
@@ -298,7 +298,7 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; 
 .gary-bubble p:last-child { margin-bottom: 0; }
 @media (min-width: 768px) {
   .meet-gary { grid-template-columns: auto 1fr; justify-items: start; align-items: center; gap: 1.5rem; padding: 1.5rem 2.5rem; }
-  .gary-art { width: 220px; }
+  .gary-art { width: 256px; }
   .gary-bubble::before { left: -9px; top: 50%; margin: -9px 0 0; }
 }
 

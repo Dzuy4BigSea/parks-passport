@@ -40,7 +40,7 @@ function landing({ total, theme }) {
 </section>
 
 <section class="meet-gary" aria-labelledby="gary-h">
-  <img class="gary-art" src="/brand/gary.svg" alt="Gary, waving hello in his rope hat" width="240" height="280">
+  <img class="gary-art" src="/brand/gary.svg" alt="Gary, waving hello in his rope hat" width="280" height="280">
   <div class="gary-bubble">
     <p class="eyebrow">Meet your guide</p>
     <h2 id="gary-h">Hey, I'm Gary. Glad you're here.</h2>
