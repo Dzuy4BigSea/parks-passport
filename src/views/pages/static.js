@@ -39,6 +39,16 @@ function landing({ total, theme }) {
   ${theme.motifs.length ? html`<div class="hero-motifs" aria-hidden="true">${tiles(theme.motifs.slice(0, 6))}</div>` : ''}
 </section>
 
+<section class="meet-gary" aria-labelledby="gary-h">
+  <img class="gary-art" src="/brand/gary.svg" alt="Gary, waving hello in his rope hat" width="240" height="280">
+  <div class="gary-bubble">
+    <p class="eyebrow">Meet your guide</p>
+    <h2 id="gary-h">Hey, I'm Gary. Glad you're here.</h2>
+    <p>I've been wandering St. Pete parks for years and I still find something new on most visits, like a heron fishing off a seawall or a shady bench I'd walked past a hundred times.</p>
+    <p>Start with the park closest to you. Your first stamp counts as much as your fiftieth, and I'll be cheering for every one.</p>
+  </div>
+</section>
+
 <section aria-labelledby="how-h">
   <h2 id="how-h">How it works</h2>
   <ol class="steps">

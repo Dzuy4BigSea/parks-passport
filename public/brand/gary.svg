@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 280" width="240" height="280" role="img" aria-labelledby="gary-title">
+  <title id="gary-title">Gary, waving hello in his rope hat</title>
+  <!-- Gary, the Parks Passport guide. Self-contained so it works inline, as an <img>, or exported.
+       Idle bob, a blink, a wave and lifted brows. Motion stops under prefers-reduced-motion. -->
+  <style>
+    .gary { animation: bob 4s ease-in-out infinite; }
+    .eyes { transform-box: fill-box; transform-origin: center; animation: blink 5s infinite; }
+    .brows { animation: brows 6s ease-in-out infinite; }
+    .forearm { transform-origin: 196px 186px; animation: wave 6s ease-in-out infinite; }
+    .hat { transform-box: view-box; transform-origin: 120px 96px; animation: tip 6s ease-in-out infinite; }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+    @keyframes brows { 0%, 45%, 100% { transform: translateY(0); } 8%, 35% { transform: translateY(-3px); } }
+    @keyframes wave {
+      0%, 48%, 100% { transform: rotate(0); }
+      8% { transform: rotate(16deg); } 16% { transform: rotate(-8deg); }
+      24% { transform: rotate(16deg); } 32% { transform: rotate(-8deg); } 40% { transform: rotate(6deg); }
+    }
+    @keyframes tip { 0%, 50%, 100% { transform: rotate(-4deg); } 10%, 38% { transform: rotate(-7deg) translateY(-2px); } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+  <defs>
+    <clipPath id="gary-mouth"><path d="M103 141 Q120 163 137 141 Q120 147 103 141 Z"/></clipPath>
+  </defs>
+  <g class="gary">
+    <!-- Body: open camp shirt over a white tee -->
+    <path d="M30 280 Q32 206 90 186 L150 186 Q208 206 210 280 Z" fill="#00b3a4"/>
+    <path d="M102 186 L120 222 L138 186 Z" fill="#fffaf0"/>
+    <path d="M102 186 L92 192 L108 214 L120 222 Z" fill="#00756c"/>
+    <path d="M138 186 L148 192 L132 214 L120 222 Z" fill="#00756c"/>
+    <path d="M120 222 L120 280" stroke="#00756c" stroke-width="2"/>
+    <circle cx="124" cy="240" r="2.5" fill="#fffaf0"/>
+    <circle cx="124" cy="262" r="2.5" fill="#fffaf0"/>
+    <!-- Pocket with a pencil, and a passport stamp pin -->
+    <rect x="74" y="222" width="28" height="26" rx="4" fill="#00756c" opacity="0.55"/>
+    <rect x="80" y="210" width="5" height="18" rx="1.5" fill="#ffc83d"/>
+    <path d="M80 210 L82.5 204 L85 210 Z" fill="#0e2a33"/>
+    <circle cx="156" cy="226" r="10" fill="#ff4d88"/>
+    <circle cx="156" cy="226" r="6.5" fill="none" stroke="#fffaf0" stroke-width="1.6" stroke-dasharray="2 2"/>
+    <!-- Resting arm (viewer's left) -->
+    <path d="M44 214 Q30 240 34 280 L58 280 Q56 246 66 226 Z" fill="#00a396"/>
+
+    <!-- Waving arm: sleeve, then forearm and hand pivoting at the elbow -->
+    <path d="M168 196 Q192 196 204 192 L196 172 Q182 180 162 186 Z" fill="#00a396"/>
+    <g class="forearm">
+      <path d="M196 186 L214 120" stroke="#e0a878" stroke-width="17" stroke-linecap="round"/>
+      <ellipse cx="216" cy="108" rx="13" ry="15" fill="#e0a878"/>
+      <ellipse cx="202" cy="114" rx="5" ry="8" transform="rotate(-35 202 114)" fill="#e0a878"/>
+      <path d="M208 96 L208 86 M215 94 L215 82 M222 95 L222 84 M228 99 L228 91" stroke="#e0a878" stroke-width="6" stroke-linecap="round"/>
+      <path d="M196 186 L200 172" stroke="#00a396" stroke-width="20" stroke-linecap="round"/>
+    </g>
+
+    <!-- Neck and head -->
+    <rect x="106" y="156" width="28" height="32" rx="10" fill="#c98d5e"/>
+    <circle cx="74" cy="118" r="9" fill="#d69a69"/>
+    <circle cx="166" cy="118" r="9" fill="#d69a69"/>
+    <ellipse cx="120" cy="114" rx="46" ry="52" fill="#e0a878"/>
+    <!-- Hair at the sides, and stubble -->
+    <path d="M74 94 Q72 116 80 126 L84 100 Z" fill="#4a3020"/>
+    <path d="M166 94 Q168 116 160 126 L156 100 Z" fill="#4a3020"/>
+    <path d="M78 124 Q82 168 120 170 Q158 168 162 124 Q154 160 120 162 Q86 160 78 124 Z" fill="#4a3020" opacity="0.28"/>
+    <!-- Cheeks -->
+    <circle cx="93" cy="138" r="8" fill="#ff4d88" opacity="0.22"/>
+    <circle cx="147" cy="138" r="8" fill="#ff4d88" opacity="0.22"/>
+    <!-- Brows, lifted in wonder -->
+    <g class="brows" fill="none" stroke="#4a3020" stroke-width="4" stroke-linecap="round">
+      <path d="M92 103 Q101 96 111 101"/>
+      <path d="M129 101 Q139 96 148 103"/>
+    </g>
+    <!-- Eyes -->
+    <g class="eyes">
+      <ellipse cx="102" cy="118" rx="7" ry="8" fill="#fffaf0"/>
+      <ellipse cx="138" cy="118" rx="7" ry="8" fill="#fffaf0"/>
+      <circle cx="103" cy="119" r="4.6" fill="#2b1a12"/>
+      <circle cx="139" cy="119" r="4.6" fill="#2b1a12"/>
+      <circle cx="104.6" cy="117.2" r="1.6" fill="#fff"/>
+      <circle cx="140.6" cy="117.2" r="1.6" fill="#fff"/>
+    </g>
+    <!-- Nose and an easy, open smile -->
+    <path d="M121 121 Q115 133 122 134" fill="none" stroke="#b77a4c" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M103 141 Q120 163 137 141 Q120 147 103 141 Z" fill="#7a2e2e"/>
+    <g clip-path="url(#gary-mouth)">
+      <rect x="100" y="138" width="40" height="9" fill="#fffaf0"/>
+      <ellipse cx="120" cy="157" rx="9" ry="5" fill="#e2626b"/>
+    </g>
+
+    <!-- Rope hat: structured five-panel crown, curved brim, rope across the front of the brim -->
+    <g class="hat">
+      <path d="M70 96 C68 48 172 48 170 96 Z" fill="#d9c49b"/>
+      <path d="M100 58 Q96 76 96 94 M140 58 Q144 76 144 94" fill="none" stroke="#b9a378" stroke-width="2"/>
+      <circle cx="120" cy="53" r="4" fill="#b9a378"/>
+      <rect x="104" y="68" width="32" height="20" rx="5" fill="#0e2a33"/>
+      <circle cx="120" cy="80" r="5" fill="#ffc83d"/>
+      <path d="M108 83 Q114 80 120 83 T132 83" fill="none" stroke="#00b3a4" stroke-width="2"/>
+      <path d="M60 96 Q120 82 180 96 Q184 108 172 110 Q120 98 68 110 Q56 108 60 96 Z" fill="#c8b285"/>
+      <path d="M66 98 Q120 85 174 98" fill="none" stroke="#ff4d88" stroke-width="5" stroke-linecap="round"/>
+      <path d="M66 98 Q120 85 174 98" fill="none" stroke="#fffaf0" stroke-width="5" stroke-dasharray="2 4" opacity="0.7"/>
+    </g>
+  </g>
+</svg>
