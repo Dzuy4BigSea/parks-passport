@@ -3,6 +3,7 @@ import { inlineJson } from '../lib/analytics.js';
 import { badgeArt } from './badge-art.js';
 import { ICONS, BRAND_MARK } from './icons.js';
 import { motifIcon } from './motif.js';
+import { photosFor } from '../domain/city-photos.js';
 
 /**
  * Page shell. `head` adds per-page tags (e.g. Leaflet CSS); `scripts` are module URLs loaded with defer.
@@ -90,8 +91,11 @@ export function layout({ title, body, head = null, scripts = [], current = '', u
       ...(user.is_admin ? [['/admin', 'Admin', 'admin']] : [])]
     : [['/parks', 'Parks', 'parks'], ['/login', 'Log in', 'login']];
   const city = theme?.name && theme.key !== 'default' ? theme.name : null;
+  // City accent colors and background photos (paths come from our own registry, never input).
+  const photos = theme ? photosFor(theme.key) : null;
+  const photoVars = photos ? Object.entries(photos).map(([role, p]) => `--photo-${role}:url(${p.file});`).join('') : '';
   const accents = theme && HEX.test(theme.accent) && HEX.test(theme.accent_2)
-    ? html`<style>:root{--city-accent:${theme.accent};--city-accent-2:${theme.accent_2}}</style>` : '';
+    ? html`<style>:root{--city-accent:${theme.accent};--city-accent-2:${theme.accent_2};${raw(photoVars)}}</style>` : '';
   return html`<!doctype html>
 <html lang="en">
 <head>
@@ -135,7 +139,7 @@ ${showConsentBanner ? consentBanner(csrf, path) : ''}
     ${theme?.motifs?.length ? html`<div class="motif-strip" aria-hidden="true">${theme.motifs.map((m) => motifIcon(m))}</div>` : ''}
     ${city ? html`<p class="footer-city">Made for ${theme.tagline ? `the ${theme.tagline}` : city}.</p>` : ''}
     <p>An independent project. Not affiliated with the City of St. Petersburg.</p>
-    <p><a href="/privacy">Privacy</a>${analytics?.gtmId ? html` · <a href="/consent?back=${encodeURIComponent(path)}" id="cookie-settings">Cookie settings</a>` : ''}</p>
+    <p><a href="/privacy">Privacy</a>${photos ? html` · <a href="/credits">Photo credits</a>` : ''}${analytics?.gtmId ? html` · <a href="/consent?back=${encodeURIComponent(path)}" id="cookie-settings">Cookie settings</a>` : ''}</p>
     <p class="credit"><span>© ${new Date().getFullYear()} Parks Passport</span>
       <a class="bigsea" href="https://bigsea.co" rel="noopener" title="Purpose built by Big Sea"><span>Purpose built by</span><img src="/brand/bigsea-logo.svg" alt="Big Sea" width="54" height="15"></a></p>
   </div>

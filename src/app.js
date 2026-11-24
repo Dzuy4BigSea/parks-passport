@@ -9,7 +9,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { html } from './views/html.js';
 import { layout } from './views/layout.js';
-import { homePage, privacyPage } from './views/pages/static.js';
+import { homePage, privacyPage, creditsPage } from './views/pages/static.js';
+import { photoCredits } from './domain/city-photos.js';
 import { countActiveParks } from './domain/parks.js';
 import { takeUnseenBadges, badgeBoard } from './domain/badges/index.js';
 import { emailSettings } from './domain/settings.js';
@@ -163,6 +164,12 @@ export function buildApp({
     return reply.page(homePage({ total, theme: getTheme(db), user, dash, today: localDate(now()) }));
   });
   app.get('/privacy', async (req, reply) => reply.page(privacyPage()));
+  app.get('/credits', async (req, reply) => {
+    const theme = getTheme(db);
+    const credits = photoCredits(theme.key);
+    if (!credits.length) return reply.callNotFound();
+    return reply.page(creditsPage({ theme, credits }));
+  });
   app.register(parkRoutes);
   app.register(authRoutes);
   app.register(visitRoutes);

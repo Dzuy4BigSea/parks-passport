@@ -834,3 +834,41 @@ img.feed-icon { width: 2rem; height: 2rem; }
 @media (min-width: 1000px) { .email-editor { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } .email-preview { position: sticky; top: 5rem; } }
 .email-preview h2 { margin-top: 0; }
 .email-preview iframe { display: block; width: 100%; height: 640px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--sand); }
+
+/* ---------- City background photos ----------
+   Pre-treated grayscale WebPs (domain/city-photos.js), colored here with blend modes and faded
+   with masks so they add atmosphere without becoming content. Each sits on its own layer
+   (::after, z-index -1) under the text. Absent for cities without photos. */
+.hero::after, .park-header::after, .passport-cover::after, .stamp-result::after, .finder::before {
+  content: none; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-position: center; background-size: cover; background-repeat: no-repeat;
+}
+/* Light surfaces: multiply tints the photo with the brand gradients underneath. */
+.hero::after {
+  content: ""; background-image: var(--photo-hero, none); opacity: 0.15; mix-blend-mode: multiply;
+  -webkit-mask-image: linear-gradient(100deg, transparent 30%, #000 80%); mask-image: linear-gradient(100deg, transparent 30%, #000 80%);
+}
+@media (max-width: 767px) {
+  .hero::after { opacity: 0.12; -webkit-mask-image: linear-gradient(180deg, transparent 35%, #000 95%); mask-image: linear-gradient(180deg, transparent 35%, #000 95%); }
+}
+.park-header::after {
+  content: ""; background-image: var(--photo-card, none); background-position: center 30%; opacity: 0.16; mix-blend-mode: multiply;
+  -webkit-mask-image: linear-gradient(90deg, transparent 35%, #000 100%); mask-image: linear-gradient(90deg, transparent 35%, #000 100%);
+}
+/* Dark surfaces: screen lifts the photo's light areas out of the ink. */
+.passport-cover::after {
+  content: ""; background-image: var(--photo-cover, none); opacity: 0.17; mix-blend-mode: screen;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.35) 100%); mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.35) 100%);
+}
+.dash-progress::after { background-image: var(--photo-card, none); background-position: center 35%; }
+.stamp-result::after { content: ""; background-image: var(--photo-texture, none); opacity: 0.16; mix-blend-mode: screen; }
+.finder { position: relative; isolation: isolate; }
+.finder::before {
+  content: ""; inset: 0 -1rem auto; height: 26rem; background-image: var(--photo-texture, none); opacity: 0.12; mix-blend-mode: multiply;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 35%, #000 20%, transparent 70%); mask-image: radial-gradient(ellipse at 50% 35%, #000 20%, transparent 70%);
+}
+.credits-list { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: 0.75rem; }
+.credits-list li { display: flex; gap: 1rem; align-items: flex-start; }
+.credits-list img { width: 120px; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: var(--radius-sm); flex: none; filter: sepia(0.2); }
+.credits-list h2 { margin: 0 0 0.25rem; font-size: 1.05rem; }
+.credits-list p { margin: 0 0 0.25rem; overflow-wrap: anywhere; }
