@@ -126,7 +126,7 @@ export function adminBadges({ badges }) {
 }
 
 const PARAM_LABELS = {
-  n: 'N (how many; weeks for the weekly rules)', category: 'Amenity', start: 'From (local time)', end: 'Until (local time)', probability: 'Chance per stamp (0–1)',
+  n: 'N (how many)', category: 'Amenity', start: 'From (local time)', end: 'Until (local time)', probability: 'Chance per stamp (0–1)',
   target: 'Which activities count', metric: 'Measure', total: 'Total (minutes or miles)', window_days: 'Within how many days (0 = all time)',
   per_week: 'Days per week',
 };
@@ -181,6 +181,7 @@ ${errorSummary(errors)}
         </div>`
       : html`<div class="param" data-param="${k}">${input(`param_${k}`, PARAM_LABELS[k], params[k], {
         type: k === 'start' || k === 'end' ? 'time' : 'number', error: errors[`param_${k}`],
+        hint: k === 'n' ? 'For the weekly rules, the number of weeks.' : undefined,
         attrs: k === 'probability' ? html`step="0.01" min="0.01" max="1"` : k === 'n' ? html`step="1" min="1" max="1000"`
           : k === 'total' ? html`step="0.1" min="0.1" max="10000"` : k === 'window_days' ? html`step="1" min="0" max="365"`
             : k === 'per_week' ? html`step="1" min="1" max="7"` : '',
