@@ -16,8 +16,11 @@ test('save and unsave parks with the heart, filter Want to go, and see it on the
   await expect(heart(page, 'Crescent Lake Park')).toHaveAttribute('aria-pressed', 'false');
   await heart(page, 'Crescent Lake Park').click();
   await expect(heart(page, 'Crescent Lake Park')).toHaveAttribute('aria-pressed', 'true');
-  await heart(page, 'Lake Vista Park').click();
+  // By keyboard: the heart keeps focus after toggling.
+  await heart(page, 'Lake Vista Park').focus();
+  await page.keyboard.press('Enter');
   await expect(heart(page, 'Lake Vista Park')).toHaveAttribute('aria-pressed', 'true');
+  await expect(heart(page, 'Lake Vista Park')).toBeFocused();
   await expect(page).toHaveURL(/\/parks$/);
   await expectNoAxeViolations(page);
 

@@ -3,9 +3,12 @@
 for (const form of document.querySelectorAll('form.save-form')) {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    // Busy flag instead of disabling the button: disabling a focused button drops keyboard focus.
+    if (form.dataset.busy) return;
+    form.dataset.busy = '1';
     const button = form.querySelector('button');
     const state = form.querySelector('input[name="saved"]');
-    button.disabled = true;
+    button.setAttribute('aria-disabled', 'true');
     try {
       const res = await fetch(form.action, {
         method: 'POST',
@@ -17,7 +20,8 @@ for (const form of document.querySelectorAll('form.save-form')) {
       const { saved } = await res.json();
       button.setAttribute('aria-pressed', String(saved));
       state.value = saved ? '0' : '1';
-      button.disabled = false;
+      button.removeAttribute('aria-disabled');
+      delete form.dataset.busy;
     } catch {
       form.submit(); // let the server handle it (and show any error page)
     }

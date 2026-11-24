@@ -884,7 +884,7 @@ img.feed-icon { width: 2rem; height: 2rem; }
 .save-btn[aria-pressed="true"] { border-color: var(--pink-ink); }
 .save-btn[aria-pressed="true"] svg { fill: currentColor; }
 .save-btn:hover { border-color: var(--pink-ink); }
-.save-btn:disabled { opacity: 0.7; cursor: progress; }
+.save-btn[aria-disabled="true"] { opacity: 0.7; cursor: progress; }
 .park-card h2 { padding-right: 3rem; }
 /* Above the card's full-size link overlay, in the top-right corner. */
 .park-card .save-form { position: absolute; top: 0.6rem; right: 0.6rem; z-index: 1; }

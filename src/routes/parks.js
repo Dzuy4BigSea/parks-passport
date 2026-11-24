@@ -3,7 +3,7 @@ import { parseLatLng } from '../domain/geo.js';
 import { stampedParkIds } from '../domain/visits.js';
 import { parksPage } from '../views/pages/parks.js';
 import { renderParkPage } from './park-view.js';
-import { requireUser, safeNext } from '../lib/auth.js';
+import { safeNext } from '../lib/auth.js';
 import { savedParkIds, setSaved } from '../domain/saved.js';
 
 export default async function parkRoutes(app) {
@@ -31,9 +31,11 @@ export default async function parkRoutes(app) {
 
   // "Want to go" heart. Sets the state sent (saved=1|0) rather than toggling. The JS enhancement
   // asks for JSON; without JS it redirects back to the page the form was on.
-  app.post('/parks/:slug/save', { preHandler: requireUser }, async (req, reply) => {
+  app.post('/parks/:slug/save', async (req, reply) => {
     const park = getParkBySlug(db, req.params.slug);
     if (!park) return reply.callNotFound();
+    // Signed out: log in and come back to the park page (a GET of this URL would be a 404).
+    if (!req.user) return reply.redirect(`/login?next=${encodeURIComponent(`/parks/${park.slug}`)}`, 303);
     const saved = req.body.saved === '1';
     setSaved(db, req.user.id, park.id, saved, { now: app.now() });
     if (String(req.headers.accept || '').includes('application/json')) return reply.send({ saved });

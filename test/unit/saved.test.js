@@ -13,7 +13,7 @@ async function world() {
   importParksCsv(db, [PARK_CSV_COLUMNS.join(','),
     'a-park,A Park,,,27.800,-82.700,,,,0',
     'b-park,B Park,,,27.801,-82.701,,,,0',
-    'c-park,C Park,,,27.900,-82.800,,,,0'].join('\n'));
+    'c-park,C Park,,,27.900,-82.800,,lake,,0'].join('\n'));
   const people = {};
   for (const name of ['ana', 'ben']) {
     const c = client(app);
@@ -45,8 +45,8 @@ test('saving and unsaving a park without JS: POST form, redirect back, idempoten
   assert.match((await c.get('/parks/c-park')).body, /aria-pressed="false"/);
 });
 
-test('save route: JSON for the JS toggle, CSRF required, sign-in required, 404 for unknown parks, unsafe back ignored', async () => {
-  const { app, people } = await world();
+test('save route: JSON for the JS toggle, CSRF required, sign-in required, 404 for unknown or inactive parks, unsafe back ignored', async () => {
+  const { app, db, people } = await world();
   const { c } = people.ana;
   await c.get('/');
   const csrf = [...c.jar].find(([k]) => k.endsWith('pp_csrf'))[1];
@@ -58,9 +58,11 @@ test('save route: JSON for the JS toggle, CSRF required, sign-in required, 404 f
 
   assert.equal((await c.post('/parks/a-park/save', { saved: '1' }, { csrf: false })).statusCode, 403);
   const anon = await client(app).post('/parks/a-park/save', { saved: '1' });
-  assert.equal(anon.statusCode, 302);
-  assert.match(anon.headers.location, /^\/login/);
+  assert.equal(anon.statusCode, 303);
+  assert.equal(anon.headers.location, '/login?next=%2Fparks%2Fa-park');
   assert.equal((await c.post('/parks/nope/save', { saved: '1' })).statusCode, 404);
+  db.prepare("UPDATE parks SET active = 0 WHERE slug = 'b-park'").run();
+  assert.equal((await c.post('/parks/b-park/save', { saved: '1' })).statusCode, 404, 'inactive park');
   const evil = await c.post('/parks/a-park/save', { saved: '1', back: '//evil.example' });
   assert.equal(evil.headers.location, '/passport');
 });
@@ -85,6 +87,10 @@ test('/parks shows hearts only when signed in, and the Want to go filter lists o
   assert.match(filtered.body, /2 of 3 parks match/);
   // Combines with search.
   assert.deepEqual(cardSlugs((await people.ana.c.get('/parks?saved=1&q=c+park')).body), ['c-park']);
+  // ...with amenities and with "Not visited yet".
+  assert.deepEqual(cardSlugs((await people.ana.c.get('/parks?saved=1&cat=lake')).body), ['c-park']);
+  await people.ana.c.post('/parks/b-park/stamp', {});
+  assert.deepEqual(cardSlugs((await people.ana.c.get('/parks?saved=1&unvisited=1')).body), ['c-park']);
   // Ben has saved nothing.
   const ben = await people.ben.c.get('/parks?saved=1');
   assert.deepEqual(cardSlugs(ben.body), []);
