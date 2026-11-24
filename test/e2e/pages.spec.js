@@ -21,7 +21,7 @@ test.use({ viewport: { width: 375, height: 800 } });
 
 test('signed-out pages', async ({ page }) => {
   for (const url of ['/', '/parks', '/parks?q=lake&cat=playground', '/parks/abercrombie-park', '/parks/auburn-street-park',
-    '/signup', '/login', '/forgot', '/privacy', '/consent']) {
+    '/signup', '/login', '/forgot', '/privacy', '/credits', '/consent']) {
     await check(page, url);
   }
   await check(page, '/reset?token=expired', { status: 400 });

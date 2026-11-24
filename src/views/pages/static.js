@@ -131,3 +131,21 @@ These never include your email, name, handle, comments, captions or location.</p
 </div>`,
   };
 }
+
+// Photo credits for the city's background photos (CC BY needs credit, a link and the license).
+export function creditsPage({ theme, credits }) {
+  return {
+    title: 'Photo credits',
+    body: html`<div class="narrow">
+<h1>Photo credits</h1>
+<p>The softened background photos of ${theme.name} are used under free licenses. Thank you to the photographers.</p>
+<ul class="credits-list">${credits.map((c) => html`<li class="card">
+  <img src="${c.file}" alt="" width="160" height="107" loading="lazy">
+  <div><h2>${c.title}</h2>
+  <p>By ${c.author} · <a href="${c.licenseUrl}" rel="noopener license">${c.license}</a> · <a href="${c.source}" rel="noopener">Source</a></p>
+  <p class="muted">${c.changes}</p></div>
+</li>`)}</ul>
+<p>The app's own icons, illustrations and design are by Big Sea for Parks Passport.</p>
+</div>`,
+  };
+}

@@ -323,3 +323,22 @@ test('theme job: internal errors and timeouts never reach the page word for word
   await app2.themeJobIdle();
   assert.equal(themeJob(db2).error, 'Generation took too long and was stopped. Try again.');
 });
+
+test('city photos: St. Pete pages get the background photos and a credits page; other themes do not', async () => {
+  const { app } = cityApp();
+  const home = (await client(app).get('/')).body;
+  assert.match(home, /--photo-hero:url\(\/city\/st-pete\/pier-sunrise\.webp\);/);
+  assert.match(home, /<a href="\/credits">Photo credits<\/a>/);
+  const credits = await client(app).get('/credits');
+  assert.equal(credits.statusCode, 200);
+  assert.match(credits.body, /Andrew Heneen/);
+  assert.match(credits.body, /CC BY 4\.0/);
+  assert.match(credits.body, /commons\.wikimedia\.org\/wiki\/File:Saint_Petersburg_Pier_at_sunrise\.jpg/);
+  assert.match(credits.body, /Converted to grayscale/);
+  for (const f of ['pier-sunrise', 'pier-point', 'mangroves']) {
+    assert.equal((await client(app).get(`/city/st-pete/${f}.webp`)).statusCode, 200, f);
+  }
+  const { app: bare } = makeApp(); // no city theme seeded
+  assert.equal((await client(bare).get('/credits')).statusCode, 404);
+  assert.doesNotMatch((await client(bare).get('/')).body, /--photo-hero/);
+});
