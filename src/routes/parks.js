@@ -42,6 +42,13 @@ export default async function parkRoutes(app) {
       }
     }
     const flash = { added: 'Photo added.' }[req.query.photo] || (req.query.rated ? 'Rating saved.' : null);
-    return renderParkPage(app, req, reply, park, { stamped, flash, events: [['park_view', { park_slug: park.slug }]] });
+    // After an undo: no message, but the activity's group stays open.
+    let activityFlash = /^[a-z0-9-]{1,60}$/.test(String(req.query.undone || '')) ? { slug: req.query.undone } : null;
+    if (user && /^\d+$/.test(String(req.query.logged || ''))) {
+      const logged = db.prepare(`SELECT a.slug, a.name, a.points FROM activity_logs l JOIN activities a ON a.id = l.activity_id
+        WHERE l.id = ? AND l.user_id = ?`).get(Number(req.query.logged), user.id);
+      if (logged) activityFlash = { text: `Logged ${logged.name}: +${logged.points} points.`, slug: logged.slug };
+    }
+    return renderParkPage(app, req, reply, park, { stamped, flash, activityFlash, events: [['park_view', { park_slug: park.slug }]] });
   });
 }

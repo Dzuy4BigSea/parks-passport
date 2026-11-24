@@ -151,6 +151,17 @@ ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
 
 ${visibilityForm({ csrf, user })}
 
+<section id="editions" aria-labelledby="ed-h">
+<h2 id="ed-h">Editions</h2>
+<p>Add extra things to do at parks, with their own badges.</p>
+<form method="post" action="/account/editions" class="card-form">
+  ${csrfField(csrf)}
+  <label class="check"><input type="checkbox" name="paws" value="1"${user.paws ? html` checked` : ''}> 🐾 Paws: I bring a pet</label>
+  <label class="check"><input type="checkbox" name="kids" value="1"${user.kids ? html` checked` : ''}> 🧒 Kids: I bring kids. New photos start as "Only me", and we never ask for children's names or ages.</label>
+  <button type="submit" class="btn btn-primary">Update editions</button>
+</form>
+</section>
+
 <h2>Delete my account</h2>
 <p>This permanently removes your account and everything in it: visits, photos, ratings, badges and Park Pals.</p>
 ${errorSummary(errors, { delete_password: 'Password' })}

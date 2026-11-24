@@ -43,7 +43,7 @@ export function closestBadge(board) {
   if (!open.length) return null;
   open.sort((a, b) => (b.progress / b.target - a.progress / a.target) || a.target - b.target);
   const b = open[0];
-  return { slug: b.slug, name: b.name, art: b.art, progress: b.progress, target: b.target, unit: b.unit, remaining: b.target - b.progress };
+  return { slug: b.slug, name: b.name, art: b.art, progress: b.progress, target: b.target, unit: b.unit, remaining: Math.round((b.target - b.progress) * 10) / 10 };
 }
 
 /** Visit dates for the streak (one query, no private fields). */

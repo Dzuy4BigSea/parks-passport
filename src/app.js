@@ -30,6 +30,7 @@ import passportRoutes from './routes/passport.js';
 import palRoutes from './routes/pals.js';
 import photoRoutes from './routes/photos.js';
 import adminRoutes from './routes/admin.js';
+import activityRoutes from './routes/activities.js';
 import { shareNudge } from './views/pages/pals.js';
 
 // Paths with tokens or handles in the URL: no analytics scripts there (see reply.page).
@@ -177,6 +178,7 @@ export function buildApp({
   app.register(palRoutes);
   app.register(photoRoutes);
   app.register(adminRoutes);
+  app.register(activityRoutes);
   app.register(consentRoutes);
 
   // Friendly HTML errors instead of Fastify's JSON (e.g. an upload over the size limit).

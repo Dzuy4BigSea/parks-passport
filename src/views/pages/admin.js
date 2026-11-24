@@ -24,6 +24,7 @@ export function adminHome({ counts }) {
   <li><a href="/admin/parks?filter=needs_pin"><strong>Pins to check</strong><span>${counts.needsPin} parks</span></a></li>
   <li><a href="/admin/import"><strong>Import parks</strong><span>CSV upload or seed file</span></a></li>
   <li><a href="/admin/badges"><strong>Badges</strong><span>${counts.badges} badges</span></a></li>
+  <li><a href="/admin/activities"><strong>Activities</strong><span>Healthy things to do at parks</span></a></li>
   <li><a href="/admin/moderation"><strong>Moderation</strong><span>${counts.shared} shared photos and reviews</span></a></li>
   <li><a href="/admin/users"><strong>Members</strong><span>${counts.users} members · ${counts.admins} admins</span></a></li>
   <li><a href="/admin/email"><strong>Email</strong><span>Sender, subject lines, SendGrid key</span></a></li>
@@ -73,6 +74,7 @@ ${!isNew && p.active ? html`<p><a href="/parks/${p.slug}">View the public page</
     <label class="check"><input type="checkbox" name="needs_pin" value="1"${p.needs_pin && !isNew ? html` checked` : ''}> Pin still needs checking</label>
   </fieldset>
   ${input('checkin_radius_m', 'Check-in radius (meters)', p.checkin_radius_m, { type: 'number', hint: '25 to 2000. Larger parks need a larger radius.', attrs: html`min="25" max="2000" step="1"` })}
+  ${input('loop_mi', 'Walking loop (miles)', p.loop_mi, { type: 'number', hint: 'Optional. One lap of the main path, e.g. 0.8. Shown next to "Walk a mile".', attrs: html`min="0.1" max="20" step="0.1" inputmode="decimal"` })}
   <fieldset class="radio-group">
     <legend>Amenities</legend>
     <div class="filter-grid">${Object.keys(CATEGORIES).map((c) => html`<label class="check"><input type="checkbox" name="categories" value="${c}"${p.categories.includes(c) ? html` checked` : ''}> ${categoryLabel(c)}</label>`)}</div>
@@ -123,9 +125,19 @@ export function adminBadges({ badges }) {
 </table></div>`);
 }
 
-const PARAM_LABELS = { n: 'N (how many)', category: 'Amenity', start: 'From (local time)', end: 'Until (local time)', probability: 'Chance per stamp (0–1)' };
+const PARAM_LABELS = {
+  n: 'N (how many)', category: 'Amenity', start: 'From (local time)', end: 'Until (local time)', probability: 'Chance per stamp (0–1)',
+  target: 'Which activities count', metric: 'Measure', total: 'Total (minutes or miles)', window_days: 'Within how many days (0 = all time)',
+  per_week: 'Days per week',
+};
+const METRICS = [['minutes', 'Minutes'], ['miles', 'Miles']];
+const paramSelect = (k, options, value, error) => html`<div class="field param" data-param="${k}">
+  <label for="param_${k}">${PARAM_LABELS[k]}</label>
+  ${error ? html`<p class="error-text">${error}</p>` : ''}
+  <select id="param_${k}" name="param_${k}"><option value="">Choose…</option>${options.map(([v, label]) => html`<option value="${v}"${String(value) === v ? html` selected` : ''}>${label}</option>`)}</select>
+</div>`;
 
-export function adminBadgeForm({ badge, csrf, isNew, errors = {}, values = null, notice }) {
+export function adminBadgeForm({ badge, csrf, isNew, errors = {}, values = null, notice, targets = [] }) {
   const b = values || badge || { kind: 'known', enabled: 1, rule_type: 'parks_count', rule_params: '{}', art: '🏅' };
   let params = {};
   try { params = values ? Object.fromEntries(Object.keys(PARAM_LABELS).map((k) => [k, values[`param_${k}`]])) : JSON.parse(b.rule_params || '{}'); } catch { params = {}; }
@@ -159,7 +171,9 @@ ${errorSummary(errors)}
   <fieldset class="radio-group rule-params">
     <legend>Rule settings</legend>
     <p class="hint">Only the settings the chosen rule uses are saved.</p>
-    ${allParams.map((k) => (k === 'category'
+    ${allParams.map((k) => (k === 'target' ? paramSelect(k, targets.map((t) => [t.value, t.label]), params[k], errors[`param_${k}`])
+      : k === 'metric' ? paramSelect(k, METRICS, params[k], errors[`param_${k}`])
+      : k === 'category'
       ? html`<div class="field param" data-param="${k}">
           <label for="param_${k}">${PARAM_LABELS[k]}</label>
           ${errors[`param_${k}`] ? html`<p class="error-text">${errors[`param_${k}`]}</p>` : ''}
@@ -167,7 +181,10 @@ ${errorSummary(errors)}
         </div>`
       : html`<div class="param" data-param="${k}">${input(`param_${k}`, PARAM_LABELS[k], params[k], {
         type: k === 'start' || k === 'end' ? 'time' : 'number', error: errors[`param_${k}`],
-        attrs: k === 'probability' ? html`step="0.01" min="0.01" max="1"` : k === 'n' ? html`step="1" min="1" max="1000"` : '',
+        hint: k === 'n' ? 'For the weekly rules, the number of weeks.' : undefined,
+        attrs: k === 'probability' ? html`step="0.01" min="0.01" max="1"` : k === 'n' ? html`step="1" min="1" max="1000"`
+          : k === 'total' ? html`step="0.1" min="0.1" max="10000"` : k === 'window_days' ? html`step="1" min="0" max="365"`
+            : k === 'per_week' ? html`step="1" min="1" max="7"` : '',
       })}</div>`))}
   </fieldset>
   <fieldset class="radio-group${errors.kind ? ' field-error' : ''}">
@@ -178,6 +195,25 @@ ${errorSummary(errors)}
   <label class="check"><input type="checkbox" name="enabled" value="1"${enabled ? html` checked` : ''}> Enabled. Disabling stops new awards; members keep badges they earned.</label>
   <button type="submit" class="btn btn-primary">${isNew ? 'Add badge' : 'Save badge'}</button>
 </form>`, { scripts: ['/js/badge-form.js'] });
+}
+
+export function adminActivities({ activities, csrf }) {
+  return page('Activities', html`${crumb}<h1>Activities</h1>
+<p>Things members can log at a park after stamping it. The wording lives in <code>seed/activities.json</code> and updates on deploy; switch an activity off here to hide it. Logs already made keep their points.</p>
+<div class="table-wrap"><table class="admin-table">
+  <caption class="visually-hidden">Activities</caption>
+  <thead><tr><th scope="col">Activity</th><th scope="col">Edition · pillar</th><th scope="col">Where</th><th scope="col">Points</th><th scope="col">Shown</th></tr></thead>
+  <tbody>${activities.map((a) => html`<tr id="act-${a.slug}"${a.active ? '' : html` class="disabled"`}>
+    <td data-label="Activity"><strong>${a.name}</strong><br><span class="muted">${a.description}</span></td>
+    <td data-label="Edition · pillar">${a.edition} · ${a.pillar}</td>
+    <td data-label="Where">${a.category ? categoryLabel(a.category) : 'Any park'}</td>
+    <td data-label="Points">${a.points}</td>
+    <td data-label="Shown"><form method="post" action="/admin/activities/${a.id}">${csrfField(csrf)}
+      <input type="hidden" name="active" value="${a.active ? '0' : '1'}">
+      <button type="submit" class="btn btn-small">${a.active ? 'Switch off' : 'Switch on'}<span class="visually-hidden"> ${a.name}</span></button>
+    </form>${a.active ? '' : html` <span class="flag">Off</span>`}</td>
+  </tr>`)}</tbody>
+</table></div>`);
 }
 
 export function adminModeration({ queue, csrf }) {
