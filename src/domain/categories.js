@@ -18,6 +18,7 @@ export const CATEGORIES = {
   'pool': 'Pool & splash pad',
   'skatepark': 'Skatepark',
   'beach': 'Beach',
+  'shuffleboard': 'Shuffleboard',
 };
 
 export const categoryLabel = (slug) => CATEGORIES[slug] || slug;

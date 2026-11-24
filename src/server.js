@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { loadConfig } from './config.js';
 import { openDb } from './db/index.js';
-import { seedParksIfEmpty, seedBadges, seedCityTheme } from './db/seed.js';
+import { seedParksIfEmpty, seedBadges, seedCityTheme, seedActivityData } from './db/seed.js';
 import { createMailer } from './lib/mail.js';
 import { createSecretBox } from './lib/secret-box.js';
 import { emailSettings, sendgridKey } from './domain/settings.js';
@@ -36,6 +36,8 @@ const seeded = seedParksIfEmpty(db);
 if (seeded) app.log.info({ ...seeded, invalid: seeded.invalid.length }, 'seeded parks from seed/parks.csv');
 const badgeCount = seedBadges(db);
 if (badgeCount) app.log.info({ badges: badgeCount }, 'seeded badges from seed/badges.json');
+const activityBadges = seedActivityData(db);
+if (activityBadges) app.log.info({ badges: activityBadges }, 'added activity badges from seed/activity-badges.json');
 const motifCount = seedCityTheme(db);
 if (motifCount) app.log.info({ motifs: motifCount }, 'seeded the city theme from seed/city-st-pete.json');
 

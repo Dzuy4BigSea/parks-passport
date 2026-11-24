@@ -1,6 +1,7 @@
 import { evaluateCheckin } from './checkin.js';
 import { rebuildParkVisitPoints } from './points.js';
 import { localDate, isValidDate } from './time.js';
+import { deleteVisitActivityPoints } from './activities.js';
 
 export const EARLIEST_STAMP_DATE = '2000-01-01';
 
@@ -50,12 +51,13 @@ export function stampVisit(db, { user, park, method, position = null, visitedOn 
 
 export const getVisit = (db, id) => db.prepare('SELECT * FROM visits WHERE id = ?').get(id);
 
-// Deletes one of the user's own visits and recalculates their points at that park.
+// Deletes one of the user's own visits (and its activities) and recalculates their points at that park.
 export function deleteVisit(db, { user, visitId }, { now = new Date() } = {}) {
   const visit = db.prepare('SELECT * FROM visits WHERE id = ? AND user_id = ?').get(visitId, user.id);
   if (!visit) return null;
   db.transaction(() => {
     db.prepare("DELETE FROM point_events WHERE source_type = 'visit' AND source_id = ?").run(visit.id);
+    deleteVisitActivityPoints(db, visit.id); // its activity logs cascade with the visit
     db.prepare('DELETE FROM visits WHERE id = ?').run(visit.id);
     rebuildParkVisitPoints(db, user.id, visit.park_id, { now });
   })();

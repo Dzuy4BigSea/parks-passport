@@ -9,7 +9,8 @@ const ANALYTICS = { gtmId: 'GTM-TEST123', gtmScriptOrigin: 'https://sgtm.example
 
 test('the event list matches the spec exactly', () => {
   assert.deepEqual(Object.keys(EVENTS).sort(), ['badge_earned', 'check_in', 'consent_update', 'level_up', 'login', 'pal_accepted',
-    'pal_invite_created', 'park_search', 'park_view', 'photo_upload', 'rating_submit', 'share_prompt_action', 'sign_up'].sort());
+    'pal_invite_created', 'park_search', 'park_view', 'photo_upload', 'rating_submit', 'share_prompt_action', 'sign_up',
+    'activity_log'].sort());
   assert.deepEqual(buildEvent('check_in', { park_slug: 'a-park', method: 'gps' }), { event: 'check_in', park_slug: 'a-park', method: 'gps' });
 });
 

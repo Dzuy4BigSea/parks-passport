@@ -104,7 +104,8 @@ export default async function visitRoutes(app) {
       result = db.transaction(() => {
         const r = stampVisit(db, { user: req.user, park, method: stored ? 'photo' : 'honor', visitedOn }, { now: app.now() });
         if (!r.error && stored) {
-          addPhoto(db, { user: req.user, park, visitId: r.visit.id, stored,
+          // Kids edition: stamp photos start private (they may show children).
+          addPhoto(db, { user: req.user, park, visitId: r.visit.id, stored, visibility: req.user.kids ? 'private' : undefined,
             caption: typeof req.body.caption === 'string' ? req.body.caption : '' }, { now: app.now() });
           r.visit = getVisit(db, r.visit.id); // points now include the photo bonus
         }

@@ -980,3 +980,39 @@ body:has(.explore) .wrap { max-width: 96rem; }
 /* Controls that only work with JS: laid out from the first paint when JS is on (html.js is set
    inline in <head>), never shown without it. */
 html:not(.js) .js-only { display: none !important; }
+
+/* Healthy activities ("Things to do here") and the passport's weekly habits. */
+.activities {
+  background: var(--surface); border-radius: 24px; padding: 1.25rem; margin: 1rem 0;
+  border: 2px solid var(--ink);
+}
+.activities h2 { margin-top: 0; }
+.activities.is-locked { border-style: dashed; background: var(--aqua-tint); }
+.activities > .hint { margin-bottom: 0.75rem; }
+.activities > .hint:last-child { margin: 0.75rem 0 0; }
+.act-group { border-top: 1px dashed var(--line); }
+.act-group summary {
+  cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  font-weight: 700; color: var(--ink);
+}
+.act-count { flex: none; white-space: nowrap; font-size: 0.85rem; font-weight: 700; color: var(--aqua-ink); background: var(--aqua-tint); border-radius: 999px; padding: 0.1rem 0.6rem; }
+.act-list { list-style: none; margin: 0 0 0.75rem; padding: 0; display: grid; gap: 0.5rem; }
+.act { padding: 0.65rem 0.75rem; border-radius: var(--radius-sm); background: var(--sand); }
+.act.is-done { background: var(--aqua-tint); }
+.act-name { margin: 0; display: flex; justify-content: space-between; gap: 0.5rem; }
+.act-pts { flex: none; font-weight: 800; color: var(--pink-ink); }
+.act-desc { margin: 0.15rem 0 0.5rem; color: var(--muted); font-size: 0.9rem; }
+.act-form { margin: 0; display: flex; flex-wrap: wrap; align-items: end; gap: 0.5rem; }
+.act .error-text { margin: 0 0 0.4rem; }
+.act-amount { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 700; }
+.act-amount input { width: 6.5rem; min-height: 36px; }
+.act-check { font-weight: 800; color: var(--aqua-ink); align-self: center; }
+.week-card { background: var(--surface); border-radius: var(--radius); padding: 1.25rem; margin: 1rem 0; box-shadow: var(--shadow); }
+.week-card h2 { margin-top: 0; }
+.week-goal p { margin: 0.5rem 0 0.25rem; display: flex; justify-content: space-between; gap: 0.5rem; }
+.week-goal progress { width: 100%; height: 12px; appearance: none; border: 0; border-radius: 999px; overflow: hidden; background: var(--sand-2); }
+.week-goal progress::-webkit-progress-bar { background: var(--sand-2); }
+.week-goal progress::-webkit-progress-value { background: var(--aqua); border-radius: 999px; }
+.week-goal progress::-moz-progress-bar { background: var(--aqua); border-radius: 999px; }
+.act-note { margin: -0.25rem 0 0.5rem; }
+.week-extra { margin: 0.75rem 0 0.25rem; font-weight: 700; }

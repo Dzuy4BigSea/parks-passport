@@ -182,3 +182,17 @@ admin drafts and approval, safe error messages, generator turn handling with a f
 `test/e2e/engage.spec.js` (one-tap stamp on a phone, finder when far away, reduced motion), axe
 on `/`, `/stamp` and `/admin/city` signed in, and the existing suite. `npm run lighthouse` stays
 at 90+.
+
+### M12 — Healthy activities, Paws and Kids editions (Flow 12)
+Outcome: SPEC Flow 12. Research and activity lists: `docs/healthy-activities.md`.
+- Migration 013 (activities, activity_logs, users.paws/kids, parks.loop_mi), `seed/activities.json`,
+  `seed/activity-badges.json`, `seedActivityData` in `src/db/seed.js` run at every start.
+- `src/domain/activities.js` (list per park and edition, log with caps, undo, week summary),
+  the seven activity rule types in `src/domain/badges/rules.js`, edition-aware badge board.
+- `src/routes/activities.js` (log, undo, editions), `src/views/activities.js` (park panel, week card),
+  Admin › Activities, the badge form's target picker, `loop_mi` on the park form, a
+  `shuffleboard` category.
+
+Checks: `test/unit/activities.test.js` (seed files valid, every new rule type, caps, undo and visit
+deletion reverse points, editions, Kids photo default, admin), `test/e2e/activities.spec.js`
+(stamp, then log at 375 px with axe clean and no sideways scroll), and the existing suite.

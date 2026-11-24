@@ -8,6 +8,7 @@ import { VISIBILITY, VISIBILITY_LABELS } from '../../domain/visibility.js';
 import { ICONS } from '../icons.js';
 import { motifIcon } from '../motif.js';
 import { nextLine } from '../nextup.js';
+import { activitiesPanel } from '../activities.js';
 
 // Confetti particles for the celebration: angles and distances, decorative only.
 const BURST = [[0, 95], [30, 70], [60, 105], [95, 80], [125, 100], [160, 75], [195, 95], [225, 70], [260, 105], [290, 85], [320, 100], [345, 72]];
@@ -96,7 +97,7 @@ function stampPanel({ park, user, csrf, today, myVisits, problem: allProblems })
 
 export function parkPage({ park, user = null, csrf = '', today = '', myVisits = [], problem = null, stamped = null,
   photos = [], summary = { count: 0, average: null }, reviews = [], mine = null, flash = null, theme = { motifs: [], areas: [] }, area = null,
-  celebrate = null }) {
+  celebrate = null, activities = null }) {
   const hasPin = park.lat != null && park.lng != null;
   const scripts = [];
   if (hasPin) scripts.push('/js/park-map.js');
@@ -131,6 +132,7 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
   <div class="park-aside">
   ${stampResult(stamped, celebrate)}
   ${stampPanel({ park, user, csrf, today, myVisits, problem })}
+  ${activitiesPanel({ park, csrf, activities, problem })}
   </div>
   <div class="park-main">
 
@@ -229,7 +231,8 @@ function photosSection({ park, user, csrf, photos, problem }) {
     </div>
     <div class="field">
       <label for="photo_visibility">Who can see it</label>
-      ${visibilitySelect('photo_visibility', user.default_visibility)}
+      ${visibilitySelect('photo_visibility', user.kids ? 'private' : user.default_visibility)}
+      ${user.kids ? html`<p class="hint">Kids edition is on, so new photos start as "Only me". Share each one only if you're happy to.</p>` : ''}
     </div>
     <button type="submit" class="btn btn-primary">Upload photo</button>
   </form>` : ''}

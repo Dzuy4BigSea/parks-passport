@@ -15,9 +15,11 @@ import {
 import { themeJob, startThemeJob } from '../domain/theme-job.js';
 import { testEmail, memberEmail } from '../views/email.js';
 import { createInvite, recentInvites } from '../domain/invites.js';
+import { allActivities, badgeTargets, setActivityActive } from '../domain/activities.js';
 import { EMAIL_KINDS, COPY_FIELDS, emailCopy, saveEmailCopy, resetEmailCopy, isCustomized } from '../domain/email-copy.js';
 import {
   adminCity, adminEmail, adminEmailMessage, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
+  adminActivities,
 } from '../views/pages/admin.js';
 
 const MAX_CSV_BYTES = 1024 * 1024;
@@ -159,11 +161,20 @@ export default async function adminRoutes(app) {
 
     // Badges
     r.get('/badges', async (req, reply) => reply.page(adminBadges({ badges: allBadgesForAdmin(db) })));
-    r.get('/badges/new', async (req, reply) => reply.page(adminBadgeForm({ csrf: req.csrfToken(), isNew: true })));
+    r.get('/badges/new', async (req, reply) => reply.page(adminBadgeForm({ csrf: req.csrfToken(), targets: badgeTargets(db), isNew: true })));
     r.get('/badges/:id', async (req, reply) => {
       const badge = badgeForAdmin(db, Number(req.params.id));
       if (!badge) return reply.callNotFound();
-      return reply.page(adminBadgeForm({ csrf: req.csrfToken(), badge, notice: req.query.saved ? 'Saved.' : null }));
+      return reply.page(adminBadgeForm({ csrf: req.csrfToken(), targets: badgeTargets(db), badge, notice: req.query.saved ? 'Saved.' : null }));
+    });
+
+    // Healthy activities: wording comes from seed/activities.json; admins switch them on or off.
+    r.get('/activities', async (req, reply) => reply.page(adminActivities({ activities: allActivities(db), csrf: req.csrfToken() })));
+    r.post('/activities/:id', async (req, reply) => {
+      const id = /^\d+$/.test(req.params.id) ? Number(req.params.id) : null;
+      const activity = id && setActivityActive(db, id, req.body.active === '1');
+      if (!activity) return reply.callNotFound();
+      return reply.redirect(`/admin/activities#act-${activity.slug}`, 303);
     });
 
     // Moderation
@@ -308,7 +319,7 @@ export default async function adminRoutes(app) {
       const isNew = !existing;
       const values = { ...req.body };
       delete values.art_file;
-      const { badge, errors = {} } = validateBadgeForm(values, { isNew });
+      const { badge, errors = {} } = validateBadgeForm(values, { isNew, targets: badgeTargets(db).map((t) => t.value) });
       const artFile = Buffer.isBuffer(req.body.art_file) && req.body.art_file.length ? req.body.art_file : null;
       if (isNew && badge && db.prepare('SELECT 1 FROM badges WHERE slug = ?').get(badge.slug)) {
         errors.slug = 'Another badge already uses that slug.';
@@ -322,7 +333,7 @@ export default async function adminRoutes(app) {
       }
       if (!badge || Object.keys(errors).length) {
         reply.code(422);
-        return reply.page(adminBadgeForm({ csrf: req.csrfToken(), isNew, badge: existing, errors, values }));
+        return reply.page(adminBadgeForm({ csrf: req.csrfToken(), targets: badgeTargets(db), isNew, badge: existing, errors, values }));
       }
       // No new emoji typed: keep an existing uploaded image.
       if (art) badge.art = art;
@@ -331,7 +342,7 @@ export default async function adminRoutes(app) {
       if (saved.error === 'slug_taken') {
         if (art) await removeBadgeArt(app.config.uploadsDir, art);
         reply.code(422);
-        return reply.page(adminBadgeForm({ csrf: req.csrfToken(), isNew, badge: existing, errors: { slug: 'Another badge already uses that slug.' }, values }));
+        return reply.page(adminBadgeForm({ csrf: req.csrfToken(), targets: badgeTargets(db), isNew, badge: existing, errors: { slug: 'Another badge already uses that slug.' }, values }));
       }
       // Replaced art: remove the old file.
       if (existing?.art?.startsWith('upload:') && saved.art !== existing.art) await removeBadgeArt(app.config.uploadsDir, existing.art);
@@ -350,7 +361,7 @@ export default async function adminRoutes(app) {
 function formPark(body) {
   return {
     name: body.name, slug: body.slug, address: body.address, phone: body.phone, lat: body.lat, lng: body.lng,
-    checkin_radius_m: body.checkin_radius_m, city_url: body.city_url, active: body.active === '1' ? 1 : 0,
+    checkin_radius_m: body.checkin_radius_m, loop_mi: body.loop_mi, city_url: body.city_url, active: body.active === '1' ? 1 : 0,
     needs_pin: body.needs_pin === '1' ? 1 : 0, categories: [].concat(body.categories || []),
   };
 }

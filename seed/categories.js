@@ -21,6 +21,7 @@ const RULES = [
   [/recreation center|tasco center/, 'recreation-center'],
   [/historic|midden|arboretum|estuary|community garden|bat box|sundial|sculpture|statue/, 'history-nature'],
   [/skatepark|skate park/, 'skatepark'],
+  [/shuffleboard/, 'shuffleboard'],
 ];
 
 export function featureToCategories(feature) {

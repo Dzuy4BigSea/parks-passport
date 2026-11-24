@@ -31,6 +31,10 @@ export function saveParkFromForm(db, id, form, { now = new Date() } = {}) {
     categories: cats.join('|'), city_url: f('city_url'), needs_pin: form.needs_pin === '1' ? '1' : '0',
   });
   if (error) return { error: error.charAt(0).toUpperCase() + error.slice(1) + '.' };
+  const loopRaw = f('loop_mi').trim();
+  const loop = loopRaw === '' ? null : Number(loopRaw);
+  if (loop !== null && !(loop >= 0.1 && loop <= 20)) return { error: 'Walking loop must be from 0.1 to 20 miles, or empty.' };
+  park.loop_mi = loop === null ? null : Math.round(loop * 10) / 10;
   const clash = db.prepare('SELECT id FROM parks WHERE slug = ? AND id IS NOT ?').get(park.slug, id);
   if (clash) return { error: 'Another park already uses that slug.' };
   const active = form.active === '1' ? 1 : 0;
@@ -39,12 +43,12 @@ export function saveParkFromForm(db, id, form, { now = new Date() } = {}) {
     let parkId = id;
     if (id) {
       db.prepare(`UPDATE parks SET slug=@slug, name=@name, address=@address, phone=@phone, lat=@lat, lng=@lng,
-        checkin_radius_m=@checkin_radius_m, city_url=@city_url, needs_pin=@needs_pin, active=@active, updated_at=@ts
+        checkin_radius_m=@checkin_radius_m, loop_mi=@loop_mi, city_url=@city_url, needs_pin=@needs_pin, active=@active, updated_at=@ts
         WHERE id=@id`).run({ ...park, active, ts, id });
     } else {
-      parkId = db.prepare(`INSERT INTO parks (slug, name, address, phone, lat, lng, checkin_radius_m, city_url,
+      parkId = db.prepare(`INSERT INTO parks (slug, name, address, phone, lat, lng, checkin_radius_m, loop_mi, city_url,
         needs_pin, active, created_at, updated_at) VALUES (@slug, @name, @address, @phone, @lat, @lng,
-        @checkin_radius_m, @city_url, @needs_pin, @active, @ts, @ts)`).run({ ...park, active, ts }).lastInsertRowid;
+        @checkin_radius_m, @loop_mi, @city_url, @needs_pin, @active, @ts, @ts)`).run({ ...park, active, ts }).lastInsertRowid;
     }
     db.prepare('DELETE FROM park_categories WHERE park_id = ?').run(parkId);
     const add = db.prepare('INSERT INTO park_categories (park_id, category) VALUES (?, ?)');
@@ -66,7 +70,8 @@ export const allBadgesForAdmin = (db) => db.prepare(`SELECT b.*,
 export const badgeForAdmin = (db, id) => db.prepare('SELECT * FROM badges WHERE id = ?').get(id) || null;
 
 /** Validates the badge form. Returns { badge } (columns ready to save) or { errors } keyed by field. */
-export function validateBadgeForm(form, { isNew }) {
+// targets: the valid activity targets (badgeTargets(db) values), for the activity rules.
+export function validateBadgeForm(form, { isNew, targets = [] }) {
   const errors = {};
   const s = (k, max) => String(form[k] ?? '').replace(/\r\n?/g, '\n').trim().slice(0, max + 1);
   const name = s('name', 60);
@@ -106,6 +111,24 @@ export function validateBadgeForm(form, { isNew }) {
     } else if (type === 'time') {
       if (!TIME_RE.test(raw)) errors[`param_${key}`] = 'Enter a time like 06:30.';
       else params[key] = raw;
+    } else if (type === 'target') {
+      if (!targets.includes(raw)) errors[`param_${key}`] = 'Choose which activities count.';
+      else params[key] = raw;
+    } else if (type === 'metric') {
+      if (!['minutes', 'miles'].includes(raw)) errors[`param_${key}`] = 'Choose minutes or miles.';
+      else params[key] = raw;
+    } else if (type === 'amount') {
+      const n = Number(raw);
+      if (!(n > 0 && n <= 10000) || raw === '') errors[`param_${key}`] = 'Enter a number above 0 and up to 10000.';
+      else params[key] = Math.round(n * 10) / 10;
+    } else if (type === 'days') {
+      const n = Number(raw);
+      if (!Number.isInteger(n) || n < 0 || n > 365 || raw === '') errors[`param_${key}`] = 'Enter whole days from 0 (all time) to 365.';
+      else params[key] = n;
+    } else if (type === 'per_week') {
+      const n = Number(raw);
+      if (!Number.isInteger(n) || n < 1 || n > 7) errors[`param_${key}`] = 'Enter a number of days from 1 to 7.';
+      else params[key] = n;
     }
   }
   if (Object.keys(errors).length) return { errors };

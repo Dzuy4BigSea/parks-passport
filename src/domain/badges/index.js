@@ -1,4 +1,4 @@
-import { RULES } from './rules.js';
+import { RULES, badgeEdition } from './rules.js';
 
 const parseParams = (b) => {
   try { return JSON.parse(b.rule_params || '{}'); } catch { return {}; }
@@ -16,8 +16,11 @@ export function buildContext(db, userId, { trigger = null, random = Math.random,
     parkCategories.get(r.park_id).add(r.category);
   }
   const activeParkIds = new Set(db.prepare('SELECT id FROM parks WHERE active = 1').pluck().all());
+  const activityLogs = db.prepare(`SELECT a.slug, a.pillar, a.edition, a.category, v.park_id, l.logged_on, l.minutes, l.miles
+    FROM activity_logs l JOIN activities a ON a.id = l.activity_id JOIN visits v ON v.id = l.visit_id
+    WHERE l.user_id = ? ORDER BY l.logged_on, l.id`).all(userId);
   return {
-    visits, parkCategories, activeParkIds, trigger, random,
+    visits, parkCategories, activeParkIds, activityLogs, trigger, random,
     palSameDay: palSameDay ?? hasPalSameDay(db, userId),
   };
 }
@@ -91,7 +94,11 @@ export function badgeBoard(db, userId) {
     LEFT JOIN user_badges ub ON ub.badge_id = b.id AND ub.user_id = ?
     WHERE b.enabled = 1 OR ub.awarded_at IS NOT NULL ORDER BY b.sort, b.id`).all(userId);
   const ctx = buildContext(db, userId, { random: () => 1 });
-  return rows.map((b) => {
+  // Paws and Kids badges show only to members who turned that edition on (or already earned them).
+  const user = db.prepare('SELECT paws, kids FROM users WHERE id = ?').get(userId) || {};
+  const editionOn = { core: true, paws: Boolean(user.paws), kids: Boolean(user.kids) };
+  const activityEditions = new Map(db.prepare('SELECT slug, edition FROM activities').raw().all());
+  return rows.filter((b) => b.awarded_at || editionOn[badgeEdition(b, activityEditions)] !== false).map((b) => {
     if (b.awarded_at) return { ...b, state: 'earned' };
     if (b.kind === 'known') {
       const r = evaluateRule(b, ctx);
@@ -107,6 +114,22 @@ export function takeUnseenBadges(db, userId, { now = new Date() } = {}) {
     WHERE ub.user_id = ? AND ub.seen_at IS NULL ORDER BY ub.awarded_at, b.sort`).all(userId);
   if (rows.length) db.prepare('UPDATE user_badges SET seen_at = ? WHERE user_id = ? AND seen_at IS NULL').run(now.toISOString(), userId);
   return rows;
+}
+
+// Adds badges from a seed list whose slugs aren't in the table yet (later seed files, e.g.
+// seed/activity-badges.json, reach databases that were seeded before they existed).
+export function addMissingBadges(db, list, { now = new Date() } = {}) {
+  const ins = db.prepare(`INSERT OR IGNORE INTO badges (slug, name, description, hint, art, rule_type, rule_params, kind, sort, created_at)
+    VALUES (@slug, @name, @description, @hint, @art, @rule_type, @rule_params, @kind, @sort, @created_at)`);
+  let sort = db.prepare('SELECT COALESCE(MAX(sort), 0) FROM badges').pluck().get();
+  let added = 0;
+  db.transaction(() => list.forEach((b) => {
+    added += ins.run({
+      description: '', hint: '', art: '🏅', ...b, rule_params: JSON.stringify(b.rule_params || {}), sort: sort + 1, created_at: now.toISOString(),
+    }).changes;
+    sort += 1;
+  }))();
+  return added;
 }
 
 // Loads seed/badges.json into an empty badges table.

@@ -224,7 +224,7 @@ Done when:
 - [ ] **dataLayer events** are pushed with these exact names and parameters, with no email,
       name, handle, free text or coordinates in any event: `sign_up {method}`,
       `login {method}`, `park_view {park_slug}`, `park_search {has_query, filter_count}`,
-      `check_in {park_slug, method}`, `photo_upload {park_slug}`,
+      `check_in {park_slug, method}`, `photo_upload {park_slug}`, `activity_log {activity_slug, pillar}`,
       `rating_submit {park_slug, stars}`, `badge_earned {badge_slug, kind}`,
       `level_up {level}`, `pal_invite_created`, `pal_accepted`, `share_prompt_action {action}`,
       `consent_update {analytics, ads}`. The same events go to Umami. A Playwright test checks
@@ -273,15 +273,53 @@ Done when:
       allowlist sanitizer (shapes only; no scripts, styles, links, text or event handlers) or is
       rejected. Without `ANTHROPIC_API_KEY` the button is off. API errors show a fixed message.
 
+### Flow 12: Healthy activities (Paws and Kids editions)
+As a member, once I've stamped a park I can log healthy things I do there, so that each visit
+has more to it and I have reasons to come back. Background and sources:
+`docs/healthy-activities.md`.
+Done when:
+- [ ] **Activities** come from `seed/activities.json`, which is loaded on every start: new ones
+      are added and existing ones reworded, but an admin's on/off switch is kept. Each has a
+      pillar (move, nature, calm, connect, learn, give), an edition (core, paws, kids), an optional
+      park category it needs, a measure (check, minutes, miles or count) and points (1–5, so a
+      stamp stays worth more).
+- [ ] On a park page, a signed-in member who **stamped that park today** sees "Things to do here":
+      activities for that park's categories first, then any-park ones grouped by pillar, then
+      Paws and Kids. Before stamping, the section only says how many activities the stamp unlocks.
+      Signed-out visitors don't see it. Backdated stamps don't unlock activities.
+- [ ] Logging works without JavaScript. Each activity counts once per visit (park and day) and
+      earns its points through the ledger. Minutes are 1–180 a log, miles 0.1–15 a log and 15 a
+      day (more is refused), and at most 180 minutes a day count toward weekly goals. Errors show
+      next to the activity. Undo removes the log and its points. Deleting the visit removes its
+      logs and their points, and badges no longer met are taken back.
+- [ ] **Privacy:** activity logs are visible only to their owner (never in the Pals feed or a
+      public passport). Analytics get `activity_log {activity_slug, pillar}` only. No GPS is
+      recorded beyond the stamp.
+- [ ] **Editions** are switched on in Account: Paws ("I bring a pet") and Kids ("I bring kids").
+      They add their activities, and their badges show on the badge board only when the edition
+      is on (or the badge is already earned). Kids stores nothing about children, and while it's
+      on, new photos (including stamp photos) default to "Only me".
+- [ ] **Badge rule types:** `activity_count(target, n)`, `activity_parks(target, n)`,
+      `activity_sum(target, metric, total, window_days)` (0 = all time), `weekly_sum(target,
+      metric, total, n)`, `weekly_days(target, per_week, n)`, `pillar_variety(n, window_days)` and
+      `activity_categories(n)`. `target` is `any`, `pillar:<p>`, `edition:<e>` or
+      `activity:<slug>`. Weekly runs survive one missed week. Seed badges ship in
+      `seed/activity-badges.json` and are added by slug to existing databases.
+- [ ] **My passport** shows this week's movement minutes (goal 150), park minutes (goal 120),
+      miles and pillars.
+- [ ] **Admin:** Admin › Activities switches each activity on or off. The badge form offers the new
+      rule types with a target picker. The park form has an optional walking-loop length
+      (`loop_mi`), shown next to "Walk a mile".
+
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.
 - **users**: id, email (unique, lower-cased), password_hash (scrypt, nullable for magic-link-only
   accounts), display_name, handle (unique), default_visibility, is_admin, share_nudge_dismissals,
-  created_at
+  paws, kids (editions), created_at
 - **sessions**: id (random token hash), user_id, expires_at, created_at
 - **auth_tokens**: id, user_id or email, purpose (magic_link | password_reset), token_hash,
   expires_at, used_at
-- **parks**: id, slug (unique), name, address, lat, lng, checkin_radius_m, city_url, active,
+- **parks**: id, slug (unique), name, address, lat, lng, checkin_radius_m, loop_mi, city_url, active,
   created_at, updated_at
 - **park_categories**: park_id, category (e.g. `dog-park`, `playground`, `waterfront`)
 - **visits**: id, user_id, park_id, visited_on (local date), visited_at, method (gps|photo|honor),
@@ -295,6 +333,10 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 - **user_badges**: user_id, badge_id, awarded_at, source_visit_id, unique(user_id, badge_id)
 - **point_events**: id, user_id, source_type, source_id, points, created_at (the ledger; total
   and level are derived from it)
+- **activities**: id, slug (unique), name, description, pillar, edition, category (nullable),
+  measure, minutes (credited for a check), points, sort, active
+- **activity_logs**: id, user_id, visit_id, activity_id, amount, minutes, miles, logged_on,
+  created_at, unique(visit_id, activity_id). Private to the owner.
 - **pal_links**: user_a, user_b (a < b), created_at. **pal_invites**: user_id, token_hash,
   created_at, revoked_at
 - **feed** is a query over visits, photos and user_badges filtered by visibility, not a table.

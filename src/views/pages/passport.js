@@ -1,3 +1,5 @@
+import { weekCard } from '../activities.js';
+import { WEEKLY_GOALS } from '../../domain/activities.js';
 import { html } from '../html.js';
 import { badgeArt } from '../badge-art.js';
 import { csrfField } from '../forms.js';
@@ -63,7 +65,7 @@ function badgeCard(b) {
 </li>`;
 }
 
-export function passportPage({ user, csrf, parks, history, points, level, badges, readOnly = false, theme = { motifs: [], areas: [] }, next = null }) {
+export function passportPage({ user, csrf, parks, history, points, level, badges, readOnly = false, theme = { motifs: [], areas: [] }, next = null, week = null }) {
   const stamped = parks.filter((p) => p.first_visit);
   const total = parks.length;
   const mapData = parks.filter((p) => p.lat != null).map((p) => ({
@@ -96,6 +98,7 @@ export function passportPage({ user, csrf, parks, history, points, level, badges
 </header>
 
 ${next ? nextUpCards(next) : ''}
+${week && !readOnly ? weekCard({ week, goals: WEEKLY_GOALS }) : ''}
 
 <section aria-labelledby="stamps-h">
   <h2 id="stamps-h">Stamps</h2>

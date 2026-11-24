@@ -192,7 +192,8 @@ export default async function authRoutes(app) {
   app.get('/account', { preHandler: requireUser }, async (req, reply) =>
     reply.page(accountPage({
       csrf: req.csrfToken(), user: req.user,
-      notice: req.query.done === 'visibility' ? `Saved. Your passport is now visible to ${VISIBILITY_SAVED[req.user.default_visibility]}.` : null,
+      notice: req.query.done === 'visibility' ? `Saved. Your passport is now visible to ${VISIBILITY_SAVED[req.user.default_visibility]}.`
+        : req.query.done === 'editions' ? 'Saved your editions.' : null,
     })));
 
   const removeAccount = async (reply, userId) => {

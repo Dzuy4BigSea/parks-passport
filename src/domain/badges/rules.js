@@ -7,7 +7,8 @@
  *   parkCategories: Map<park_id, Set<category>>,
  *   activeParkIds: Set<park_id>,
  *   palSameDay: boolean,            // a pal stamped the same park on the same day (M6)
- *   trigger: { type: 'visit' | 'photo' | 'rating' | 'pal', id },
+ *   activityLogs: [{ slug, pillar, edition, category, park_id, logged_on, minutes, miles }],
+ *   trigger: { type: 'visit' | 'photo' | 'rating' | 'pal' | 'activity', id },
  *   random: () => number,           // injectable for tests
  * }
  */
@@ -117,6 +118,143 @@ export const RULES = {
     // Only rolls when a stamp triggered the evaluation; never re-rolled on other events.
     evaluate: ({ probability }, ctx) => ({ earned: ctx.trigger?.type === 'visit' && ctx.random() < probability }),
   },
+
+  // ---- Healthy activities (docs/healthy-activities.md) ----
+  // `target` picks which logs count: "any", "pillar:<pillar>", "edition:<edition>" or "activity:<slug>".
+
+  activity_count: {
+    label: 'Log N activities (of a kind)',
+    params: { target: 'target', n: 'number' },
+    evaluate: ({ target, n }, ctx) => count(logsFor(ctx, target).length, n, 'activities'),
+  },
+
+  activity_parks: {
+    label: 'Log activities (of a kind) at N different parks',
+    params: { target: 'target', n: 'number' },
+    evaluate: ({ target, n }, ctx) => count(new Set(logsFor(ctx, target).map((l) => l.park_id)).size, n, 'parks'),
+  },
+
+  activity_sum: {
+    label: 'Log a total of minutes or miles (within a window of days; 0 = all time)',
+    params: { target: 'target', metric: 'metric', total: 'amount', window_days: 'days' },
+    evaluate: ({ target, metric, total, window_days: windowDays }, ctx) => {
+      const days = byDay(logsFor(ctx, target), (l) => l[metric] || 0);
+      const best = windowDays ? bestWindow(days, windowDays, (vals) => vals.reduce((s, v) => s + v, 0)) : sumOf([...days.values()]);
+      return count(round1(best), total, metric);
+    },
+  },
+
+  weekly_sum: {
+    label: 'Reach a weekly total of minutes or miles for N weeks (one missed week allowed)',
+    params: { target: 'target', metric: 'metric', total: 'amount', n: 'number' },
+    evaluate: ({ target, metric, total, n }, ctx) => {
+      const weeks = new Map();
+      for (const l of logsFor(ctx, target)) {
+        const w = mondayOf(dayNumber(l.logged_on));
+        weeks.set(w, (weeks.get(w) || 0) + (l[metric] || 0));
+      }
+      // For a one-week goal, show progress as the best week's total ("95 / 150 minutes").
+      if (n === 1) return count(round1(Math.max(0, ...weeks.values())), total, `${metric} in a week`);
+      return count(weekRun([...weeks].filter(([, v]) => v >= total - 1e-9).map(([w]) => w)), n, 'weeks');
+    },
+  },
+
+  weekly_days: {
+    label: 'Log activities (of a kind) on N days a week, for N weeks (one missed week allowed)',
+    params: { target: 'target', per_week: 'per_week', n: 'number' },
+    evaluate: ({ target, per_week: perWeek, n }, ctx) => {
+      const weeks = new Map();
+      for (const l of logsFor(ctx, target)) {
+        const w = mondayOf(dayNumber(l.logged_on));
+        if (!weeks.has(w)) weeks.set(w, new Set());
+        weeks.get(w).add(l.logged_on);
+      }
+      return count(weekRun([...weeks].filter(([, s]) => s.size >= perWeek).map(([w]) => w)), n, 'weeks');
+    },
+  },
+
+  pillar_variety: {
+    label: 'Log activities from N different pillars within a window of days',
+    params: { n: 'number', window_days: 'days' },
+    evaluate: ({ n, window_days: windowDays }, ctx) => {
+      const days = new Map();
+      for (const l of ctx.activityLogs || []) {
+        const d = dayNumber(l.logged_on);
+        if (!days.has(d)) days.set(d, []);
+        days.get(d).push(l.pillar);
+      }
+      const variety = (vals) => new Set(vals.flat()).size;
+      return count(windowDays ? bestWindow(days, windowDays, variety) : variety([...days.values()]), n, 'pillars');
+    },
+  },
+
+  activity_categories: {
+    label: 'Log facility activities at N different kinds of facility',
+    params: { n: 'number' },
+    evaluate: ({ n }, ctx) => count(new Set((ctx.activityLogs || []).filter((l) => l.category).map((l) => l.category)).size, n, 'facilities'),
+  },
 };
+
+// Logs matching a badge's target.
+export function matchesTarget(target, log) {
+  if (!target || target === 'any') return true;
+  const [kind, value] = String(target).split(':');
+  if (kind === 'pillar') return log.pillar === value;
+  if (kind === 'edition') return log.edition === value;
+  if (kind === 'activity') return log.slug === value;
+  return false;
+}
+const logsFor = (ctx, target) => (ctx.activityLogs || []).filter((l) => matchesTarget(target, l));
+
+const round1 = (x) => Math.round(x * 10) / 10;
+const sumOf = (vals) => vals.reduce((s, v) => s + (Array.isArray(v) ? sumOf(v) : v), 0);
+
+// Map<dayNumber, value[]> of the logs.
+function byDay(logs, value) {
+  const days = new Map();
+  for (const l of logs) {
+    const d = dayNumber(l.logged_on);
+    if (!days.has(d)) days.set(d, []);
+    days.get(d).push(value(l));
+  }
+  return days;
+}
+
+// The best score over any run of `windowDays` consecutive days. score(values[]) -> number.
+function bestWindow(days, windowDays, score) {
+  let best = 0;
+  for (const start of days.keys()) {
+    const vals = [];
+    for (const [d, v] of days) if (d >= start && d < start + windowDays) vals.push(...v);
+    best = Math.max(best, score(vals));
+  }
+  return best;
+}
+
+// Longest run of qualifying weeks (Monday day numbers). A run survives one missed week, which
+// doesn't count toward it (habits survive the odd miss: Lally et al. 2010).
+function weekRun(weeks) {
+  const sorted = [...new Set(weeks)].sort((a, b) => a - b);
+  let best = 0;
+  let run = 0;
+  let graceUsed = false;
+  for (let i = 0; i < sorted.length; i++) {
+    const gap = i > 0 ? sorted[i] - sorted[i - 1] : null;
+    if (gap === 7) run += 1;
+    else if (gap === 14 && !graceUsed) { run += 1; graceUsed = true; } else { run = 1; graceUsed = false; }
+    best = Math.max(best, run);
+  }
+  return best;
+}
+
+/** The edition a badge belongs to ('core', 'paws' or 'kids'), from its target. */
+export function badgeEdition(badge, activityEditions) {
+  let target;
+  try { target = JSON.parse(badge.rule_params || '{}').target; } catch { return 'core'; }
+  const [kind, value] = String(target || '').split(':');
+  if (kind === 'edition') return value;
+  if (kind === 'activity') return activityEditions.get(value) || 'core';
+  return 'core';
+}
 
 export const RULE_TYPES = Object.keys(RULES);

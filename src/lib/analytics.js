@@ -7,6 +7,7 @@ export const EVENTS = {
   park_search: ['has_query', 'filter_count'],
   check_in: ['park_slug', 'method'],
   photo_upload: ['park_slug'],
+  activity_log: ['activity_slug', 'pillar'],
   rating_submit: ['park_slug', 'stars'],
   badge_earned: ['badge_slug', 'kind'],
   level_up: ['level'],

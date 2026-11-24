@@ -35,7 +35,7 @@
   1  Azalea Recreation Center  ->  recreation-center
   1  Azalea Sports Complex  ->  ball-fields
   1  Pickleball Courts (6)  ->  pickleball
-  1  Shuffleboard  ->  (none)
+  1  Shuffleboard  ->  shuffleboard
   1  St. Petersburg Tennis Center  ->  tennis
   1  Cricket Field  ->  ball-fields
   1  Lighted Pickleball Court  ->  pickleball
