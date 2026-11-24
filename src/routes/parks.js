@@ -1,4 +1,4 @@
-import { listParks, getParkBySlug, countActiveParks, categoriesInUse, cleanCategories } from '../domain/parks.js';
+import { listParks, getParkBySlug, countActiveParks, categoriesInUse, cleanCategories, parkCardExtras } from '../domain/parks.js';
 import { parseLatLng } from '../domain/geo.js';
 import { stampedParkIds } from '../domain/visits.js';
 import { parksPage } from '../views/pages/parks.js';
@@ -17,8 +17,12 @@ export default async function parkRoutes(app) {
     if (unvisited) parks = parks.filter((p) => !stamped.has(p.id));
     const filterCount = selected.length + (unvisited ? 1 : 0);
     const events = q || filterCount ? [['park_search', { has_query: Boolean(q), filter_count: filterCount }]] : [];
+    // First-visit dates for the postmarks on stamped cards (the member's own data).
+    const stampDates = req.user ? new Map(db.prepare('SELECT park_id, MIN(visited_on) FROM visits WHERE user_id = ? GROUP BY park_id')
+      .raw().all(req.user.id)) : null;
     return reply.page({ events, ...parksPage({
-      parks, total: countActiveParks(db), q, selected, near, unvisited, stamped,
+      parks, total: countActiveParks(db), q, selected, near, unvisited, stamped, stampDates,
+      extras: parkCardExtras(db, parks.map((p) => p.id)),
       categories: categoriesInUse(db), signedIn: Boolean(req.user), theme: app.theme(),
     }) });
   });

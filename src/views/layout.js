@@ -108,6 +108,7 @@ export function layout({ title, body, head = null, scripts = [], current = '', u
 <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
 <link rel="preload" href="/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
+<script>document.documentElement.classList.add('js')</script>
 <link rel="stylesheet" href="/css/app.css">
 ${accents}
 ${analyticsHead(analytics, consent, events)}

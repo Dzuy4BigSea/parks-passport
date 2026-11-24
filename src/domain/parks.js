@@ -57,3 +57,23 @@ export function categoriesInUse(db) {
     JOIN parks p ON p.id = pc.park_id WHERE p.active = 1`).pluck().all());
   return Object.keys(CATEGORIES).filter((c) => used.has(c));
 }
+
+/**
+ * Card extras for a list of park ids: average rating and count (all ratings count, as on the park
+ * page), and the newest public, unhidden photo (safe to show to anyone).
+ * Returns Map<park_id, { rating: { average, count } | null, photoId: number | null }>.
+ */
+export function parkCardExtras(db, ids) {
+  const out = new Map(ids.map((id) => [id, { rating: null, photoId: null }]));
+  if (!ids.length) return out;
+  const marks = ids.map(() => '?').join(',');
+  for (const r of db.prepare(`SELECT park_id, AVG(stars) AS average, COUNT(*) AS count FROM ratings
+    WHERE park_id IN (${marks}) GROUP BY park_id`).all(...ids)) {
+    out.get(r.park_id).rating = { average: r.average, count: r.count };
+  }
+  for (const r of db.prepare(`SELECT park_id, MAX(id) AS id FROM photos
+    WHERE park_id IN (${marks}) AND visibility = 'public' AND hidden = 0 GROUP BY park_id`).all(...ids)) {
+    out.get(r.park_id).photoId = r.id;
+  }
+  return out;
+}
