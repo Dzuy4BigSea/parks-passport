@@ -5,6 +5,8 @@ test('home page loads and passes axe', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your passport to St. Pete parks');
   await expect(page.getByText('Not affiliated with the City of St. Petersburg')).toBeVisible();
+  await expect(page.getByRole('heading', { name: "Hey, I'm Gary. Glad you're here." })).toBeVisible();
+  await expect(page.getByRole('img', { name: /Gary, waving hello/ })).toBeVisible();
   await expectNoAxeViolations(page);
 });
 

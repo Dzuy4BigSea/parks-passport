@@ -280,6 +280,28 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; 
   .hero { padding: 3rem 2.5rem; display: grid; grid-template-columns: 1.4fr 1fr; align-items: center; gap: 2rem; }
   .hero-motifs { grid-template-columns: repeat(3, 88px); justify-content: end; margin-top: 0; }
 }
+/* Meet Gary, the guide. His own motion lives inside gary.svg. */
+.meet-gary {
+  display: grid; justify-items: center; gap: 0.5rem; margin-top: 1.5rem; padding: 1.25rem 1.25rem 1.5rem;
+  background: var(--sun-tint); border-radius: 28px; box-shadow: var(--shadow);
+}
+.gary-art { width: 180px; height: auto; display: block; }
+.gary-bubble {
+  position: relative; background: var(--surface); border-radius: var(--radius); padding: 1.1rem 1.25rem;
+  box-shadow: var(--shadow); max-width: 36rem;
+}
+.gary-bubble::before {
+  content: ""; position: absolute; left: 50%; top: -9px; width: 18px; height: 18px; margin-left: -9px;
+  background: var(--surface); transform: rotate(45deg); border-radius: 3px;
+}
+.gary-bubble h2 { margin: 0.2rem 0 0.5rem; }
+.gary-bubble p:last-child { margin-bottom: 0; }
+@media (min-width: 768px) {
+  .meet-gary { grid-template-columns: auto 1fr; justify-items: start; align-items: center; gap: 1.5rem; padding: 1.5rem 2.5rem; }
+  .gary-art { width: 220px; }
+  .gary-bubble::before { left: -9px; top: 50%; margin: -9px 0 0; }
+}
+
 .tile {
   display: grid; place-items: center; aspect-ratio: 1; border-radius: 22px; color: var(--ink);
   background: var(--aqua-tint); box-shadow: var(--shadow);
