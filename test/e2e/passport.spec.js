@@ -56,9 +56,11 @@ test('stamping announces the badge once and fills in the passport', async ({ pag
   const first = page.locator('.badge.earned', { hasText: 'First Stamp' });
   await expect(first).toContainText(/Earned \w+ \d+, \d{4}/);
   await expect(page.locator('.badge.known', { hasText: 'Five Parks' })).toContainText('2 / 5 parks');
-  const hidden = page.locator('.badge.mystery', { hasText: 'Some parks are best before breakfast.' });
+  // Weekend Warrior needs 3 parks in one weekend, which this test never does. (Early Bird was used
+  // here before, but a stamp made between 5:00 and 7:30 am New York time really earns it.)
+  const hidden = page.locator('.badge.mystery', { hasText: 'Make a weekend of it.' });
   await expect(hidden).toContainText('Hidden badge');
-  await expect(hidden).not.toContainText('Early Bird');
+  await expect(hidden).not.toContainText('Weekend Warrior');
 
   // History: newest first, with date, park and method.
   const rows = page.locator('.history li');

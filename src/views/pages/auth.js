@@ -5,11 +5,14 @@ import { visibilityForm } from './pals.js';
 const nextField = (next) => (next ? html`<input type="hidden" name="next" value="${next}">` : '');
 const withNext = (path, next) => (next ? `${path}?next=${encodeURIComponent(next)}` : path);
 
-export function signupPage({ csrf, values = {}, errors = {}, next }) {
+export function signupPage({ csrf, values = {}, errors = {}, next, invite = null, inviteNotice = null }) {
   return {
     title: 'Create your passport',
     body: html`<div class="narrow">
+${invite ? html`<p class="eyebrow">You're invited</p>` : ''}
 <h1>Create your passport</h1>
+${invite?.inviter_name ? html`<p class="lede">${invite.inviter_name} invited you. Stamp every St. Pete park you visit, earn badges and explore with friends.</p>` : ''}
+${inviteNotice ? html`<p class="notice" role="status">${inviteNotice}</p>` : ''}
 ${errorSummary(errors, { display_name: 'Display name', email: 'Email', password: 'Password' })}
 <form method="post" action="/signup" class="card-form" novalidate>
   ${csrfField(csrf)}${nextField(next)}

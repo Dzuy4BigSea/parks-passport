@@ -191,6 +191,13 @@ Done when:
 - [ ] A moderation queue lists the newest public and pals photos and reviews, with hide and
       unhide actions.
 - [ ] I can promote or demote another member to admin, but I can't demote myself.
+- [ ] I can invite someone by email from Admin › Members. They get the branded invitation (wording
+      editable in Admin › Email › Messages) with a one-time `/join/<token>` link that fills in the
+      sign-up form and works for 30 days. Sign-up stays open to everyone. Existing members and
+      addresses invited in the last 24 hours are refused. The list shows each invite as Pending or
+      Joined. Only the token's hash is stored, and the join page loads no analytics.
+- [ ] I can change the wording of every member email (subject, preview text, heading, message,
+      button, small print, with {name} and {inviter}) and preview or reset it.
 
 ### Flow 10: Analytics and consent
 As the owner, I can see how the app is used without tracking anyone who hasn't agreed, and

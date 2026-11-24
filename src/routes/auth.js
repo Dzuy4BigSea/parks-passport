@@ -1,6 +1,7 @@
 import { requireUser, safeNext } from '../lib/auth.js';
 import { magicLinkEmail, passwordResetEmail, deleteAccountEmail } from '../views/email.js';
 import { emailCopy } from '../domain/email-copy.js';
+import { inviteForToken, acceptInvites } from '../domain/invites.js';
 import { verifyPassword, burnPasswordCheck } from '../lib/crypto.js';
 import {
   createUser, findUserByEmail, findUserById, createSession, deleteSession, deleteAllSessions,
@@ -56,6 +57,18 @@ export default async function authRoutes(app) {
     return reply.page(signupPage({ csrf: req.csrfToken(), next: str(req.query.next) }));
   });
 
+  // Invite links from Admin › Members: the sign-up form, filled in from the invite. Sign-up is open
+  // to everyone, so an expired link still offers it. The token stays out of analytics (app.js).
+  app.get('/join/:token', async (req, reply) => {
+    if (req.user) return reply.redirect('/passport');
+    const invite = inviteForToken(db, req.params.token, { now: now() });
+    return reply.page(signupPage({
+      csrf: req.csrfToken(), invite,
+      values: invite ? { email: invite.email, display_name: invite.name } : {},
+      inviteNotice: invite ? null : 'This invite link has expired or was already used. You can still create a passport here.',
+    }));
+  });
+
   app.post('/signup', async (req, reply) => {
     const values = { display_name: str(req.body.display_name, 100), email: str(req.body.email, 300) };
     const { user, errors } = await createUser(db, { ...values, password: str(req.body.password) }, { now: now() });
@@ -63,6 +76,7 @@ export default async function authRoutes(app) {
       reply.code(422);
       return reply.page(signupPage({ csrf: req.csrfToken(), values, errors, next: str(req.body.next) }));
     }
+    acceptInvites(db, user.email, user.id, { now: now() });
     startSession(req, reply, user.id);
     app.track(user.id, 'sign_up', { method: 'password' });
     return reply.redirect(safeNext(req.body.next), 303);

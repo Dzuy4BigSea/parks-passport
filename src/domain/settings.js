@@ -7,6 +7,7 @@ export const EMAIL_DEFAULTS = {
   subject_magic_link: 'Your Parks Passport sign-in link',
   subject_password_reset: 'Reset your Parks Passport password',
   subject_delete_account: 'Confirm deleting your Parks Passport account',
+  subject_invite: "You're invited to Parks Passport",
 };
 
 const getRaw = (db, key) => db.prepare('SELECT value FROM settings WHERE key = ?').pluck().get(key);

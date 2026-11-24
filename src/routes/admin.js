@@ -14,6 +14,7 @@ import {
 } from '../domain/city.js';
 import { themeJob, startThemeJob } from '../domain/theme-job.js';
 import { testEmail, memberEmail } from '../views/email.js';
+import { createInvite, recentInvites } from '../domain/invites.js';
 import { EMAIL_KINDS, COPY_FIELDS, emailCopy, saveEmailCopy, resetEmailCopy, isCustomized } from '../domain/email-copy.js';
 import {
   adminCity, adminEmail, adminEmailMessage, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
@@ -188,7 +189,7 @@ export default async function adminRoutes(app) {
     // Admin › Email › Messages: the wording of each member email, with a preview.
     const copyOf = (kind) => ({ ...emailCopy(db, kind), subject: app.emailSettings()[EMAIL_KINDS[kind].subjectKey] });
     const sample = (req, kind, copy) => memberEmail({
-      kind, copy, baseUrl: app.config.baseUrl, tagline: app.theme().tagline, name: req.user.display_name, url: `${app.config.baseUrl}/`,
+      kind, copy, baseUrl: app.config.baseUrl, tagline: app.theme().tagline, name: req.user.display_name, inviter: req.user.display_name, url: `${app.config.baseUrl}/`,
     });
     const messagePage = (req, kind, extra = {}) => {
       const copy = copyOf(kind);
@@ -259,10 +260,29 @@ export default async function adminRoutes(app) {
     });
 
     // Members
-    r.get('/users', async (req, reply) => reply.page(adminUsers({
-      users: allUsersForAdmin(db), csrf: req.csrfToken(), me: req.user,
-      notice: req.query.done ? 'Saved.' : null,
+    const usersPage = (req, extra = {}) => adminUsers({
+      users: allUsersForAdmin(db), csrf: req.csrfToken(), me: req.user, invites: recentInvites(db), ...extra,
+    });
+    r.get('/users', async (req, reply) => reply.page(usersPage(req, {
+      notice: { invited: 'Invite sent.' }[req.query.done] || (req.query.done ? 'Saved.' : null),
     })));
+    // Invite by email: records the invite, then sends the branded invitation with a /join link.
+    r.post('/invites', async (req, reply) => {
+      const result = createInvite(db, { email: req.body.invite_email, name: req.body.invite_name, inviter: req.user }, { now: now() });
+      if (result.error) return reply.code(422).page(usersPage(req, { inviteError: result.error, inviteValues: result.values }));
+      const msg = memberEmail({
+        kind: 'invite', copy: copyOf('invite'), baseUrl: app.config.baseUrl, tagline: app.theme().tagline,
+        name: result.invite.name || 'there', inviter: req.user.display_name, url: `${app.config.baseUrl}/join/${result.token}`,
+      });
+      try {
+        await app.mailer.send({ to: result.invite.email, ...msg });
+      } catch (err) {
+        req.log.warn({ err: err.message }, 'invite email failed');
+        db.prepare('DELETE FROM invites WHERE id = ?').run(result.invite.id); // so it can be retried right away
+        return reply.code(502).page(usersPage(req, { inviteError: `The invite couldn't be sent: ${err.message}`, inviteValues: result.invite }));
+      }
+      return reply.redirect('/admin/users?done=invited', 303);
+    });
     r.post('/users/:id/admin', async (req, reply) => {
       const result = setAdminFlag(db, req.user, Number(req.params.id), req.body.admin === '1');
       if (result.error === 'not_found') return reply.callNotFound();

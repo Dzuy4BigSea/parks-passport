@@ -26,6 +26,7 @@ test('signed-out pages', async ({ page }) => {
   }
   await check(page, '/reset?token=expired', { status: 400 });
   await check(page, '/auth/magic?token=expired', { status: 400 });
+  await check(page, '/join/expired-or-unknown-invite-token');
   await check(page, '/no-such-page', { status: 404 });
 });
 
@@ -37,7 +38,7 @@ test('signed-in pages, including admin', async ({ page }) => {
   db.close();
   for (const url of ['/', '/stamp', '/passport', '/pals', '/account', `/u/${handle}?preview=1`, '/parks?unvisited=1',
     '/admin', '/admin/parks', '/admin/parks/new', '/admin/import', '/admin/badges', '/admin/badges/new',
-    '/admin/moderation', '/admin/users', '/admin/email', '/admin/email/messages/magic_link', '/admin/city']) {
+    '/admin/moderation', '/admin/users', '/admin/email', '/admin/email/messages/magic_link', '/admin/email/messages/invite', '/admin/city']) {
     await check(page, url);
   }
 });

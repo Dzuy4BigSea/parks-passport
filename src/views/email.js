@@ -81,25 +81,27 @@ export function emailLayout({ baseUrl, preheader, heading, paragraphs = [], butt
 }
 
 // Member emails: wording from Admin › Email › Messages (domain/email-copy.js), defaults otherwise.
-const fill = (text, name) => String(text).split('{name}').join(name);
+// {name} and {inviter} placeholders; values are escaped later with everything else.
+const fill = (text, vars) => String(text).replace(/\{(name|inviter)\}/g, (_, k) => vars[k] ?? '');
 // Blank lines split paragraphs; single line breaks stay as <br>. Everything is escaped.
-const paragraphsOf = (body, name) => fill(body, name).split(/\n{2,}/).map((para) => {
+const paragraphsOf = (body, vars) => fill(body, vars).split(/\n{2,}/).map((para) => {
   const lines = para.split('\n');
   return html`${lines.map((l, i) => (i ? html`<br>${l}` : l))}`;
 });
 
 /** { subject, text, html } for one member email. copy = { subject, preheader, heading, body, button, note }. */
-export function memberEmail({ kind, copy, baseUrl, tagline, name, url }) {
+export function memberEmail({ kind, copy, baseUrl, tagline, name, url, inviter = '' }) {
   const def = EMAIL_KINDS[kind];
   const c = { ...def.defaults, ...copy };
-  const note = fill(c.note, name);
+  const vars = { name, inviter };
+  const note = fill(c.note, vars);
   return {
-    subject: fill(c.subject, name),
+    subject: fill(c.subject, vars),
     // Plain text: the link is the first URL, so text-only mail apps and tests find it.
-    text: `${fill(c.body, name)}\n\n${c.button}:\n${url}\n${note ? `\n${note}\n` : ''}`,
+    text: `${fill(c.body, vars)}\n\n${c.button}:\n${url}\n${note ? `\n${note}\n` : ''}`,
     html: emailLayout({
-      baseUrl, tagline, preheader: fill(c.preheader, name), heading: fill(c.heading, name),
-      paragraphs: paragraphsOf(c.body, name), button: { label: c.button, url, danger: def.danger }, note,
+      baseUrl, tagline, preheader: fill(c.preheader, vars), heading: fill(c.heading, vars),
+      paragraphs: paragraphsOf(c.body, vars), button: { label: c.button, url, danger: def.danger }, note,
     }),
   };
 }
