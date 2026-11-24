@@ -21,7 +21,7 @@ export function nextUpCards({ nextPark, nextBadge, streak }, { heading = 'Up nex
   <ul class="nextup">
     <li class="reveal" style="--i:0">${nextPark
       ? html`<a href="/parks/${nextPark.slug}"><span class="icon">${ICONS.pin}</span><span>
-        <span class="label">Closest new park</span><strong>${nextPark.name}</strong>
+        <span class="label">${nextPark.saved ? 'Want to go' : 'Closest new park'}</span><strong>${nextPark.name}</strong>
         <span class="meta">${formatMiles(nextPark.distance_m)} from your last stamp · +10 points</span></span></a>`
       : html`<a href="/parks"><span class="icon">${ICONS.pin}</span><span>
         <span class="label">Closest new park</span><strong>Find a park near you</strong>
@@ -39,5 +39,5 @@ export function nextUpCards({ nextPark, nextBadge, streak }, { heading = 'Up nex
 export function nextLine({ nextPark, nextBadge }) {
   if (!nextPark && !nextBadge) return '';
   return html`<p class="next-line">${nextBadge ? html`<strong>${more(nextBadge)}</strong> to earn ${nextBadge.name}. ` : ''}${nextPark
-    ? html`Closest new park: <a href="/parks/${nextPark.slug}">${nextPark.name}</a> (${formatMiles(nextPark.distance_m)}).` : ''}</p>`;
+    ? html`${nextPark.saved ? 'Next on your Want to go list' : 'Closest new park'}: <a href="/parks/${nextPark.slug}">${nextPark.name}</a> (${formatMiles(nextPark.distance_m)}).` : ''}</p>`;
 }

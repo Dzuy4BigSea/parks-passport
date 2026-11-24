@@ -872,3 +872,25 @@ img.feed-icon { width: 2rem; height: 2rem; }
 .credits-list img { width: 120px; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: var(--radius-sm); flex: none; filter: sepia(0.2); }
 .credits-list h2 { margin: 0 0 0.25rem; font-size: 1.05rem; }
 .credits-list p { margin: 0 0 0.25rem; overflow-wrap: anywhere; }
+
+/* ---------- Want to go (saved parks) ---------- */
+.save-form { margin: 0; }
+.save-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+  min-width: 44px; min-height: 44px; padding: 0 0.6rem; border-radius: 999px; cursor: pointer;
+  border: 2px solid var(--line); background: var(--surface); color: var(--pink-ink); font: inherit; font-weight: 700;
+}
+.save-btn svg { width: 22px; height: 22px; }
+.save-btn[aria-pressed="true"] { border-color: var(--pink-ink); }
+.save-btn[aria-pressed="true"] svg { fill: currentColor; }
+.save-btn:hover { border-color: var(--pink-ink); }
+.save-btn:disabled { opacity: 0.7; cursor: progress; }
+.park-card h2 { padding-right: 3rem; }
+/* Above the card's full-size link overlay, in the top-right corner. */
+.park-card .save-form { position: absolute; top: 0.6rem; right: 0.6rem; z-index: 1; }
+.park-pills .save-form { display: inline-block; }
+.want-list { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 0.5rem; }
+.want-list li {
+  display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.6rem 0.85rem;
+}

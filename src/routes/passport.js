@@ -5,6 +5,7 @@ import { levelFor } from '../domain/levels.js';
 import { passportData } from '../domain/passport.js';
 import { passportPage } from '../views/pages/passport.js';
 import { nextUp } from '../domain/engagement.js';
+import { wantToGo } from '../domain/saved.js';
 
 export default async function passportRoutes(app) {
   const { db } = app;
@@ -16,6 +17,7 @@ export default async function passportRoutes(app) {
     return reply.page(passportPage({
       ...passportData(db, user.id), user, csrf: req.csrfToken(), points, level: levelFor(points),
       badges, theme: app.theme(), next: nextUp(db, user.id, badges, { now: app.now() }),
+      wantToGo: wantToGo(db, user.id),
     }));
   });
 }

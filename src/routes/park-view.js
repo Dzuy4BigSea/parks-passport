@@ -6,6 +6,7 @@ import { parkPage } from '../views/pages/park.js';
 import { areaForPark, motifForPark } from '../domain/city.js';
 import { nextParks, closestBadge } from '../domain/engagement.js';
 import { badgeBoard } from '../domain/badges/index.js';
+import { isSaved } from '../domain/saved.js';
 
 /**
  * Renders a park page with everything the viewer may see. `problem` ({ text, area, offerHonor })
@@ -29,5 +30,6 @@ export function renderParkPage(app, req, reply, park, { problem = null, stamped 
     summary: ratingSummary(db, park.id),
     reviews: visibleReviews(db, user, park.id),
     mine: user ? myRating(db, user.id, park.id) : null,
+    saved: user ? isSaved(db, user.id, park.id) : false,
   }) });
 }

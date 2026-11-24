@@ -22,18 +22,20 @@ export function weeklyStreak(dates, today) {
 
 /**
  * The closest unstamped active parks to the park of the user's latest stamp (pins only).
+ * Parks on the user's own "Want to go" list come first (saved: true), then the rest.
  * Returns [] when the user hasn't stamped yet or every pinned park is stamped.
  */
 export function nextParks(db, userId, { limit = 1 } = {}) {
   const anchor = db.prepare(`SELECT p.lat, p.lng FROM visits v JOIN parks p ON p.id = v.park_id
     WHERE v.user_id = ? AND p.lat IS NOT NULL ORDER BY v.visited_on DESC, v.id DESC LIMIT 1`).get(userId);
   if (!anchor) return [];
-  const candidates = db.prepare(`SELECT p.id, p.slug, p.name, p.lat, p.lng FROM parks p
+  const candidates = db.prepare(`SELECT p.id, p.slug, p.name, p.lat, p.lng,
+      EXISTS (SELECT 1 FROM saved_parks s WHERE s.park_id = p.id AND s.user_id = ?) AS saved FROM parks p
     WHERE p.active = 1 AND p.lat IS NOT NULL
-      AND NOT EXISTS (SELECT 1 FROM visits v WHERE v.park_id = p.id AND v.user_id = ?)`).all(userId);
+      AND NOT EXISTS (SELECT 1 FROM visits v WHERE v.park_id = p.id AND v.user_id = ?)`).all(userId, userId);
   return candidates
-    .map((p) => ({ slug: p.slug, name: p.name, distance_m: distanceMeters(anchor, p) }))
-    .sort((a, b) => a.distance_m - b.distance_m)
+    .map((p) => ({ slug: p.slug, name: p.name, saved: p.saved === 1, distance_m: distanceMeters(anchor, p) }))
+    .sort((a, b) => (b.saved - a.saved) || a.distance_m - b.distance_m)
     .slice(0, limit);
 }
 

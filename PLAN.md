@@ -182,3 +182,14 @@ admin drafts and approval, safe error messages, generator turn handling with a f
 `test/e2e/engage.spec.js` (one-tap stamp on a phone, finder when far away, reduced motion), axe
 on `/`, `/stamp` and `/admin/city` signed in, and the existing suite. `npm run lighthouse` stays
 at 90+.
+
+### M12 — Want to go (Flow 12)
+Outcome: SPEC Flow 12. Migration `012_saved_parks.sql`, `src/domain/saved.js`,
+`POST /parks/:slug/save` (redirect without JS, JSON for `public/js/want-to-go.js`), the heart
+partial `src/views/save-button.js` on park cards, the park page and the passport's "Want to go"
+section, the `saved=1` filter on `/parks`, and `nextParks` preferring saved parks.
+
+Checks: `test/unit/saved.test.js` (save/unsave, idempotent, JSON, CSRF 403, signed-out redirect,
+404, safe `back`, filter, passport section, inactive parks, privacy on `/u/:handle` and Pals,
+next up, account deletion cascade), `test/e2e/saved.spec.js` (JS toggle, no-JS form, filter,
+park page, passport, privacy for signed-out and another member, axe on each changed page).

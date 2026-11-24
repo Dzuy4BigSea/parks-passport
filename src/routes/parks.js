@@ -3,6 +3,8 @@ import { parseLatLng } from '../domain/geo.js';
 import { stampedParkIds } from '../domain/visits.js';
 import { parksPage } from '../views/pages/parks.js';
 import { renderParkPage } from './park-view.js';
+import { requireUser, safeNext } from '../lib/auth.js';
+import { savedParkIds, setSaved } from '../domain/saved.js';
 
 export default async function parkRoutes(app) {
   const { db } = app;
@@ -13,14 +15,30 @@ export default async function parkRoutes(app) {
     const near = parseLatLng(req.query.lat, req.query.lng);
     const stamped = req.user ? stampedParkIds(db, req.user.id) : null;
     const unvisited = Boolean(req.user) && req.query.unvisited === '1';
+    // "Want to go" marks and filter: the viewer's own saved parks only.
+    const saved = req.user ? savedParkIds(db, req.user.id) : null;
+    const onlySaved = Boolean(req.user) && req.query.saved === '1';
     let parks = listParks(db, { q, categories: selected, near });
     if (unvisited) parks = parks.filter((p) => !stamped.has(p.id));
-    const filterCount = selected.length + (unvisited ? 1 : 0);
+    if (onlySaved) parks = parks.filter((p) => saved.has(p.id));
+    const filterCount = selected.length + (unvisited ? 1 : 0) + (onlySaved ? 1 : 0);
     const events = q || filterCount ? [['park_search', { has_query: Boolean(q), filter_count: filterCount }]] : [];
     return reply.page({ events, ...parksPage({
-      parks, total: countActiveParks(db), q, selected, near, unvisited, stamped,
+      parks, total: countActiveParks(db), q, selected, near, unvisited, stamped, saved, onlySaved, csrf: req.csrfToken(), back: req.url,
       categories: categoriesInUse(db), signedIn: Boolean(req.user), theme: app.theme(),
     }) });
+  });
+
+  // "Want to go" heart. Sets the state sent (saved=1|0) rather than toggling. The JS enhancement
+  // asks for JSON; without JS it redirects back to the page the form was on.
+  app.post('/parks/:slug/save', { preHandler: requireUser }, async (req, reply) => {
+    const park = getParkBySlug(db, req.params.slug);
+    if (!park) return reply.callNotFound();
+    const saved = req.body.saved === '1';
+    setSaved(db, req.user.id, park.id, saved, { now: app.now() });
+    if (String(req.headers.accept || '').includes('application/json')) return reply.send({ saved });
+    const back = typeof req.body.back === 'string' && req.body.back ? safeNext(req.body.back) : `/parks/${park.slug}`;
+    return reply.redirect(back, 303);
   });
 
   app.get('/parks/:slug', async (req, reply) => {
