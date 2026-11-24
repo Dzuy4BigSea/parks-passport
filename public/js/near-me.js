@@ -4,6 +4,8 @@ const button = document.getElementById('near-me');
 const status = document.getElementById('near-me-status');
 const form = button?.closest('form');
 
+// The button is laid out from the first paint when JS runs (.js-only), so it never shifts the page.
+if (button && !('geolocation' in navigator)) button.hidden = true;
 if (button && form && 'geolocation' in navigator) {
   button.hidden = false;
   button.addEventListener('click', () => {

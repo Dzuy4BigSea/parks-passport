@@ -202,10 +202,36 @@ ${queue.reviews.length ? html`<ul class="mod-list">${queue.reviews.map((r) => ht
 </li>`)}</ul>` : html`<p>No shared reviews with comments.</p>`}`);
 }
 
-export function adminUsers({ users, csrf, me, error, notice }) {
+export function adminUsers({ users, csrf, me, error, notice, invites = [], inviteError = null, inviteValues = {} }) {
   return page('Members', html`${crumb}<h1>Members</h1>
 ${error ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${error}</p>` : ''}
 ${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${notice}</p>` : ''}
+
+<section aria-labelledby="invite-h">
+<h2 id="invite-h">Invite someone</h2>
+<form method="post" action="/admin/invites" class="card-form admin-form">
+  ${csrfField(csrf)}
+  ${inviteError ? html`<p class="error-text" role="alert" tabindex="-1" data-announce>${inviteError}</p>` : ''}
+  <div class="two-col">
+    ${input('invite_email', 'Email', inviteValues.email, { type: 'email', required: true })}
+    ${input('invite_name', 'Their name (optional)', inviteValues.name, { hint: 'Used in the greeting and to fill in their sign-up.' })}
+  </div>
+  <p class="hint">They get the branded invitation email (<a href="/admin/email/messages/invite">edit its wording</a>) with a link to create their passport. It works for 30 days.</p>
+  <button type="submit" class="btn btn-pop">Send invite</button>
+</form>
+${invites.length ? html`<div class="table-wrap"><table class="admin-table">
+  <caption class="visually-hidden">Recent invites</caption>
+  <thead><tr><th scope="col">Invited</th><th scope="col">By</th><th scope="col">Sent</th><th scope="col">Status</th></tr></thead>
+  <tbody>${invites.map((i) => html`<tr>
+    <td data-label="Invited">${i.name ? html`${i.name}<br>` : ''}<span class="muted">${i.email}</span></td>
+    <td data-label="By">${i.inviter_name || 'A former admin'}</td>
+    <td data-label="Sent">${dateOf(i.created_at)}</td>
+    <td data-label="Status">${i.accepted_at ? html`<span class="status-pill ok">Joined ${dateOf(i.accepted_at)}</span>` : html`<span class="status-pill">Pending</span>`}</td>
+  </tr>`)}</tbody>
+</table></div>` : ''}
+</section>
+
+<h2>All members</h2>
 <div class="table-wrap"><table class="admin-table">
   <caption class="visually-hidden">Members</caption>
   <thead><tr><th scope="col">Member</th><th scope="col">Parks</th><th scope="col">Joined</th><th scope="col">Admin</th></tr></thead>

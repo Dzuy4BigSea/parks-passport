@@ -126,6 +126,9 @@ These never include your email, name, handle, comments, captions or location.</p
 <h2>Email</h2>
 <p>Emails are sent through SendGrid, which processes your address only to deliver them.</p>
 
+<h2>Invitations</h2>
+<p>If an admin invites you by email, we store your address, the name they typed (if any), who invited you and when, so we can send the invitation and show whether you joined. The link expires after 30 days.</p>
+
 <h2>Deleting your data</h2>
 <p>You can delete your account from the <a href="/account">Account</a> page. That removes your account and everything in it right away.</p>
 </div>`,

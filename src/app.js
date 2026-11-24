@@ -33,7 +33,7 @@ import adminRoutes from './routes/admin.js';
 import { shareNudge } from './views/pages/pals.js';
 
 // Paths with tokens or handles in the URL: no analytics scripts there (see reply.page).
-const NO_ANALYTICS = [/^\/reset$/, /^\/auth\/magic$/, /^\/account\/delete\/confirm$/, /^\/pals\/invite\//, /^\/u\//];
+const NO_ANALYTICS = [/^\/reset$/, /^\/auth\/magic$/, /^\/account\/delete\/confirm$/, /^\/pals\/invite\//, /^\/join\//, /^\/u\//];
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
