@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { markMilestone } from '../domain/milestones.js';
 import { requireUser, safeNext } from '../lib/auth.js';
 import { parkPath } from '../views/urls.js';
 import { urlPark } from './city-params.js';
@@ -35,6 +36,7 @@ export default async function photoRoutes(app) {
       await removePhotoFiles(uploadsDir, stored.fileKey);
       throw err;
     }
+    markMilestone(db, req.user.id, 'photo', { now: app.now() });
     awardBadges(db, req.user.id, { type: 'photo', id: photo.id }, badgeOpts());
     app.track(req.user.id, 'photo_upload', { park_slug: park.slug });
     return reply.redirect(parkPath(park, '?photo=added#photos'), 303);
@@ -79,6 +81,7 @@ export default async function photoRoutes(app) {
     if (result.error) {
       return renderParkPage(app, req, reply, park, { problem: { text: result.error, area: 'rating', values: { comment: str(req.body.comment, 2000) } } });
     }
+    markMilestone(db, req.user.id, 'rating', { now: app.now() });
     awardBadges(db, req.user.id, { type: 'rating', id: result.rating.id }, badgeOpts());
     app.track(req.user.id, 'rating_submit', { park_slug: park.slug, stars: result.rating.stars });
     return reply.redirect(parkPath(park, '?rated=1#ratings'), 303);

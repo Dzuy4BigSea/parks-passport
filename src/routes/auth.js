@@ -1,4 +1,5 @@
 import { requireUser, safeNext } from '../lib/auth.js';
+import { recordMilestone } from '../domain/milestones.js';
 import { magicLinkEmail, passwordResetEmail, deleteAccountEmail } from '../views/email.js';
 import { emailCopy } from '../domain/email-copy.js';
 import { inviteForToken, acceptInvites } from '../domain/invites.js';
@@ -230,6 +231,7 @@ export default async function authRoutes(app) {
     const old = db.prepare('SELECT avatar_key FROM users WHERE id = ?').pluck().get(req.user.id);
     db.prepare('UPDATE users SET avatar_key = ? WHERE id = ?').run(stored.key, req.user.id);
     await removeAvatar(app.config.uploadsDir, old);
+    recordMilestone(db, req.user.id, 'avatar', { now: app.now(), random: app.random });
     return reply.redirect('/account?done=avatar#photo', 303);
   }));
   app.post('/account/avatar/delete', { preHandler: requireUser }, async (req, reply) => {

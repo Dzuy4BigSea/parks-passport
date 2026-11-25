@@ -1,4 +1,5 @@
 import { requireUser } from '../lib/auth.js';
+import { markMilestone } from '../domain/milestones.js';
 import { getParkById } from '../domain/parks.js';
 import { parkTimeZone } from '../domain/city.js';
 import { parkPath } from '../views/urls.js';
@@ -123,6 +124,7 @@ export default async function visitRoutes(app) {
       if (stored) await removePhotoFiles(app.config.uploadsDir, stored.fileKey);
       return parkWithProblem(req, reply, park, problemFor(result, park));
     }
+    if (stored) markMilestone(db, req.user.id, 'photo', { now: app.now() });
     afterStamp(req.user, result.visit, park);
     if (stored) app.track(req.user.id, 'photo_upload', { park_slug: park.slug });
     return reply.redirect(parkPath(park, `?stamped=${result.visit.id}`), 303);

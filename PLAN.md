@@ -287,3 +287,14 @@ EXIF strip, photo visibility for owner / pal / stranger / signed-out with 404, f
 replace, remove and deletion, pal faces only for sharing pals, the filter, stats counts and 404s),
 `test/e2e/cities.spec.js` (upload and pal faces at 375 px, axe clean), `/admin/stats` in the
 `pages.spec.js` sweep, and the existing suite.
+
+### M19 — Reward schedule: surprise badges, lucky drops, the long climb (Flow 7)
+- Migration 018 (`user_milestones`), `src/domain/milestones.js` (record, mark, Night Owl hours),
+  hooks on the park page and list, profile photo, new pals, ratings, photos and photo stamps.
+- `milestone` and `lucky_drop` rule types (`luckyChance`), the next drop and one roll per stamp in
+  the badge context, admin form support (`chance` and `milestone` settings).
+- `seed/reward-badges.json` (6 surprises, 4 lucky drops, 3 park milestones), 5 more levels.
+
+Checks: `test/unit/rewards.test.js` (odds schedule, each surprise once and announced on the same
+page, Night Owl by city time, one lucky drop per stamp in order, kept after deletes, admin
+validation), updated rule and level tests, and the existing suite.

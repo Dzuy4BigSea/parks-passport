@@ -2,6 +2,7 @@ import { validateParkRow } from './csv-import.js';
 import { cityById, defaultCity } from './city.js';
 import { CATEGORIES } from './categories.js';
 import { RULES } from './badges/rules.js';
+import { MILESTONES } from './milestones.js';
 
 // ---------- Parks ----------
 
@@ -96,7 +97,8 @@ export function validateBadgeForm(form, { isNew, targets = [] }) {
   if (!rule) errors.rule_type = 'Choose a rule.';
   const kind = String(form.kind || '');
   if (!['known', 'hidden', 'lucky'].includes(kind)) errors.kind = 'Choose how it shows.';
-  else if ((kind === 'lucky') !== (ruleType === 'lucky')) errors.kind = 'Lucky badges use the "lucky" rule, and the "lucky" rule needs a lucky badge.';
+  // Chance-based rules (lucky, lucky_drop) go with lucky badges, and only they do.
+  else if ((kind === 'lucky') !== ['lucky', 'lucky_drop'].includes(ruleType)) errors.kind = 'Lucky badges use a lucky rule (random or lucky drop), and those rules need a lucky badge.';
   if (kind !== 'known' && !hint) errors.hint = 'Hidden and lucky badges need a hint.';
 
   const params = {};
@@ -110,6 +112,13 @@ export function validateBadgeForm(form, { isNew, targets = [] }) {
       const n = Number(raw);
       if (!Number.isInteger(n) || n < 1 || n > 1000) errors[`param_${key}`] = 'Enter a whole number from 1 to 1000.';
       else params[key] = n;
+    } else if (type === 'chance') {
+      const p = Number(raw);
+      if (!(p > 0 && p <= 1) || raw === '') errors[`param_${key}`] = 'Enter a chance above 0 and up to 1 (e.g. 0.45).';
+      else params[key] = p;
+    } else if (type === 'milestone') {
+      if (!Object.hasOwn(MILESTONES, raw)) errors[`param_${key}`] = 'Choose the first-time action.';
+      else params[key] = raw;
     } else if (type === 'category') {
       if (!Object.hasOwn(CATEGORIES, raw)) errors[`param_${key}`] = 'Choose an amenity.';
       else params[key] = raw;

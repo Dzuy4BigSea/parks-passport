@@ -1,4 +1,5 @@
 import { listParks, countActiveParks, categoriesInUse, cleanCategories, parkCardExtras } from '../domain/parks.js';
+import { recordMilestone, isNight } from '../domain/milestones.js';
 import { parseLatLng } from '../domain/geo.js';
 import { stampedParkIds } from '../domain/visits.js';
 import { palsWhoStamped } from '../domain/pals.js';
@@ -26,6 +27,7 @@ export default async function parkRoutes(app) {
     const stamped = req.user ? stampedParkIds(db, req.user.id) : null;
     const unvisited = Boolean(req.user) && req.query.unvisited === '1';
     const palsOnly = Boolean(req.user) && req.query.pals === '1';
+    if (req.user && isNight(app.now(), city.time_zone)) recordMilestone(db, req.user.id, 'night_plan', { now: app.now(), random: app.random });
     let parks = listParks(db, { cityId: city.id, q, categories: selected, near });
     // Pals who stamped each park (only pals who share their passport).
     const palsHere = req.user ? palsWhoStamped(db, req.user.id, parks.map((p) => p.id)) : null;
@@ -48,6 +50,12 @@ export default async function parkRoutes(app) {
     const park = urlPark(db, req);
     if (!park) return reply.callNotFound();
     const user = req.user;
+    // Surprise badges: the first park page opened, and late-night trip planning.
+    if (user) {
+      const opts = { now: app.now(), random: app.random };
+      recordMilestone(db, user.id, 'park_view', opts);
+      if (isNight(app.now(), req.city.time_zone)) recordMilestone(db, user.id, 'night_plan', opts);
+    }
     let stamped = null;
     if (user && /^\d+$/.test(String(req.query.stamped || ''))) {
       const visit = db.prepare('SELECT * FROM visits WHERE id = ? AND user_id = ? AND park_id = ?')
