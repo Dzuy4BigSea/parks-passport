@@ -193,3 +193,41 @@ test('wrong codes are limited to 20 an hour per IP, typed or by link; family emo
   gps('ana', 10);
   assert.equal((await people.ana.c.post('/groups', { name: 'Family', emoji: '👨‍👩‍👧' })).statusCode, 303);
 });
+
+test('group invites and join requests can be answered right in the notification center', async () => {
+  const { db, people, gps, groupId, code, members } = await world();
+  const { ana, ben, cat, dee } = people;
+  gps('ana', 10);
+  await ana.c.post('/groups', { name: 'Walkers', emoji: '🚶' });
+  const g = groupId('Walkers');
+
+  // Ben asks to join with the code; Ana approves from her notifications.
+  await ben.c.post(`/groups/join/${code('Walkers')}`);
+  let page = (await ana.c.get('/notifications')).body;
+  assert.match(page, new RegExp(`action="/groups/${g}/requests/${ben.id}/approve"[\\s\\S]*name="from" value="notifications"`));
+  assert.equal((await dee.c.post(`/groups/${g}/requests/${ben.id}/approve`, { from: 'notifications' })).statusCode, 404); // not the owner
+  assert.equal((await ana.c.post(`/groups/${g}/requests/${ben.id}/approve`, { from: 'notifications' })).headers.location, '/notifications?done=group_approved');
+  assert.deepEqual(members('Walkers'), ['ana', 'ben']);
+  page = (await ana.c.get('/notifications?done=group_approved')).body;
+  assert.match(page, /Approved\. They(’|&#39;|')re in\./);
+  assert.match(page, /They(’|&#39;|')re in\.<\/span>/);
+  assert.doesNotMatch(page, new RegExp(`/groups/${g}/requests/${ben.id}/approve`));
+
+  // Dee asks; Ana declines from her notifications: it just says Answered.
+  await dee.c.post(`/groups/join/${code('Walkers')}`);
+  assert.equal((await ana.c.post(`/groups/${g}/requests/${dee.id}/decline`, { from: 'notifications' })).headers.location, '/notifications?done=group_declined');
+  assert.match((await ana.c.get('/notifications')).body, /Answered\./);
+
+  // Ana invites her pal Cat; Cat joins from her notifications.
+  const [a, b] = ana.id < cat.id ? [ana.id, cat.id] : [cat.id, ana.id];
+  db.prepare('INSERT INTO pal_links (user_a, user_b, created_at) VALUES (?, ?, ?)').run(a, b, '2026-06-01T00:00:00Z');
+  await ana.c.post(`/groups/${g}/invite`, { user_id: String(cat.id) });
+  page = (await cat.c.get('/notifications')).body;
+  assert.match(page, new RegExp(`href="/groups\\?invite=${g}#invites"`));
+  assert.match(page, new RegExp(`action="/groups/invites/${g}/accept"`));
+  assert.equal((await cat.c.post(`/groups/invites/${g}/accept`, { from: 'notifications' })).headers.location, '/notifications?done=group_joined');
+  assert.deepEqual(members('Walkers'), ['ana', 'ben', 'cat']);
+  assert.match((await cat.c.get('/notifications')).body, /You joined\./);
+  // Someone else can't answer Cat's invite.
+  assert.equal((await dee.c.post(`/groups/invites/${g}/accept`, { from: 'notifications' })).statusCode, 404);
+});

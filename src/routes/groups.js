@@ -77,6 +77,8 @@ export default async function groupRoutes(app) {
       const result = answerInvite(db, req.user, id(req.params.id), action === 'accept', { now: now() });
       if (result.error === 'not_found') return reply.callNotFound();
       if (result.error) return reply.code(422).page(listPage(req, { notice: JOIN_ERRORS[result.error] }));
+      // Answered from the notification center: back there (SPEC Flow 23).
+      if (req.body.from === 'notifications') return reply.redirect(`/notifications?done=${result.joined ? 'group_joined' : 'declined'}`, 303);
       return reply.redirect(result.joined ? `/groups/${id(req.params.id)}?done=joined` : '/groups?done=declined', 303);
     });
   }
@@ -147,6 +149,7 @@ export default async function groupRoutes(app) {
       const result = group ? answerRequest(db, group, id(req.params.userId), action === 'approve', { now: now() }) : null;
       if (!result) return reply.callNotFound();
       if (result === 'full') return reply.code(422).page(showGroup(req, group, { notice: 'They\u2019re in as many groups as they can be right now, so they can\u2019t join. Their request is still here.' }));
+      if (req.body.from === 'notifications') return reply.redirect(`/notifications?done=group_${result}`, 303);
       return reply.redirect(`/groups/${group.id}?done=${result}#requests`, 303);
     });
   }

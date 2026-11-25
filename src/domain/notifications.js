@@ -17,6 +17,29 @@ export const unreadCount = (db, userId) => db.prepare('SELECT COUNT(*) FROM noti
 
 export const PAGE_SIZE = 30;
 
+// Group invites and join requests can be answered right here while they're open (SPEC Flow 23).
+// The group comes from the notification's own link, which the server wrote.
+const actorOf = (db, id) => db.prepare('SELECT actor_id FROM notifications WHERE id = ?').pluck().get(id);
+function withGroupAction(db, userId, n) {
+  if (n.kind === 'group_invite') {
+    const groupId = Number(/^\/groups\?invite=(\d+)#invites$/.exec(n.link)?.[1]) || null;
+    if (!groupId) return n; // older notifications: just the link
+    const open = Boolean(db.prepare('SELECT 1 FROM group_invites WHERE group_id = ? AND to_user = ?').get(groupId, userId));
+    const member = Boolean(db.prepare('SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?').get(groupId, userId));
+    return { ...n, group: { kind: 'invite', id: groupId, open, member } };
+  }
+  if (n.kind === 'group_request') {
+    const groupId = Number(/^\/groups\/(\d+)#requests$/.exec(n.link)?.[1]) || null;
+    const requester = actorOf(db, n.id);
+    if (!groupId || !requester) return n;
+    const owner = Boolean(db.prepare('SELECT 1 FROM member_groups WHERE id = ? AND owner_id = ?').get(groupId, userId));
+    const open = owner && Boolean(db.prepare('SELECT 1 FROM group_requests WHERE group_id = ? AND user_id = ?').get(groupId, requester));
+    const member = Boolean(db.prepare('SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?').get(groupId, requester));
+    return { ...n, group: { kind: 'request', id: groupId, userId: requester, open, member } };
+  }
+  return n;
+}
+
 /** A page of notifications, newest first: { items, hasMore }. */
 export function listNotifications(db, userId, { page = 1 } = {}) {
   // A pal request carries its open request (if it's still open), so it can be answered right here.
@@ -27,7 +50,7 @@ export function listNotifications(db, userId, { page = 1 } = {}) {
     FROM notifications n LEFT JOIN users a ON a.id = n.actor_id WHERE n.user_id = ?
     ORDER BY n.id DESC LIMIT ? OFFSET ?`).all(userId, PAGE_SIZE + 1, (Math.max(1, page) - 1) * PAGE_SIZE);
   // The other member's name as it is now (they may have changed it since).
-  const items = rows.slice(0, PAGE_SIZE).map(({ actor, ...n }) => ({ ...n, text: n.text.replace('{actor}', actor || 'Someone') }));
+  const items = rows.slice(0, PAGE_SIZE).map(({ actor, ...n }) => withGroupAction(db, userId, { ...n, text: n.text.replace('{actor}', actor || 'Someone') }));
   return { items, hasMore: rows.length > PAGE_SIZE };
 }
 

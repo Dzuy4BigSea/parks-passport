@@ -11,6 +11,9 @@ export default async function notificationRoutes(app) {
     const unreadIds = new Set(items.filter((n) => !n.read_at).map((n) => n.id));
     if (req.method === 'GET') markAllRead(db, req.user.id, { now: app.now() });
     return reply.page(notificationsPage({ items, page, hasMore, unreadIds, timeZone: req.city.time_zone, csrf: req.csrfToken(),
-      notice: { accepted: "You're now Park Pals!", declined: 'Request declined.' }[req.query.done] || null }));
+      notice: {
+        accepted: "You're now Park Pals!", declined: 'Declined.', group_joined: "You're in the group!",
+        group_approved: 'Approved. They\u2019re in.', group_declined: 'Request declined.',
+      }[req.query.done] || null }));
   });
 }

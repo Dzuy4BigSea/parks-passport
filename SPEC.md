@@ -685,6 +685,8 @@ Done when:
 - [ ] **Home:** the signed-in home has a "Your groups" card: my groups, or how to join one with a
       code and how close I am to Troop Leader. Group news (invites, requests, approvals, joins, a
       group ending) goes in the notification center.
+- [ ] In the notification center, a group invite has **Join** and **Decline**, and a request to my
+      group has **Approve** and **Decline**, while it's still open; once answered it says so.
 
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.
