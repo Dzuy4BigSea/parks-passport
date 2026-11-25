@@ -237,3 +237,17 @@ Outcome: a private repo (`gamification-engine`) that starts a new app's gamifica
   shared dependency (no publish step to maintain).
 
 Checks: the template's CI passes; its README's quick start runs as written.
+
+### M16 — Friend codes and pal requests (Flow 8)
+Outcome: the friend-code and pal-request bullets of SPEC Flow 8, and a clear page for dead invite links.
+- Migration 015 (`pal_codes`, `pal_requests`, `pal_code_failures`).
+- `src/domain/pals.js`: `friendCodeFor`, `regenerateFriendCode`, `normalizeCode`,
+  `requestByCode` (rate limits, mutual request accepts), `answerRequest`, `cancelRequest`,
+  `palRequests`; accepting reuses the invite's link-and-badges step.
+- `src/routes/pals.js` (`/pals/code`, `/pals/code/regenerate`, `/pals/requests/:id/accept|decline|cancel`),
+  the Pals page sections, and the "link doesn't work anymore" page.
+
+Checks: `test/unit/pals.test.js` (code format and normalizing, request then accept or decline,
+mutual request, cancel, self / already pals / repeat, wrong-code and daily limits, new code kills
+the old one, dead link page is a 404 with help, account deletion removes codes and requests),
+`test/e2e/pals.spec.js` (add by code at 375 px, accept, axe clean), and the existing suite.

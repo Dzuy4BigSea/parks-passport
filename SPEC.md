@@ -169,6 +169,18 @@ Done when:
 - [ ] I get a personal invite link (`/pals/invite/:token`). Someone who opens it and accepts
       becomes my pal (in both directions). I can regenerate the link, which invalidates the old
       one, and remove a pal. There is no user search.
+- [ ] A link that no longer works (regenerated, renewed after removing a pal, or cut short when
+      pasted) shows "This invite link doesn't work anymore" with what to do next (status 404).
+- [ ] **Friend codes:** the Pals page shows my friend code (8 characters shown as `XXXX-XXXX`,
+      no look-alike characters such as 0/O or 1/I/L), with Copy and "New code" (the old one stops
+      working). Typing a friend's code (any case, spaces or dash optional) under "Add a pal by
+      code" sends them a **pal request**. It doesn't make us pals until they accept.
+- [ ] **Pal requests:** the Pals page lists requests to me (Accept / Decline) and requests I
+      sent (Cancel). Accepting makes us pals both ways and checks badges, like an invite link.
+      If they already sent me a request, entering their code makes us pals at once. My own
+      code, an existing pal, or a repeat request gets a clear message. Wrong codes are limited
+      to 10 per hour and requests to 20 per day per person, so codes can't be guessed.
+      Declining tells the sender nothing; their request just disappears.
 - [ ] **Pals feed** (`/pals`) shows my pals' recent stamps, photos and badges that are visible
       to me, newest first, 20 per page.
 - [ ] **Pals leaderboard** ranks me and my pals by unique parks stamped (points as the
@@ -374,6 +386,8 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
   measure, minutes (credited for a check), points, sort, active
 - **activity_logs**: id, user_id, visit_id, activity_id, amount, minutes, miles, logged_on,
   created_at, unique(visit_id, activity_id). Private to the owner.
+- **pal_codes**: user_id, code (unique), created_at. **pal_requests**: from_user, to_user,
+  created_at, unique(from_user, to_user). **pal_code_failures**: user_id, at.
 - **pal_links**: user_a, user_b (a < b), created_at. **pal_invites**: user_id, token_hash,
   created_at, revoked_at
 - **feed** is a query over visits, photos and user_badges filtered by visibility, not a table.

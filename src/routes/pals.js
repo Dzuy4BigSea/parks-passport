@@ -1,12 +1,13 @@
 import { requireUser, safeNext } from '../lib/auth.js';
 import {
   inviteTokenFor, regenerateInvite, inviterForToken, acceptInvite, removePal, palsOf, leaderboard, palsFeed,
+  friendCodeFor, regenerateFriendCode, formatCode, requestByCode, palRequests, answerRequest, cancelRequest, CODE_LIMITS,
 } from '../domain/pals.js';
 import { areFriends, canViewOwner, VISIBILITY } from '../domain/visibility.js';
 import { badgeBoard } from '../domain/badges/index.js';
 import { totalPoints } from '../domain/points.js';
 import { levelFor } from '../domain/levels.js';
-import { palsPage, invitePage } from '../views/pages/pals.js';
+import { palsPage, invitePage, deadInvitePage } from '../views/pages/pals.js';
 import { passportPage } from '../views/pages/passport.js';
 import { passportData } from '../domain/passport.js';
 
@@ -14,15 +15,64 @@ export default async function palRoutes(app) {
   const { db } = app;
   const now = () => app.now();
 
-  app.get('/pals', { preHandler: requireUser }, async (req, reply) => {
+  const NOTICES = {
+    accepted: "You're now Park Pals!",
+    regenerated: 'New invite link made. The old one no longer works.',
+    removed: 'Pal removed. Your invite link was renewed, so the old one no longer works.',
+    code: 'New friend code made. The old one no longer works.',
+    requested: "Request sent. You'll be Park Pals when they accept.",
+    declined: 'Request declined.',
+    cancelled: 'Request cancelled.',
+  };
+  const showPals = (req, reply, extra = {}) => {
     const user = req.user;
-    const page = Math.max(1, Math.min(1000, Number.parseInt(req.query.page, 10) || 1));
-    const notice = { accepted: "You're now Park Pals!", regenerated: 'New invite link made. The old one no longer works.', removed: 'Pal removed. Your invite link was renewed, so the old one no longer works.' }[req.query.done];
+    const page = Math.max(1, Math.min(1000, Number.parseInt(req.query?.page, 10) || 1));
     return reply.page(palsPage({
-      user, csrf: req.csrfToken(), page, notice,
+      user, csrf: req.csrfToken(), page, notice: NOTICES[req.query?.done],
       inviteUrl: `${app.config.baseUrl}/pals/invite/${inviteTokenFor(db, user.id, { now: now(), onCreate: () => app.track(user.id, 'pal_invite_created') })}`,
+      friendCode: formatCode(friendCodeFor(db, user.id, { now: now() })), requests: palRequests(db, user.id),
       pals: palsOf(db, user.id).map((p) => ({ ...p, visible: canViewOwner(db, user.id, p.id, p.default_visibility) })), board: leaderboard(db, user.id), feed: palsFeed(db, user.id, { page }),
+      ...extra,
     }));
+  };
+
+  app.get('/pals', { preHandler: requireUser }, async (req, reply) => showPals(req, reply));
+
+  // Friend codes: typing a code sends a request; the code's owner accepts or declines it.
+  const CODE_ERRORS = {
+    invalid: () => "That code doesn't match anyone. Check it and try again.",
+    limited: () => 'Too many codes that didn\'t match. Try again in an hour.',
+    self: () => "That's your own code. Share it with a friend.",
+    already: (to) => `You're already Park Pals with ${to.display_name}.`,
+    pending: (to) => `You already asked ${to.display_name}. They'll see it on their Pals page.`,
+    daily: () => `That's ${CODE_LIMITS.requestsPerDay} requests today. Try again tomorrow.`,
+  };
+  app.post('/pals/code', { preHandler: requireUser }, async (req, reply) => {
+    const result = requestByCode(db, req.user, req.body.code, { now: now(), random: app.random });
+    if (result.error) {
+      return showPals(req, reply.code(result.error === 'limited' || result.error === 'daily' ? 429 : 422), {
+        codeError: CODE_ERRORS[result.error](result.to), codeValue: String(req.body.code ?? '').slice(0, 20),
+      });
+    }
+    if (result.paired) app.track(req.user.id, 'pal_accepted');
+    return reply.redirect(`/pals?done=${result.paired ? 'accepted' : 'requested'}`, 303);
+  });
+  app.post('/pals/code/regenerate', { preHandler: requireUser }, async (req, reply) => {
+    regenerateFriendCode(db, req.user.id, { now: now() });
+    return reply.redirect('/pals?done=code', 303);
+  });
+  const requestId = (req) => (/^\d+$/.test(req.params.id) ? Number(req.params.id) : 0);
+  for (const action of ['accept', 'decline']) {
+    app.post(`/pals/requests/:id/${action}`, { preHandler: requireUser }, async (req, reply) => {
+      const result = answerRequest(db, req.user.id, requestId(req), action === 'accept', { now: now(), random: app.random });
+      if (!result) return reply.callNotFound();
+      if (action === 'accept') app.track(req.user.id, 'pal_accepted');
+      return reply.redirect(`/pals?done=${action === 'accept' ? 'accepted' : 'declined'}`, 303);
+    });
+  }
+  app.post('/pals/requests/:id/cancel', { preHandler: requireUser }, async (req, reply) => {
+    if (!cancelRequest(db, req.user.id, requestId(req))) return reply.callNotFound();
+    return reply.redirect('/pals?done=cancelled', 303);
   });
 
   app.post('/pals/invite/regenerate', { preHandler: requireUser }, async (req, reply) => {
@@ -37,9 +87,12 @@ export default async function palRoutes(app) {
     return areFriends(db, inviter.id, user.id) ? 'already' : 'open';
   };
 
+  // A link that no longer works says so (still a 404) and points to what to do instead.
+  const deadLink = (req, reply) => reply.code(404).page(deadInvitePage({ user: req.user }));
+
   app.get('/pals/invite/:token', async (req, reply) => {
     const inviter = inviterForToken(db, req.params.token);
-    if (!inviter) return reply.callNotFound();
+    if (!inviter) return deadLink(req, reply);
     return reply.page(invitePage({
       inviter, user: req.user, csrf: req.csrfToken(), token: req.params.token, state: inviteState(inviter, req.user),
     }));
@@ -47,7 +100,7 @@ export default async function palRoutes(app) {
 
   app.post('/pals/invite/:token/accept', { preHandler: requireUser }, async (req, reply) => {
     const inviter = inviterForToken(db, req.params.token);
-    if (!inviter) return reply.callNotFound();
+    if (!inviter) return deadLink(req, reply);
     const result = acceptInvite(db, inviter, req.user, { now: now(), random: app.random });
     if (result.ok) app.track(req.user.id, 'pal_accepted');
     if (result.error) {

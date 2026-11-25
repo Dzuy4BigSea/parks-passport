@@ -73,3 +73,45 @@ test('Pals page fits at 375px', async ({ page }, info) => {
   expect(overflow).toBe(false);
   await page.screenshot({ path: info.outputPath('pals-375.png'), fullPage: true });
 });
+
+test('add a pal by friend code at 375px: request, accept, axe clean', async ({ page, browser }, info) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await signUp(page, { name: 'Coda' });
+  await page.goto('/pals');
+  const code = await page.getByLabel('Your friend code').inputValue();
+  expect(code).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+
+  const dee = await freshPage(browser, info);
+  await dee.setViewportSize({ width: 375, height: 800 });
+  await signUp(dee, { name: 'Dee' });
+  await dee.goto('/pals');
+  await dee.getByLabel('Add a pal by code').fill(code.toLowerCase().replace('-', ' '));
+  await dee.getByRole('button', { name: 'Send request' }).click();
+  await expect(dee.getByRole('status').first()).toContainText('Request sent');
+  await expect(dee.locator('#requests')).toContainText('Coda');
+  await expectNoAxeViolations(dee);
+  expect(await dee.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
+
+  await page.reload();
+  await expect(page.locator('#requests')).toContainText('Dee');
+  await expectNoAxeViolations(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
+  await page.getByRole('button', { name: 'Accept Dee' }).click();
+  await expect(page.getByRole('status').first()).toContainText("You're now Park Pals!");
+  await expect(page.locator('.pal-list')).toContainText('Dee');
+
+  // A wrong code shows an inline error.
+  await dee.goto('/pals');
+  await dee.getByLabel('Add a pal by code').fill('ZZZZ-ZZZZ');
+  await dee.getByRole('button', { name: 'Send request' }).click();
+  await expect(dee.getByRole('alert')).toContainText("doesn't match anyone");
+  await expectNoAxeViolations(dee);
+});
+
+test('a dead invite link page passes axe', async ({ page }) => {
+  await signUp(page);
+  const res = await page.goto('/pals/invite/not-a-real-token-at-all');
+  expect(res.status()).toBe(404);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText("This invite link doesn't work anymore");
+  await expectNoAxeViolations(page);
+});
