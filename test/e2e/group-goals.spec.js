@@ -36,6 +36,6 @@ test('an owner starts a goal; a check-in reaches it and the team badge shows; no
   await expect(page).toHaveURL(/stamped=/);
   await page.goto('/st-pete/passport');
   await expect(page.locator('#team-badges')).toContainText('Team Effort');
-  await expect(page.locator('#team-badges')).toContainText('With Goal Crew');
+  await expect(page.locator('#team-badges')).toContainText('with Goal Crew');
   await expectNoAxeViolations(page);
 });

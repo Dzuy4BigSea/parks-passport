@@ -11,6 +11,10 @@ export const GOAL_TEMPLATES = JSON.parse(fs.readFileSync(SEED, 'utf8'));
 export const METRICS = { checkins: 'check-ins', parks: 'different parks', minutes: 'active minutes' };
 const ONE = { checkins: 'check-in', parks: 'park', minutes: 'active minute' };
 export const CUSTOM_BADGE = 'team-effort';
+export const MAX_TIER = 5;
+const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+/** A team badge's level from how many times it was earned: I to V. */
+export const tierOf = (times) => ROMAN[Math.min(Math.max(1, times || 1), MAX_TIER) - 1];
 const DAYS_MAX = 120;
 const TARGET_MAX = 10000;
 
@@ -111,9 +115,18 @@ export function checkGroupGoals(db, userId, { now = new Date() } = {}) {
       const members = db.prepare('SELECT user_id FROM group_members WHERE group_id = ?').pluck().all(goal.group_id);
       const give = db.prepare(`INSERT OR IGNORE INTO user_badges (user_id, badge_id, awarded_at, source_type, source_id, note)
         VALUES (?, ?, ?, 'group', ?, ?)`);
+      // Earned again: the badge levels up (announced again), naming the group it was last earned with.
+      const levelUp = db.prepare(`UPDATE user_badges SET times = times + 1, seen_at = NULL, source_type = 'group', source_id = ?, note = ?
+        WHERE user_id = ? AND badge_id = ?`);
+      const badgeName = goal.badge_id ? db.prepare('SELECT name FROM badges WHERE id = ?').pluck().get(goal.badge_id) : null;
       for (const id of members) {
-        if (goal.badge_id) give.run(id, goal.badge_id, iso(now), goal.id, goal.group_name);
-        notify(db, id, { kind: 'goal_reached', text: `${goal.group_name} reached its goal: ${goal.title}!`, link: `/groups/${goal.group_id}` }, { now });
+        let what = '';
+        if (goal.badge_id) {
+          if (!give.run(id, goal.badge_id, iso(now), goal.id, goal.group_name).changes) levelUp.run(goal.id, goal.group_name, id, goal.badge_id);
+          const times = db.prepare('SELECT times FROM user_badges WHERE user_id = ? AND badge_id = ?').pluck().get(id, goal.badge_id);
+          what = ` You earned ${badgeName} ${tierOf(times)}.`;
+        }
+        notify(db, id, { kind: 'goal_reached', text: `${goal.group_name} reached its goal: ${goal.title}!${what}`, link: `/groups/${goal.group_id}` }, { now });
       }
       reached.push(goal);
     })();
@@ -131,5 +144,5 @@ export function goalSummary(db, groupId, { now = new Date() } = {}) {
 }
 
 /** A member's team badges, newest first, with the group they earned each with. */
-export const teamBadgesOf = (db, userId) => db.prepare(`SELECT b.*, ub.awarded_at, CASE WHEN ub.source_type = 'group' THEN ub.note END AS group_name FROM user_badges ub
+export const teamBadgesOf = (db, userId) => db.prepare(`SELECT b.*, ub.awarded_at, ub.times, CASE WHEN ub.source_type = 'group' THEN ub.note END AS group_name FROM user_badges ub
   JOIN badges b ON b.id = ub.badge_id WHERE ub.user_id = ? AND b.is_group = 1 ORDER BY ub.awarded_at DESC`).all(userId);

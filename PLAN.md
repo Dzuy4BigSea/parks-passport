@@ -483,10 +483,11 @@ sideways scroll at 375 px), and the existing suite.
   `seed/team-badges.json`. Goals are checked after stamps and activity logs (`awardBadges`).
 - The group page's goal section and owner form, the home card's goal bar, the passport's Team
   badges, Admin › Badges › Group badges and the team flag, suggestions into badge ideas, the
-  "Team goal reached!" reveal. Team badges are skipped when the rules take badges back.
+  "Team goal reached!" reveal. Team badges are skipped when the rules take badges back. Earned again, a
+  team badge levels up I to V (`user_badges.times`, `tierOf`).
 
 Checks: `test/unit/group-goals.test.js` (templates and badges, owner only, one at a time, limits,
 counting check-ins and different parks and minutes, members only, reaching it gives everyone the
 badge with the group's name, announcement, passport section, kept after leaving and ending,
-stop, suggestions, admin section and validation), `test/e2e/group-goals.spec.js` (start a goal,
+stop, suggestions, admin section and validation, levels I to V), `test/e2e/group-goals.spec.js` (start a goal,
 reach it with a GPS check-in, Team badges; axe and no sideways scroll at 375 px), and the existing suite.

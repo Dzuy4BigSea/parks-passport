@@ -1706,3 +1706,4 @@ svg.gary-art { height: auto; }
 .team-badges .badge { border-color: #1f7a5c; }
 .team-badges .badge-meta { color: #186a4f; }
 .groups-mini .bar { margin-top: 0.25rem; }
+.tier { display: inline-block; font-size: 0.75em; font-weight: 800; letter-spacing: 0.04em; color: #fff; background: #1f7a5c; border-radius: 0.35rem; padding: 0.05rem 0.4rem; vertical-align: 0.1em; }

@@ -107,7 +107,7 @@ export function awardBadges(db, userId, trigger, opts = {}) {
 
 /** Badges awarded but not yet announced, with a gift's note and giver; marks them announced. */
 export function takeUnseenBadges(db, userId, { now = new Date() } = {}) {
-  const rows = db.prepare(`SELECT b.*, ub.serial, CASE WHEN ub.source_type = 'group' THEN ub.note END AS team, CASE WHEN ub.source_type = 'grant' THEN ub.note END AS award_note, CASE WHEN ub.source_type = 'grant' THEN g.display_name END AS given_by
+  const rows = db.prepare(`SELECT b.*, ub.serial, ub.times, CASE WHEN ub.source_type = 'group' THEN ub.note END AS team, CASE WHEN ub.source_type = 'grant' THEN ub.note END AS award_note, CASE WHEN ub.source_type = 'grant' THEN g.display_name END AS given_by
     FROM user_badges ub JOIN badges b ON b.id = ub.badge_id LEFT JOIN users g ON g.id = ub.source_id
     WHERE ub.user_id = ? AND ub.seen_at IS NULL ORDER BY ub.awarded_at, b.sort`).all(userId);
   if (rows.length) db.prepare('UPDATE user_badges SET seen_at = ? WHERE user_id = ? AND seen_at IS NULL').run(now.toISOString(), userId);

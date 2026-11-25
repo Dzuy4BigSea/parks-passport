@@ -700,6 +700,10 @@ Done when:
 - [ ] **Reaching it:** the moment a stamp or an activity reaches the goal, every member at that
       moment gets the goal's team badge and a notification. On their next page the badge is
       revealed as "Team goal reached!" with "Earned together with <group>".
+- [ ] **Levels:** a team badge earned again (another goal with the same badge, in any of my groups)
+      levels up: I, II, III, IV, then V, where it stays. Each new level is announced and notified
+      ("You earned Fifty Strong III."); the passport shows the level, how many times and the group it
+      was last earned with.
 - [ ] **Team badges** are their own kind (`badges.is_group`): in a "Team badges" section of my
       own passport (with the group's name and date), not among the regular badges, and in a "Group
       badges" section of Admin › Badges, where admins add more ("Add a team badge"; the "Given by an

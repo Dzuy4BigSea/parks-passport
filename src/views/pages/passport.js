@@ -1,4 +1,5 @@
 import { weekCard } from '../activities.js';
+import { tierOf } from '../../domain/group-goals.js';
 import { avatar } from '../avatar.js';
 import { WEEKLY_GOALS } from '../../domain/activities.js';
 import { html } from '../html.js';
@@ -153,8 +154,8 @@ ${teamBadges.length ? html`<section aria-labelledby="team-h" id="team-badges" cl
   <p class="muted">Earned together by reaching a group goal. They're yours to keep.</p>
   <ul class="badge-grid">${teamBadges.map((b) => html`<li class="badge earned">
     ${badgeArt(b.art)}
-    <span class="badge-name">${b.name}</span>
-    <span class="badge-meta">${b.group_name ? `With ${b.group_name} · ` : ''}${formatDate(localDate(new Date(b.awarded_at)))}</span>
+    <span class="badge-name">${b.name} <span class="tier">${tierOf(b.times)}</span></span>
+    <span class="badge-meta">${b.times > 1 ? `Earned ${b.times} times · last ` : ''}${b.group_name ? `with ${b.group_name} · ` : ''}${formatDate(localDate(new Date(b.awarded_at)))}</span>
     ${b.description ? html`<span class="badge-desc">${b.description}</span>` : ''}
   </li>`)}</ul>
 </section>` : ''}

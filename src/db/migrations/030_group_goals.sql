@@ -20,6 +20,8 @@ CREATE INDEX group_goals_group ON group_goals(group_id, id);
 -- section of the passport and of Admin › Badges, and kept after leaving or the group ending.
 -- user_badges.source_type = 'group', source_id = the goal, note = the group's name then.
 ALTER TABLE badges ADD COLUMN is_group INTEGER NOT NULL DEFAULT 0;
+-- How many times a member earned a team badge: its level is I, II, III, IV, then V (and stays V).
+ALTER TABLE user_badges ADD COLUMN times INTEGER NOT NULL DEFAULT 1;
 
 -- Badge ideas can now be a group goal or a team badge, suggested by a group's owner.
 ALTER TABLE badge_ideas ADD COLUMN kind TEXT NOT NULL DEFAULT 'badge' CHECK (kind IN ('badge', 'group_goal', 'group_badge'));
