@@ -150,6 +150,8 @@ export const clearLoginFailures = (db, email) =>
 export function deleteUser(db, userId) {
   // Badge-idea access is keyed by email, so remove it too (their ideas cascade).
   db.prepare('DELETE FROM idea_contributors WHERE email = (SELECT email FROM users WHERE id = ?)').run(userId);
+  // Badges they gave stay with the members, without naming them (their id could be reused).
+  db.prepare("UPDATE user_badges SET source_id = NULL WHERE source_type = 'grant' AND source_id = ?").run(userId);
   db.prepare('DELETE FROM users WHERE id = ?').run(userId);
 }
 

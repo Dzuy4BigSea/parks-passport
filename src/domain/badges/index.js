@@ -124,7 +124,7 @@ export function grantBadge(db, { admin, userId, badgeId, note = '' }, { now = ne
   const { changes } = db.prepare(`INSERT OR IGNORE INTO user_badges (user_id, badge_id, awarded_at, source_type, source_id, note)
     VALUES (?, ?, ?, 'grant', ?, ?)`).run(userId, badgeId, now.toISOString(), admin.id, text || null);
   if (!changes) return { error: 'already' };
-  notify(db, userId, { kind: 'gift', text: `${admin.display_name} gave you the ${badge.name} badge${text ? `: “${text}”` : '.'}`, link: '/passport#badges' }, { now });
+  notify(db, userId, { kind: 'gift', text: `${admin.display_name} gave you the ${badge.name} badge${text ? `: “${text}”` : '.'}`, link: '/passport#badges', actorId: admin.id }, { now });
   return { ok: true, badge };
 }
 

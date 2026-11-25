@@ -160,12 +160,13 @@ ${announcements ? html`<script type="module" src="/js/reveal.js"></script>` : ''
 <header class="site-header">
   <div class="wrap header-row">
     <a class="brand" href="/">${BRAND_MARK}<span class="brand-text">Parks Passport${city ? html` <span class="brand-city">${city}</span>` : ''}</span></a>
-    ${user ? html`<div class="header-chips">${statusPills(status)}${bell(status?.unread || 0, current === 'notifications')}${user.is_admin ? html`<a class="pill" href="/admin">Admin</a>` : ''}</div>` : ''}
+    ${user ? html`<div class="header-chips${user.is_admin ? ' has-admin' : ''}">${statusPills(status)}${bell(status?.unread || 0, current === 'notifications')}${user.is_admin ? html`<a class="pill" href="/admin">Admin</a>` : ''}</div>` : ''}
     <nav aria-label="Main" class="site-nav">
       <ul class="nav-list">
         ${nav.map(([href, label, key]) => html`<li><a href="${href}"${aria(key === current)}>${label}</a></li>`)}
         ${user
-          ? html`<li><a href="/stamp" class="nav-cta"${aria(current === 'stamp')}>${ICONS.stamp}Stamp</a></li>
+          ? html`<li class="nav-bell">${bell(status?.unread || 0, current === 'notifications')}</li>
+        <li><a href="/stamp" class="nav-cta"${aria(current === 'stamp')}>${ICONS.stamp}Stamp</a></li>
         <li class="nav-logout"><form method="post" action="/logout"><input type="hidden" name="_csrf" value="${csrf}"><button type="submit" class="nav-button">Log out</button></form></li>`
           : html`<li class="nav-signup"><a href="/signup" class="nav-cta">Get started</a></li>`}
       </ul>

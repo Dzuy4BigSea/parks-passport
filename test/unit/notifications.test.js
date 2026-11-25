@@ -30,13 +30,15 @@ async function world() {
 }
 
 test('an admin gives a badge with a note: it pops up on the member\'s next page and in their notifications', async () => {
-  const { db, people, badge, kinds } = await world();
+  const { app, db, people, badge, kinds } = await world();
   const { ana, boss } = people;
   assert.equal((await ana.c.get(`/admin/users/${ana.id}/badges`)).statusCode, 404); // members can't
   const form = await boss.c.get(`/admin/users/${ana.id}/badges`);
   assert.match(form.body, /Founding Member \(given only\)/);
   const give = await boss.c.post(`/admin/users/${ana.id}/badges`, { badge_id: String(badge('founder')), note: 'Thanks for testing the app!' });
   assert.equal(give.headers.location, `/admin/users/${ana.id}/badges?done=given`);
+  assert.equal((await boss.c.post(`/admin/users/${ana.id}/badges`, { badge_id: String(badge('first')) }, { csrf: false })).statusCode, 403);
+  assert.equal((await boss.c.post(`/admin/users/${ana.id}/badges/${badge('founder')}/delete`, {}, { csrf: false })).statusCode, 403);
   assert.equal((await boss.c.post(`/admin/users/${ana.id}/badges`, { badge_id: String(badge('founder')) })).statusCode, 422); // already has it
   assert.equal((await boss.c.post(`/admin/users/${ana.id}/badges`, { badge_id: String(badge('first')), note: 'x'.repeat(141) })).statusCode, 422);
 
@@ -44,6 +46,8 @@ test('an admin gives a badge with a note: it pops up on the member\'s next page 
   assert.match(page, /New badge: Founding Member/);
   assert.match(page, /From boss: “Thanks for testing the app!”/);
   assert.match(page, /aria-label="Notifications, 1 unread"/);
+  assert.equal((await app.inject({ method: 'HEAD', url: '/notifications', headers: { cookie: [...ana.c.jar].map(([k, v]) => `${k}=${v}`).join('; ') } })).statusCode, 200);
+  assert.match((await ana.c.get('/pals')).body, /aria-label="Notifications, 1 unread"/); // HEAD doesn't mark read
   const list = (await ana.c.get('/notifications')).body;
   assert.match(list, /<span class="new-pill">New<\/span> <a href="\/passport#badges">boss gave you the Founding Member badge: “Thanks for testing the app!”<\/a>/);
   assert.match((await ana.c.get('/pals')).body, /aria-label="Notifications"/); // all read now
@@ -56,6 +60,10 @@ test('an admin gives a badge with a note: it pops up on the member\'s next page 
   // The admin can take back what was given.
   await boss.c.post(`/admin/users/${ana.id}/badges/${badge('first')}/delete`);
   assert.ok(!db.prepare('SELECT 1 FROM user_badges WHERE user_id = ? AND badge_id = ?').get(ana.id, badge('first')));
+  // If the admin deletes their account, the gift stays but no longer names them.
+  await boss.c.post('/account/delete', { delete_password: PW });
+  assert.deepEqual(kinds(ana.id), []);
+  assert.equal(db.prepare('SELECT source_id FROM user_badges WHERE user_id = ? AND badge_id = ?').pluck().get(ana.id, badge('founder')), null);
 });
 
 test('badges earned and pal news reach the notification center; a manual badge is never earned by the rules', async () => {

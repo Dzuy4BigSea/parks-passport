@@ -1365,6 +1365,8 @@ html.fx-locked { overflow: hidden; }
 .welcome-gary { right: 0; }
 
 /* Notification center (SPEC Flow 8). */
+.nav-list .nav-bell a.pill-bell { padding: 0.45rem 0.45rem; background: none; }
+@media (max-width: 420px) { .header-chips.has-admin .pill-points { display: none; } } /* points are on the passport */
 .pill-bell { display: inline-flex; align-items: center; gap: 0.25rem; position: relative; }
 .pill-bell svg { width: 1.15rem; height: 1.15rem; }
 .bell-count { min-width: 1.3rem; padding: 0 0.3rem; border-radius: 999px; background: #c8155a; color: #fff; font-size: 0.75rem; font-weight: 800; text-align: center; line-height: 1.3rem; }

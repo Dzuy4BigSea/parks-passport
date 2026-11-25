@@ -15,6 +15,11 @@ test('an admin gives a badge; it pops up for the member with the note, and the b
   const admin = await signUp(page, { name: 'Ada Admin' });
   const db = new Database(path.join(process.env.PP_E2E_DATA_DIR, 'app.db'));
   db.prepare('UPDATE users SET is_admin = 1 WHERE email = ?').run(admin.email);
+  // A streak, so the admin's phone header has every chip (streak, points, bell, Admin).
+  const today = new Date().toISOString().slice(0, 10);
+  db.prepare(`INSERT INTO visits (user_id, park_id, visited_on, visited_at, method, points, created_at)
+    SELECT u.id, (SELECT id FROM parks WHERE slug = 'abercrombie-park'), ?, ?, 'honor', 10, ? FROM users u WHERE u.email = ?`)
+    .run(today, new Date().toISOString(), new Date().toISOString(), admin.email);
   const slug = `gift-${Date.now()}`;
   db.prepare(`INSERT INTO badges (slug, name, description, art, rule_type, rule_params, kind, enabled, created_at)
     VALUES (?, 'Cleanup Crew', 'Helped at a park cleanup.', '🧹', 'manual', '{}', 'hidden', 1, 'x')`).run(slug);
@@ -32,6 +37,8 @@ test('an admin gives a badge; it pops up for the member with the note, and the b
   await page.goto(`/admin/users/${memberId}/badges`);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Give Gift Ee a badge');
   await expectNoAxeViolations(page);
+  await expect(page.locator('.header-chips .pill-streak')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByLabel('Badge').selectOption({ label: 'Cleanup Crew (given only)' });
   await page.getByLabel('Note (optional)').fill('Thanks for helping at the cleanup!');
   await page.getByRole('button', { name: 'Give badge' }).click();
@@ -60,5 +67,9 @@ test('an admin gives a badge; it pops up for the member with the note, and the b
   await member.reload();
   await expect(member.locator('.notification.is-new')).toHaveCount(0);
   await expect(member.getByRole('link', { name: /^Notifications/ })).toHaveAccessibleName('Notifications');
+  // On a wider screen the bell is in the main nav.
+  await member.setViewportSize({ width: 1280, height: 800 });
+  await member.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Notifications' }).click();
+  await expect(member).toHaveURL(/\/notifications$/);
   await context.close();
 });
