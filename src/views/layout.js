@@ -177,6 +177,13 @@ ${showConsentBanner ? consentBanner(csrf, path) : ''}
     <p><a href="/privacy">Privacy</a>${photos ? html` · <a href="/credits">Photo credits</a>` : ''}${analytics?.gtmId ? html` · <a href="/consent?back=${encodeURIComponent(path)}" id="cookie-settings">Cookie settings</a>` : ''}</p>
     <p class="credit"><span>© ${new Date().getFullYear()} Parks Passport</span>
       <a class="bigsea" href="https://bigsea.co" rel="noopener" title="Purpose built by Big Sea"><span>Purpose built by</span><img src="/brand/bigsea-logo.svg" alt="Big Sea" width="54" height="15"></a></p>
+    <div class="impact">
+      <p>Big Sea is a Certified B Corporation and a member of 1% for the Planet.</p>
+      <ul class="impact-logos">
+        <li><a href="https://www.bcorporation.net/" rel="noopener"><img src="/brand/b-corp.png" alt="Certified B Corporation" width="29" height="48" loading="lazy"></a></li>
+        <li><a href="https://onepercentfortheplanet.org/" rel="noopener"><img src="/brand/one-percent-for-the-planet.png" alt="1% for the Planet member" width="40" height="48" loading="lazy"></a></li>
+      </ul>
+    </div>
   </div>
 </footer>
 ${user ? tabBar(current, base) : ''}
