@@ -1534,3 +1534,5 @@ body:has(.feedback-fab) .site-footer { padding-bottom: 5.5rem; }
   25% { opacity: 1; }
   100% { opacity: 0; transform: rotate(calc(var(--d) * 36deg)) translateY(-120px) scale(1); }
 }
+.notification { flex-wrap: wrap; }
+.notification .request-actions, .notification .request-answered { margin-left: auto; align-self: center; }

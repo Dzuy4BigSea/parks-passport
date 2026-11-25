@@ -106,3 +106,32 @@ test('the notification center keeps the latest 200 and pages them 30 at a time',
   assert.ok(!last.hasMore);
   assert.match((await ana.c.get('/notifications?page=2')).body, /Note 175\./);
 });
+
+test('a pal request can be accepted or declined right in the notification center (M27)', async () => {
+  const { db, people } = await world();
+  const codeOf = async (who) => (await people[who].c.get('/pals')).body.match(/id="my-code"[^>]*value="([A-Z0-9-]{9})"/)[1];
+  // Ben asks Ana; Ana accepts from her notifications.
+  await people.ben.c.post('/pals/code', { code: await codeOf('ana') });
+  const open = (await people.ana.c.get('/notifications')).body;
+  const rid = db.prepare('SELECT id FROM pal_requests').pluck().get();
+  assert.match(open, new RegExp(`action="/pals/requests/${rid}/accept"[\\s\\S]*name="from" value="notifications"`));
+  assert.match(open, /action="\/pals\/requests\/\d+\/decline"/);
+  // Someone else can't answer it.
+  assert.equal((await people.boss.c.post(`/pals/requests/${rid}/accept`, { from: 'notifications' })).statusCode, 404);
+  const res = await people.ana.c.post(`/pals/requests/${rid}/accept`, { from: 'notifications' });
+  assert.equal(res.headers.location, '/notifications?done=accepted');
+  const after = (await people.ana.c.get('/notifications?done=accepted')).body;
+  assert.match(after, /You(&#39;|')re now Park Pals!/);
+  assert.match(after, /You(&#39;|')re Park Pals now\./);
+  assert.doesNotMatch(after, /\/pals\/requests\/\d+\/accept/);
+
+  // Boss asks Ana; she declines from the notification center: it just says Answered.
+  await people.boss.c.post('/pals/code', { code: await codeOf('ana') });
+  const rid2 = db.prepare('SELECT id FROM pal_requests').pluck().get();
+  assert.equal((await people.ana.c.post(`/pals/requests/${rid2}/decline`, { from: 'notifications' })).headers.location, '/notifications?done=declined');
+  assert.match((await people.ana.c.get('/notifications')).body, /Answered\./);
+  // Answering from the Pals page still goes back there.
+  await people.boss.c.post('/pals/code', { code: await codeOf('ana') });
+  const rid3 = db.prepare('SELECT id FROM pal_requests').pluck().get();
+  assert.equal((await people.ana.c.post(`/pals/requests/${rid3}/accept`)).headers.location, '/pals?done=accepted');
+});
