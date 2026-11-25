@@ -114,7 +114,8 @@ export function validateBadgeForm(form, { isNew, targets = [] }) {
       else params[key] = n;
     } else if (type === 'chance') {
       const p = Number(raw);
-      if (!(p > 0 && p <= 1) || raw === '') errors[`param_${key}`] = 'Enter a chance above 0 and up to 1 (e.g. 0.45).';
+      const min = key === 'floor' ? 0 : Number.MIN_VALUE; // the lowest chance may be 0
+      if (!(p >= min && p <= 1) || raw === '') errors[`param_${key}`] = key === 'floor' ? 'Enter a chance from 0 to 1 (e.g. 0.03).' : 'Enter a chance above 0 and up to 1 (e.g. 0.45).';
       else params[key] = p;
     } else if (type === 'milestone') {
       if (!Object.hasOwn(MILESTONES, raw)) errors[`param_${key}`] = 'Choose the first-time action.';
@@ -145,6 +146,7 @@ export function validateBadgeForm(form, { isNew, targets = [] }) {
       else params[key] = n;
     }
   }
+  if (params.floor != null && params.chance != null && params.floor > params.chance) errors.param_floor = 'The lowest chance can\u2019t be above the starting chance.';
   if (Object.keys(errors).length) return { errors };
   return {
     badge: {

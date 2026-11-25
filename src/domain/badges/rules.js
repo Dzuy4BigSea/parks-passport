@@ -152,8 +152,10 @@ export const RULES = {
     params: { order: 'number', chance: 'chance', floor: 'chance', half_life: 'number' },
     permanent: true,
     evaluate: ({ order, chance, floor = 0, half_life = 1 }, ctx) => {
-      if (ctx.trigger?.type !== 'visit' || order !== ctx.nextLuckyOrder) return { earned: false };
-      return { earned: ctx.luckyRoll < luckyChance(Math.max(1, ctx.visits.length), { chance, floor, half_life }) };
+      if (ctx.trigger?.type !== 'visit' || order !== ctx.nextLuckyOrder || ctx.lucky?.dropped) return { earned: false };
+      const earned = ctx.luckyRoll < luckyChance(Math.max(1, ctx.lucky?.rolls || ctx.visits.length), { chance, floor, half_life });
+      if (earned && ctx.lucky) ctx.lucky.dropped = true; // two drops sharing an order: still only one
+      return { earned };
     },
   },
 

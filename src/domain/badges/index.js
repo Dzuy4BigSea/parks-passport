@@ -49,6 +49,8 @@ export function buildContext(db, userId, { trigger = null, random = Math.random,
     visits, parkCategories, activeParkIds, parkCity, activityLogs, trigger, random, milestones,
     nextLuckyOrder: openDrops.length ? Math.min(...openDrops) : null,
     luckyRoll: trigger?.type === 'visit' ? random() : 1,
+    // Stamps ever made (deleting a stamp doesn't lower it), and whether this stamp already dropped one.
+    lucky: { rolls: db.prepare('SELECT lucky_rolls FROM users WHERE id = ?').pluck().get(userId) || 0, dropped: false },
     palSameDay: palSameDay ?? hasPalSameDay(db, userId),
   };
 }

@@ -34,6 +34,8 @@ export default async function visitRoutes(app) {
   // Badges for the stamper, and "Better Together" for pals who stamped here the same day.
   function afterStamp(user, visit, park) {
     app.track(user.id, 'check_in', { park_slug: park.slug, method: visit.method });
+    // Lucky drop odds follow stamps ever made, so stamping and deleting doesn't reset them.
+    db.prepare('UPDATE users SET lucky_rolls = lucky_rolls + 1 WHERE id = ?').run(user.id);
     const opts = { now: app.now(), random: app.random };
     // Photos already uploaded here that day count toward this stamp (+3).
     attachSameDayPhotos(db, user.id, visit, { now: app.now() });

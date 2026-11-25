@@ -209,7 +209,7 @@ ${errorSummary(errors)}
       : html`<div class="param" data-param="${k}">${input(`param_${k}`, PARAM_LABELS[k], params[k], {
         type: k === 'start' || k === 'end' ? 'time' : 'number', error: errors[`param_${k}`],
         hint: k === 'n' ? 'For the weekly rules, the number of weeks.' : undefined,
-        attrs: k === 'probability' || k === 'chance' || k === 'floor' ? html`step="0.01" min="0.01" max="1"`
+        attrs: k === 'probability' || k === 'chance' ? html`step="any" min="0.001" max="1"` : k === 'floor' ? html`step="any" min="0" max="1"`
           : k === 'order' || k === 'half_life' ? html`step="1" min="1" max="1000"` : k === 'n' ? html`step="1" min="1" max="1000"`
           : k === 'total' ? html`step="0.1" min="0.1" max="10000"` : k === 'window_days' ? html`step="1" min="0" max="365"`
             : k === 'per_week' ? html`step="1" min="1" max="7"` : '',
@@ -218,7 +218,7 @@ ${errorSummary(errors)}
   <fieldset class="radio-group${errors.kind ? ' field-error' : ''}">
     <legend>Shows as</legend>
     ${errors.kind ? html`<p class="error-text">${errors.kind}</p>` : ''}
-    ${[['known', 'Known: name and progress shown'], ['hidden', 'Hidden: "?" with the hint until earned'], ['lucky', 'Lucky: awarded at random (lucky rule)']].map(([k, label]) => html`<label class="check"><input type="radio" name="kind" value="${k}"${b.kind === k ? html` checked` : ''}> ${label}</label>`)}
+    ${[['known', 'Known: name and progress shown'], ['hidden', 'Hidden: "?" with the hint until earned'], ['lucky', 'Lucky: awarded at random (random or lucky drop rule)']].map(([k, label]) => html`<label class="check"><input type="radio" name="kind" value="${k}"${b.kind === k ? html` checked` : ''}> ${label}</label>`)}
   </fieldset>
   <label class="check"><input type="checkbox" name="enabled" value="1"${enabled ? html` checked` : ''}> Enabled. Disabling stops new awards; members keep badges they earned.</label>
   <button type="submit" class="btn btn-primary">${isNew ? 'Add badge' : 'Save badge'}</button>
