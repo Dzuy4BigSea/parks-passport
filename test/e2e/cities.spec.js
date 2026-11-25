@@ -51,7 +51,8 @@ test('profile photo upload and pal faces: axe clean at 375 px', async ({ page, b
   await page.goto('/account');
   await page.getByLabel('Choose a profile photo').setInputFiles({ name: 'me.jpg', mimeType: 'image/jpeg', buffer: photo });
   await page.getByRole('button', { name: 'Upload photo' }).click();
-  await expect(page.getByRole('status')).toHaveText('Profile photo saved.');
+  await expect(page.locator('p.notice[role=status]')).toHaveText('Profile photo saved.');
+  await expect(page.locator('.announcements')).toContainText('New badge: Say Cheese'); // a surprise (M19)
   await expect(page.locator('#photo img.avatar')).toBeVisible();
   await expectNoAxeViolations(page);
   // Share with pals, invite a friend who stamps a park: Ana sees their face on the card.
