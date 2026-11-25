@@ -206,7 +206,9 @@ export default async function adminRoutes(app) {
     r.get('/badges/new', async (req, reply) => {
       const idea = keptIdea(req, req.query.from_idea);
       return reply.page(adminBadgeForm({
-        csrf: req.csrfToken(), targets: badgeTargets(db), isNew: true, fromIdea: idea?.id ?? null, values: idea ? badgePrefill(idea) : null,
+        csrf: req.csrfToken(), targets: badgeTargets(db), isNew: true, fromIdea: idea?.id ?? null,
+        // ?team=1 (Admin › Badges › Group badges): a team badge, given when a group reaches a goal.
+        values: idea ? badgePrefill(idea) : req.query.team === '1' ? { kind: 'known', enabled: '1', rule_type: 'manual', is_group: '1', art: '🤝' } : null,
       }));
     });
     r.get('/badges/:id', async (req, reply) => {

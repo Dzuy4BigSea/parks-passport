@@ -476,3 +476,17 @@ Checks: `test/unit/groups.test.js` (unlocking, limits, validation, ask-first and
 new code, pal invites only, join limit, privacy and 404s, owner actions, leave, end, account deletion,
 home card), `test/e2e/groups.spec.js` (start, ask with the code, approve, home card; axe and no
 sideways scroll at 375 px), and the existing suite.
+
+### M36 — Group goals and team badges (Flow 24)
+- Migration 030 (`group_goals`, `badges.is_group`, `badge_ideas.kind`), `src/domain/group-goals.js`
+  (set, stop, progress, reach and award, team badges), `seed/group-goals.json` and
+  `seed/team-badges.json`. Goals are checked after stamps and activity logs (`awardBadges`).
+- The group page's goal section and owner form, the home card's goal bar, the passport's Team
+  badges, Admin › Badges › Group badges and the team flag, suggestions into badge ideas, the
+  "Team goal reached!" reveal. Team badges are skipped when the rules take badges back.
+
+Checks: `test/unit/group-goals.test.js` (templates and badges, owner only, one at a time, limits,
+counting check-ins and different parks and minutes, members only, reaching it gives everyone the
+badge with the group's name, announcement, passport section, kept after leaving and ending,
+stop, suggestions, admin section and validation), `test/e2e/group-goals.spec.js` (start a goal,
+reach it with a GPS check-in, Team badges; axe and no sideways scroll at 375 px), and the existing suite.

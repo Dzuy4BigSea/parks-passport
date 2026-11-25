@@ -351,7 +351,7 @@ test('migration 028 backfills home city from where members stamped most', () => 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-mig-'));
   for (const f of fs.readdirSync(dir).filter((f) => f < '028')) fs.copyFileSync(path.join(dir, f), path.join(tmp, f));
   migrate(db, tmp);
-  seedCities(db);
+  for (const key of ['st-pete', 'westminster', 'asheville']) seedCityPack(db, JSON.parse(fs.readFileSync(path.join(CITIES_DIR, key, 'city.json'), 'utf8')));
   const city = (k) => cityByKey(db, k).id;
   const park = (cityKey, slug) => db.prepare("INSERT INTO parks (slug, name, city_id, active, created_at, updated_at) VALUES (?, ?, ?, 1, 'x', 'x')").run(slug, slug, city(cityKey)).lastInsertRowid;
   const u = db.prepare("INSERT INTO users (email, password_hash, display_name, handle, created_at) VALUES ('a@x.com', 'h', 'A', 'a', 'x')").run().lastInsertRowid;

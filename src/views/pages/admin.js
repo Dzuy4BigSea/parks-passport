@@ -145,18 +145,26 @@ ${seedFile ? html`<form method="post" action="/admin/import/seed${cityQ(cityBar)
 }
 
 export function adminBadges({ badges }) {
-  return page('Badges', html`${crumb}<h1>Badges</h1>
-<p><a class="btn btn-primary" href="/admin/badges/new">Add a badge</a></p>
-<div class="table-wrap"><table class="admin-table">
-  <caption class="visually-hidden">Badges</caption>
+  const table = (list, caption) => html`<div class="table-wrap"><table class="admin-table">
+  <caption class="visually-hidden">${caption}</caption>
   <thead><tr><th scope="col">Badge</th><th scope="col">Rule</th><th scope="col">Shows as</th><th scope="col">Earned</th></tr></thead>
-  <tbody>${badges.map((b) => html`<tr${b.enabled ? '' : html` class="disabled"`}>
+  <tbody>${list.map((b) => html`<tr${b.enabled ? '' : html` class="disabled"`}>
     <td data-label="Badge">${badgeArt(b.art, 'table-art')} <a href="/admin/badges/${b.id}">${b.name}</a>${b.enabled ? '' : html` <span class="flag">Disabled</span>`}${b.limited_count ? html` <span class="flag flag-holo">Limited: ${b.serials_given} of ${b.limited_count} given</span>` : ''}</td>
     <td data-label="Rule">${RULES[b.rule_type]?.label || b.rule_type}<br><span class="muted">${b.rule_params}</span></td>
     <td data-label="Shows as">${b.kind}</td>
     <td data-label="Earned">${b.earned_count}</td>
   </tr>`)}</tbody>
-</table></div>`);
+</table></div>`;
+  const team = badges.filter((b) => b.is_group);
+  return page('Badges', html`${crumb}<h1>Badges</h1>
+<p><a class="btn btn-primary" href="/admin/badges/new">Add a badge</a></p>
+${table(badges.filter((b) => !b.is_group), 'Badges')}
+<section aria-labelledby="team-h">
+<h2 id="team-h">Group badges (${team.length})</h2>
+<p>Team badges: every member of a group gets one when the group reaches a goal, and keeps it. The ready-made goals are in <code>seed/group-goals.json</code>; owners can pick any enabled team badge for a goal of their own.</p>
+<p><a class="btn" href="/admin/badges/new?team=1">Add a team badge</a></p>
+${team.length ? table(team, 'Group badges') : html`<p>None yet.</p>`}
+</section>`);
 }
 
 const PARAM_LABELS = {
@@ -233,6 +241,8 @@ ${errorSummary(errors)}
   ${input('limited_count', 'Limited edition: number of copies (optional)', b.limited_count ?? '', { type: 'number', error: errors.limited_count,
     hint: 'Leave empty for an ordinary badge. A limited edition is numbered (#1 of 100, #2 of 100…) as you give it out, and shines like a holographic card. Use the "Given by an admin only" rule.',
     attrs: html`step="1" min="1" max="1000"` })}
+  <label class="check"><input type="checkbox" name="is_group" value="1"${(values ? values.is_group === '1' : Boolean(b.is_group)) ? html` checked` : ''}> Team badge: earned by every member when their group reaches a goal (use the "Given by an admin only" rule). Shown in its own section.</label>
+  ${errors.is_group ? html`<p class="error-text">${errors.is_group}</p>` : ''}
   <label class="check"><input type="checkbox" name="enabled" value="1"${enabled ? html` checked` : ''}> Enabled. Disabling stops new awards; members keep badges they earned.</label>
   <button type="submit" class="btn btn-primary">${isNew ? 'Add badge' : 'Save badge'}</button>
 </form>`, { scripts: ['/js/badge-form.js'] });

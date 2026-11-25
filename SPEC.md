@@ -657,7 +657,7 @@ Done when:
 
 ### Flow 23: Groups
 As a member, I can be in groups (a gym, a running club, a class) that see each other's progress as
-counts, so exploring feels like a team sport. (Group goals and team badges: Flow 24, M36.)
+counts, so exploring feels like a team sport. (Group goals and team badges: Flow 24.)
 Done when:
 - [ ] **Unlocking:** 10 GPS check-ins earns the **Troop Leader** badge (rule `gps_checkins`) and
       lets me start up to 3 groups. Before that, Groups shows my progress toward it. An admin can
@@ -685,6 +685,28 @@ Done when:
 - [ ] **Home:** the signed-in home has a "Your groups" card: my groups, or how to join one with a
       code and how close I am to Troop Leader. Group news (invites, requests, approvals, joins, a
       group ending) goes in the notification center.
+
+### Flow 24: Group goals and team badges
+As a group, we work toward one goal at a time and earn a team badge together, to build camaraderie.
+Done when:
+- [ ] **Goals:** the owner picks the next goal from a ready-made list (`seed/group-goals.json`: 10
+      check-ins this week, 50 check-ins in 30 days, 25 different parks this month, 500 active
+      minutes in 30 days, 100 different parks in 90 days) or sets the group's own: what to count
+      (check-ins, different parks, active minutes), how many (1 to 10,000), how many days (1 to
+      120) and which team badge. One goal at a time; the owner can stop it. Members can't set goals.
+- [ ] **Progress:** what current members do from the goal's start counts (different parks count
+      once for the group). The group page shows the total as a bar and each member's share; the
+      home card shows each group's goal under way.
+- [ ] **Reaching it:** the moment a stamp or an activity reaches the goal, every member at that
+      moment gets the goal's team badge and a notification. On their next page the badge is
+      revealed as "Team goal reached!" with "Earned together with <group>".
+- [ ] **Team badges** are their own kind (`badges.is_group`): in a "Team badges" section of my
+      own passport (with the group's name and date), not among the regular badges, and in a "Group
+      badges" section of Admin › Badges, where admins add more ("Add a team badge"; the "Given by an
+      admin only" rule; not a limited edition). Members keep them if they leave or the group ends,
+      and the rules never take them back.
+- [ ] **Suggestions:** the owner can suggest a group goal or a team badge from the group page. It
+      goes to the badge ideas queue (Flow 13), marked "Group goal" or "Team badge".
 
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.

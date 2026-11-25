@@ -156,12 +156,15 @@ export function validateBadgeForm(form, { isNew, targets = [] }) {
     else if (ruleType !== 'manual') errors.limited_count = 'Limited editions are given by hand: choose the "Given by an admin only" rule.';
     else limitedCount = n;
   }
+  const isGroup = form.is_group === '1' ? 1 : 0;
+  if (isGroup && ruleType !== 'manual') errors.is_group = 'Team badges are given when a group reaches a goal: choose the "Given by an admin only" rule.';
+  if (isGroup && limitedCount) errors.is_group = 'A team badge can\u2019t also be a limited edition.';
   if (params.floor != null && params.chance != null && params.floor > params.chance) errors.param_floor = 'The lowest chance can\u2019t be above the starting chance.';
   if (Object.keys(errors).length) return { errors };
   return {
     badge: {
       slug, name, description, hint, art: art || '🏅', rule_type: ruleType,
-      rule_params: JSON.stringify(params), kind, enabled: form.enabled === '1' ? 1 : 0, limited_count: limitedCount,
+      rule_params: JSON.stringify(params), kind, enabled: form.enabled === '1' ? 1 : 0, limited_count: limitedCount, is_group: isGroup,
     },
   };
 }
@@ -169,13 +172,13 @@ export function validateBadgeForm(form, { isNew, targets = [] }) {
 export function saveBadge(db, id, badge, { now = new Date() } = {}) {
   if (id) {
     db.prepare(`UPDATE badges SET name=@name, description=@description, hint=@hint, art=@art, rule_type=@rule_type,
-      rule_params=@rule_params, kind=@kind, enabled=@enabled, limited_count=@limited_count WHERE id=@id`).run({ ...badge, id });
+      rule_params=@rule_params, kind=@kind, enabled=@enabled, limited_count=@limited_count, is_group=@is_group WHERE id=@id`).run({ ...badge, id });
     return badgeForAdmin(db, id);
   }
   if (db.prepare('SELECT 1 FROM badges WHERE slug = ?').get(badge.slug)) return { error: 'slug_taken' };
   const sort = db.prepare('SELECT COALESCE(MAX(sort), 0) + 1 FROM badges').pluck().get();
-  const newId = db.prepare(`INSERT INTO badges (slug, name, description, hint, art, rule_type, rule_params, kind, enabled, limited_count, sort, created_at)
-    VALUES (@slug, @name, @description, @hint, @art, @rule_type, @rule_params, @kind, @enabled, @limited_count, @sort, @created_at)`)
+  const newId = db.prepare(`INSERT INTO badges (slug, name, description, hint, art, rule_type, rule_params, kind, enabled, limited_count, is_group, sort, created_at)
+    VALUES (@slug, @name, @description, @hint, @art, @rule_type, @rule_params, @kind, @enabled, @limited_count, @is_group, @sort, @created_at)`)
     .run({ ...badge, sort, created_at: now.toISOString() }).lastInsertRowid;
   return badgeForAdmin(db, newId);
 }

@@ -41,8 +41,9 @@ export function submitIdea(db, user, form, { now = new Date() } = {}) {
   }
   if (Object.keys(errors).length) return { errors, values };
   const ts = now.toISOString();
-  const id = Number(db.prepare(`INSERT INTO badge_ideas (user_id, name, pitch, art, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?)`).run(user.id, values.name, values.pitch, values.art, ts, ts).lastInsertRowid);
+  const kind = ['group_goal', 'group_badge'].includes(form.kind) ? form.kind : 'badge';
+  const id = Number(db.prepare(`INSERT INTO badge_ideas (user_id, name, pitch, art, kind, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)`).run(user.id, values.name, values.pitch, values.art, kind, ts, ts).lastInsertRowid);
   return { idea: ideaById(db, id) };
 }
 

@@ -78,7 +78,7 @@ function cityTabs(cities, theme, href) {
 </ul></nav>`;
 }
 
-export function passportPage({ user, csrf, parks, history, points, level, badges, readOnly = false, theme = { motifs: [], areas: [] }, next = null, week = null,
+export function passportPage({ teamBadges = [], user, csrf, parks, history, points, level, badges, readOnly = false, theme = { motifs: [], areas: [] }, next = null, week = null,
   cities = null, cityHref = (city) => cityPath(city, '/passport'), welcome = false, wantToGo = null }) {
   // Saved parks are private: only the owner's own passport passes wantToGo (never /u/:handle).
   const showWantToGo = !readOnly && Array.isArray(wantToGo);
@@ -148,6 +148,16 @@ ${showWantToGo ? html`<section aria-labelledby="want-h" id="want-to-go">
   <h2 id="badges-h">Badges <span class="count">(${earned.length} earned)</span></h2>
   <ul class="badge-grid">${badges.map(badgeCard)}</ul>
 </section>
+${teamBadges.length ? html`<section aria-labelledby="team-h" id="team-badges" class="team-badges">
+  <h2 id="team-h">Team badges <span class="count">(${teamBadges.length})</span></h2>
+  <p class="muted">Earned together by reaching a group goal. They're yours to keep.</p>
+  <ul class="badge-grid">${teamBadges.map((b) => html`<li class="badge earned">
+    ${badgeArt(b.art)}
+    <span class="badge-name">${b.name}</span>
+    <span class="badge-meta">With ${b.group_name || 'a group'} · ${formatDate(localDate(new Date(b.awarded_at)))}</span>
+    ${b.description ? html`<span class="badge-desc">${b.description}</span>` : ''}
+  </li>`)}</ul>
+</section>` : ''}
 
 <section aria-labelledby="history-h">
   <h2 id="history-h">Visit history</h2>

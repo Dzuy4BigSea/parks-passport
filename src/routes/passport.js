@@ -1,4 +1,5 @@
 import { requireUser } from '../lib/auth.js';
+import { teamBadgesOf } from '../domain/group-goals.js';
 import { badgeBoard } from '../domain/badges/index.js';
 import { totalPoints } from '../domain/points.js';
 import { levelFor } from '../domain/levels.js';
@@ -32,6 +33,7 @@ export default async function passportRoutes(app) {
       week: weekSummary(db, user.id, { now: app.now(), timeZone: city.time_zone }),
       welcome: req.query.welcome === '1', // right after sign-up: the passport opening
       wantToGo: wantToGo(db, user.id, { cityId: city.id }), // private: only on your own passport
+      teamBadges: teamBadgesOf(db, user.id), // own passport only: they name the groups
     }));
   });
 }

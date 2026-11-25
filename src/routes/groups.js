@@ -7,6 +7,8 @@ import {
   endGroup, memberBoard, requestsFor, invitablePals, isMember,
 } from '../domain/groups.js';
 import { groupsPage, groupPage, joinGroupPage } from '../views/pages/groups.js';
+import { currentGoal, goalProgress, setGoal, stopGoal, teamBadges, GOAL_TEMPLATES } from '../domain/group-goals.js';
+import { submitIdea } from '../domain/ideas.js';
 
 const HOUR = 3600_000;
 
@@ -83,14 +85,20 @@ export default async function groupRoutes(app) {
 
   // One group: members only.
   const memberGroup = (req) => groupForMember(db, id(req.params.id), req.user.id);
+  const goalView = (group) => {
+    const goal = currentGoal(db, group.id, { now: now() });
+    return { goal, progress: goal ? goalProgress(db, goal) : undefined, templates: GOAL_TEMPLATES, teamBadges: teamBadges(db) };
+  };
   const showGroup = (req, group, extra = {}) => groupPage({
     csrf: req.csrfToken(), group, me: req.user, board: memberBoard(db, group.id),
-    requests: group.is_owner ? requestsFor(db, group.id) : [], pals: invitablePals(db, group.id, req.user.id), baseUrl: app.config.baseUrl, ...extra,
+    requests: group.is_owner ? requestsFor(db, group.id) : [], pals: invitablePals(db, group.id, req.user.id), baseUrl: app.config.baseUrl,
+    ...goalView(group), ...extra,
   });
   const GROUP_NOTICES = {
     created: NOTICES.created, joined: NOTICES.joined, invited: 'Invite sent. They’ll see it in their notifications.', saved: 'Saved.',
     code: 'New code made. The old code and link no longer work.', approved: 'Approved. They’re in.', declined: 'Request declined.',
-    removed: 'Removed from the group.', owner: 'They run the group now.',
+    removed: 'Removed from the group.', owner: 'They run the group now.', goal: 'Goal set. Go team!', stopped: 'Goal stopped.',
+    suggested: 'Thanks! Your idea went to the Parks Passport team.',
   };
 
   app.get('/groups/:id', { preHandler: requireUser }, async (req, reply) => {
@@ -157,6 +165,28 @@ export default async function groupRoutes(app) {
     const ok = req.body.action === 'owner' ? transferOwnership(db, group, userId) : removeMember(db, group, userId);
     if (!ok) return reply.callNotFound();
     return reply.redirect(`/groups/${group.id}?done=${req.body.action === 'owner' ? 'owner' : 'removed'}`, 303);
+  });
+  app.post('/groups/:id/goal', { preHandler: requireUser }, async (req, reply) => {
+    const group = ownedGroup(req);
+    if (!group) return reply.callNotFound();
+    const result = setGoal(db, group, { template: str(req.body.template), metric: str(req.body.metric), target: str(req.body.target), days: str(req.body.days), badge_id: str(req.body.badge_id) }, { now: now() });
+    if (result.error) return reply.code(422).page(showGroup(req, group, { notice: 'Your group already has a goal under way. Stop it first to pick another.' }));
+    if (result.errors) return reply.code(422).page(showGroup(req, group, { goalErrors: result.errors }));
+    return reply.redirect(`/groups/${group.id}?done=goal#goal`, 303);
+  });
+  app.post('/groups/:id/goal/stop', { preHandler: requireUser }, async (req, reply) => {
+    const group = ownedGroup(req);
+    if (!group || !stopGoal(db, group.id, { now: now() })) return reply.callNotFound();
+    return reply.redirect(`/groups/${group.id}?done=stopped#goal`, 303);
+  });
+  // Owners suggest a group goal or a team badge: it goes to the badge ideas queue (Flow 13).
+  app.post('/groups/:id/suggest', { preHandler: requireUser }, async (req, reply) => {
+    const group = ownedGroup(req);
+    if (!group) return reply.callNotFound();
+    const kind = req.body.kind === 'group_badge' ? 'group_badge' : 'group_goal';
+    const result = submitIdea(db, req.user, { name: str(req.body.idea_name), pitch: str(req.body.pitch, 400), art: '', kind }, { now: now() });
+    if (result.errors) return reply.code(422).page(showGroup(req, group, { notice: Object.values(result.errors)[0] }));
+    return reply.redirect(`/groups/${group.id}?done=suggested`, 303);
   });
   app.post('/groups/:id/end', { preHandler: requireUser }, async (req, reply) => {
     const group = ownedGroup(req);
