@@ -44,12 +44,12 @@ test('an admin gives a badge with a note: it pops up on the member\'s next page 
 
   const page = (await ana.c.get('/pals')).body;
   assert.match(page, /New badge: Founding Member/);
-  assert.match(page, /From boss: “Thanks for testing the app!”/);
+  assert.match(page, /From Parks Passport: “Thanks for testing the app!”/);
   assert.match(page, /aria-label="Notifications, 1 unread"/);
   assert.equal((await app.inject({ method: 'HEAD', url: '/notifications', headers: { cookie: [...ana.c.jar].map(([k, v]) => `${k}=${v}`).join('; ') } })).statusCode, 200);
   assert.match((await ana.c.get('/pals')).body, /aria-label="Notifications, 1 unread"/); // HEAD doesn't mark read
   const list = (await ana.c.get('/notifications')).body;
-  assert.match(list, /<span class="new-pill">New<\/span> <a href="\/passport#badges">boss gave you the Founding Member badge: “Thanks for testing the app!”<\/a>/);
+  assert.match(list, /<span class="new-pill">New<\/span> <a href="\/passport#badges">Parks Passport gave you the Founding Member badge: “Thanks for testing the app!”<\/a>/);
   assert.match((await ana.c.get('/pals')).body, /aria-label="Notifications"/); // all read now
   assert.deepEqual(kinds(ana.id), ['gift']);
 
@@ -60,9 +60,9 @@ test('an admin gives a badge with a note: it pops up on the member\'s next page 
   // The admin can take back what was given.
   await boss.c.post(`/admin/users/${ana.id}/badges/${badge('first')}/delete`);
   assert.ok(!db.prepare('SELECT 1 FROM user_badges WHERE user_id = ? AND badge_id = ?').get(ana.id, badge('first')));
-  // If the admin deletes their account, the gift stays but no longer names them.
+  // If the admin deletes their account, the gifts and their notifications stay: they say "Parks Passport", not the admin.
   await boss.c.post('/account/delete', { delete_password: PW });
-  assert.deepEqual(kinds(ana.id), []);
+  assert.deepEqual(kinds(ana.id), ['gift', 'gift']);
   assert.equal(db.prepare('SELECT source_id FROM user_badges WHERE user_id = ? AND badge_id = ?').pluck().get(ana.id, badge('founder')), null);
 });
 

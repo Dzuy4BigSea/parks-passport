@@ -66,7 +66,7 @@ test('copies are numbered 1..N, a taken-back number is given again, and none pas
   const page = (await ben.c.get('/pals')).body;
   assert.match(page, /class="announce is-holo"/);
   assert.match(page, /Limited edition #2 of 3/);
-  assert.match((await ben.c.get('/notifications')).body, /boss gave you the Trio badge, #2 of 3\./);
+  assert.match((await ben.c.get('/notifications')).body, /Parks Passport gave you the Trio badge, #2 of 3\./);
   const passport = (await ben.c.get('/st-pete/passport')).body;
   assert.match(passport, /class="badge earned is-holo"/);
   assert.match(passport, /Limited edition #2 of 3 · Earned/);

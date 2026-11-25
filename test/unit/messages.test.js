@@ -20,6 +20,8 @@ async function world() {
     people[name] = { c, id: db.prepare('SELECT id FROM users WHERE email = ?').pluck().get(`${name}@example.com`) };
   }
   db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(people.boss.id);
+  // Sign-up gives Early Bird (test/unit/founding.test.js); these tests start without it.
+  db.prepare("DELETE FROM user_badges WHERE badge_id = (SELECT id FROM badges WHERE slug = 'early-bird-100')").run();
   const badgeId = (slug) => db.prepare('SELECT id FROM badges WHERE slug = ?').pluck().get(slug);
   return { ...made, people, badgeId };
 }
@@ -92,7 +94,7 @@ test('badges come with the message: given once, as a gift (the path the rules ne
   const page = (await people.ana.c.get('/st-pete/parks')).body;
   assert.match(page, /team-message-badges[\s\S]*Early Adopter/);
   assert.match(page, /data-kind="gift"[\s\S]*New badge: Early Adopter/);
-  assert.match(page, /From boss: “Thank you for being an early adopter”/);
+  assert.match(page, /From Parks Passport: “Thank you for being an early adopter”/);
   const row = db.prepare('SELECT source_type, note FROM user_badges WHERE user_id = ? AND badge_id = ?').get(people.ana.id, eb);
   assert.deepEqual({ ...row }, { source_type: 'grant', note: 'Thank you for being an early adopter' });
   // Someone who already has it isn't given it twice.

@@ -338,9 +338,9 @@ export default async function adminRoutes(app) {
     r.post('/users/give', async (req, reply) => {
       const userIds = [].concat(req.body.user_id || []).filter((v) => /^\d+$/.test(String(v))).map(Number);
       const badgeId = /^\d+$/.test(String(req.body.badge_id || '')) ? Number(req.body.badge_id) : 0;
-      const result = grantBadgeToMany(db, { admin: req.user, userIds, badgeId, note: req.body.note }, { now: now() });
+      const result = grantBadgeToMany(db, { admin: req.user, userIds, badgeId, note: req.body.note, fromName: req.body.from_name }, { now: now() });
       if (result.error) {
-        const message = { not_found: 'Choose a badge to give.', none: 'Tick at least one member.', note: 'Keep the note to 140 characters.' }[result.error];
+        const message = { not_found: 'Choose a badge to give.', none: 'Tick at least one member.', note: 'Keep the note to 140 characters.', from: 'Keep the From name to 40 characters.' }[result.error];
         return reply.code(422).page(usersPage(req, { giveError: message, giveValues: { ...req.body, user_id: userIds } }));
       }
       return reply.redirect(`/admin/users?done=gave&n=${result.given}&had=${result.already}&out=${result.soldOut}#members`, 303);
@@ -365,9 +365,9 @@ export default async function adminRoutes(app) {
       const member = memberOf(req);
       if (!member) return reply.callNotFound();
       const badgeId = /^\d+$/.test(String(req.body.badge_id || '')) ? Number(req.body.badge_id) : 0;
-      const result = grantBadge(db, { admin: req.user, userId: member.id, badgeId, note: req.body.note }, { now: now() });
+      const result = grantBadge(db, { admin: req.user, userId: member.id, badgeId, note: req.body.note, fromName: req.body.from_name }, { now: now() });
       if (result.error) {
-        const message = { not_found: 'Choose a badge.', already: 'They already have that badge.', note: 'Keep the note to 140 characters.', sold_out: 'All the numbered copies of that badge are given.' }[result.error];
+        const message = { not_found: 'Choose a badge.', already: 'They already have that badge.', note: 'Keep the note to 140 characters.', from: 'Keep the From name to 40 characters.', sold_out: 'All the numbered copies of that badge are given.' }[result.error];
         return reply.code(422).page(giveView(req, member, { error: message, values: req.body }));
       }
       return reply.redirect(`/admin/users/${member.id}/badges?done=given`, 303);
