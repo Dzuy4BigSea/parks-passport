@@ -146,6 +146,8 @@ export default async function adminRoutes(app) {
         newIdeas: one("SELECT COUNT(*) FROM badge_ideas WHERE status = 'new'"),
         openFeedback: one('SELECT COUNT(*) FROM feedback WHERE done_at IS NULL'),
         newSunshine: one("SELECT COUNT(*) FROM sunshine_notes WHERE status = 'new'"),
+        nonprofitsSuggested: one("SELECT COUNT(*) FROM nonprofits WHERE status = 'suggested'"),
+        nonprofitsActive: one("SELECT COUNT(*) FROM nonprofits WHERE status = 'active'"),
         checkins7: db.prepare('SELECT COUNT(*) FROM visits WHERE created_at >= ?').pluck().get(new Date(now().getTime() - 7 * 86400000).toISOString()),
       } }));
     });

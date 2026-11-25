@@ -1540,3 +1540,27 @@ body:has(.feedback-fab) .site-footer { padding-bottom: 5.5rem; }
 }
 .notification { flex-wrap: wrap; }
 .notification .request-actions, .notification .request-answered { margin-left: auto; align-self: center; }
+
+/* ---------- Nonprofit spotlights (Flow 18) ---------- */
+.spotlight { margin: 1.5rem 0; padding: 0.9rem 1rem; border: 1px dashed #cdbf9f; border-radius: var(--radius); background: var(--surface); }
+.spotlight-label { margin: 0 0 0.4rem; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.spotlight-body { display: flex; gap: 0.85rem; align-items: flex-start; }
+.spotlight-logo { flex: none; width: 56px; height: 56px; object-fit: contain; border-radius: 10px; }
+.spotlight h2 { margin: 0 0 0.2rem; font-size: 1.05rem; }
+.spotlight p { margin: 0 0 0.35rem; }
+.spotlight-suggest { font-size: 0.85rem; margin: 0.5rem 0 0; }
+.plain-list { list-style: none; margin: 0; padding: 0; }
+
+/* ---------- Our mission (Flow 19) ---------- */
+.mission-eyebrow { margin: 0.5rem 0 0; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.8rem; color: var(--aqua-ink); }
+.mission-lead { font-size: 1.15rem; }
+.mission-cycle { display: grid; gap: 1rem; align-items: center; margin: 0.5rem 0 1rem; }
+@media (min-width: 768px) { .mission-cycle { grid-template-columns: 240px 1fr; } }
+.mission-ring { width: 100%; max-width: 260px; margin: 0 auto; }
+.mission-ring > circle { fill: none; stroke: var(--line); stroke-width: 10; stroke-dasharray: 2 14; stroke-linecap: round; }
+.mission-node circle { stroke: #fffaf0; stroke-width: 4; }
+.mission-node-0 circle { fill: #00b3a4; } .mission-node-1 circle { fill: #ff4d88; } .mission-node-2 circle { fill: #ffc83d; } .mission-node-3 circle { fill: #7c6cf2; }
+.mission-node text { font: 800 22px var(--sans); fill: #0e2a33; }
+.mission-center { font: 700 15px var(--sans); fill: var(--muted); }
+.mission-steps { margin: 0; padding-left: 1.4rem; display: grid; gap: 0.5rem; }
+@media (prefers-reduced-motion: no-preference) { .mission-ring > circle { animation: sun-spin 60s linear infinite; transform-origin: 160px 160px; } }

@@ -5,7 +5,15 @@ import {
   sunshineParks, defaultSunshinePark, sendSunshine, sunshineForAdmin, sunshineCounts, setSunshineStatus, STATUSES as SUNSHINE_STATUSES,
 } from '../domain/sunshine.js';
 import { listCities } from '../domain/city.js';
-import { feedbackPage, adminFeedbackPage, sunshinePage, adminSunshinePage } from '../views/pages/community.js';
+import {
+  suggestNonprofit, saveNonprofit, nonprofitById, deleteNonprofit, nonprofitsForAdmin, nonprofitCounts, recordClick, STATUSES as NP_STATUSES,
+} from '../domain/nonprofits.js';
+import { withUploads } from '../lib/uploads.js';
+import { storeBadgeArt, removeBadgeArt } from '../lib/images.js';
+import {
+  feedbackPage, adminFeedbackPage, sunshinePage, adminSunshinePage, suggestNonprofitPage, adminNonprofitsPage, adminNonprofitForm,
+  adminMissionPage,
+} from '../views/pages/community.js';
 
 // Community features: feedback from founding explorers (SPEC Flow 16) and Drops of Sunshine
 // (Flow 17). Pages that aren't for this member 404 (never 403).
@@ -57,11 +65,31 @@ export default async function communityRoutes(app) {
     return reply.redirect(`/sunshine?sent=1${slug ? `&to=${encodeURIComponent(slug)}` : ''}`, 303);
   });
 
+  // ---------- Nonprofit spotlights (SPEC Flow 18) ----------
+  app.get('/nonprofits/suggest', { preHandler: requireUser }, async (req, reply) => reply.page(suggestNonprofitPage({
+    csrf: req.csrfToken(), city: req.city, sent: req.query.done === 'sent',
+  })));
+  app.post('/nonprofits/suggest', { preHandler: requireUser }, async (req, reply) => {
+    const result = suggestNonprofit(db, req.user, req.city.id, req.body, { now: now() });
+    if (result.errors) return reply.code(422).page(suggestNonprofitPage({ csrf: req.csrfToken(), city: req.city, errors: result.errors, values: result.values }));
+    return reply.redirect('/nonprofits/suggest?done=sent', 303);
+  });
+  // A spotlight click: counted for the park it was on, then off to the saved website (never a URL
+  // from the request). Only active spotlights redirect.
+  app.get('/go/nonprofit/:id', async (req, reply) => {
+    const n = idOf(req) ? nonprofitById(db, idOf(req)) : null;
+    if (!n || n.status !== 'active') return reply.callNotFound();
+    const parkId = /^\d+$/.test(String(req.query.park || '')) ? Number(req.query.park) : null;
+    if (parkId && db.prepare('SELECT 1 FROM parks WHERE id = ?').get(parkId)) recordClick(db, n.id, parkId, { now: now() });
+    return reply.header('Cache-Control', 'no-store').redirect(n.url, 302);
+  });
+
   // ---------- Admin ----------
   app.register(async (admin) => {
     admin.addHook('onRequest', async (req, reply) => {
       if (!req.user?.is_admin) return reply.callNotFound();
     });
+    admin.get('/mission', async (req, reply) => reply.page(adminMissionPage()));
     admin.get('/feedback', async (req, reply) => {
       const done = req.query.show === 'done';
       return reply.page(adminFeedbackPage({ csrf: req.csrfToken(), items: allFeedback(db, { done }), done }));
@@ -79,6 +107,54 @@ export default async function communityRoutes(app) {
       if (!id || !setSunshineStatus(db, id, String(req.body.status), { now: now() })) return reply.callNotFound();
       const back = Object.hasOwn(SUNSHINE_STATUSES, req.body.back) ? req.body.back : 'new';
       return reply.redirect(`/admin/sunshine?status=${back}`, 303);
+    });
+    // Nonprofits: list with views and clicks; the form (with a logo upload) is below.
+    admin.get('/nonprofits', async (req, reply) => {
+      const status = Object.hasOwn(NP_STATUSES, req.query.status) ? req.query.status : '';
+      return reply.page(adminNonprofitsPage({ items: nonprofitsForAdmin(db, { status, now: now() }), counts: nonprofitCounts(db), status }));
+    });
+    const formView = (req, extra) => {
+      const cities = listCities(db);
+      const parksByCity = Object.fromEntries(cities.map((c) => [c.id, db.prepare('SELECT id, name FROM parks WHERE city_id = ? AND active = 1 ORDER BY name COLLATE NOCASE').all(c.id)]));
+      return adminNonprofitForm({ csrf: req.csrfToken(), cities, parksByCity, ...extra });
+    };
+    admin.get('/nonprofits/new', async (req, reply) => reply.page(formView(req, { isNew: true })));
+    admin.get('/nonprofits/:id', async (req, reply) => {
+      const n = idOf(req) ? nonprofitById(db, idOf(req)) : null;
+      if (!n) return reply.callNotFound();
+      return reply.page(formView(req, { nonprofit: n, notice: req.query.saved ? 'Saved.' : null }));
+    });
+    admin.post('/nonprofits/:id/delete', async (req, reply) => {
+      const n = idOf(req) ? nonprofitById(db, idOf(req)) : null;
+      if (!n || !deleteNonprofit(db, n.id)) return reply.callNotFound();
+      if (n.logo) await removeBadgeArt(app.config.uploadsDir, n.logo);
+      return reply.redirect('/admin/nonprofits', 303);
+    });
+    withUploads(admin, (r) => {
+      const save = async (req, reply, existing) => {
+        const values = { ...req.body };
+        delete values.logo_file;
+        const file = Buffer.isBuffer(req.body.logo_file) && req.body.logo_file.length ? req.body.logo_file : null;
+        let logo;
+        if (file) {
+          const stored = await storeBadgeArt(file, app.config.uploadsDir);
+          if (stored.error) return reply.code(422).page(formView(req, { isNew: !existing, nonprofit: existing, values, errors: { logo_file: stored.error } }));
+          logo = `upload:${stored.key}`;
+        } else if (values.remove_logo === '1') logo = null;
+        const result = saveNonprofit(db, existing?.id ?? null, values, { now: now(), logo });
+        if (result.errors) {
+          if (logo) await removeBadgeArt(app.config.uploadsDir, logo);
+          return reply.code(422).page(formView(req, { isNew: !existing, nonprofit: existing, values: { ...values, ...result.values }, errors: result.errors }));
+        }
+        if (existing?.logo && logo !== undefined && logo !== existing.logo) await removeBadgeArt(app.config.uploadsDir, existing.logo);
+        return reply.redirect(`/admin/nonprofits/${result.id}?saved=1`, 303);
+      };
+      r.post('/nonprofits/new', async (req, reply) => save(req, reply, null));
+      r.post('/nonprofits/:id', async (req, reply) => {
+        const n = idOf(req) ? nonprofitById(db, idOf(req)) : null;
+        if (!n) return reply.callNotFound();
+        return save(req, reply, n);
+      });
     });
     admin.post('/feedback/:id', async (req, reply) => {
       const id = idOf(req);

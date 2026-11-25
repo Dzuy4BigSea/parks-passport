@@ -99,9 +99,25 @@ function stampPanel({ park, user, csrf, today, myVisits, problem: allProblems })
 </section>`;
 }
 
+// A local nonprofit spotlight (SPEC Flow 18): small and clearly labelled. The link goes through
+// /go/nonprofit/:id so clicks are counted per park (counts only).
+const SPOTLIGHT_REASONS = { steward: 'Cares for this park', one_percent: '1% for the Planet partner', local: 'Local nonprofit' };
+function spotlightCard(n, park) {
+  const logo = /^upload:([a-f0-9]{24})$/.exec(String(n.logo || ''));
+  return html`<aside class="spotlight" aria-labelledby="spotlight-h">
+  <p class="spotlight-label">Local nonprofit · ${SPOTLIGHT_REASONS[n.reason]}</p>
+  <div class="spotlight-body">
+    ${logo ? html`<img class="spotlight-logo" src="/badge-art/${logo[1]}.png" alt="" width="56" height="56" loading="lazy">` : ''}
+    <div><h2 id="spotlight-h">${n.name}</h2><p>${n.mission}</p>
+    <p><a href="/go/nonprofit/${n.id}?park=${park.id}" rel="noopener sponsored">Learn more<span class="visually-hidden"> about ${n.name}</span></a></p></div>
+  </div>
+  <p class="spotlight-suggest"><a href="/nonprofits/suggest?city=${park.city_key}">Know a nonprofit that cares for this park?</a></p>
+</aside>`;
+}
+
 export function parkPage({ park, user = null, csrf = '', today = '', myVisits = [], problem = null, stamped = null,
   photos = [], summary = { count: 0, average: null }, reviews = [], mine = null, flash = null, theme = { motifs: [], areas: [] }, area = null, palsHere = [],
-  celebrate = null, activities = null, saved = false }) {
+  celebrate = null, activities = null, saved = false, spotlight = null }) {
   const hasPin = park.lat != null && park.lng != null;
   const scripts = [];
   if (hasPin) scripts.push('/js/park-map.js');
@@ -165,6 +181,9 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
 
   ${ratingsSection({ park, user, csrf, summary, reviews, mine, problem })}
   ${photosSection({ park, user, csrf, photos, problem })}
+
+  ${spotlight ? spotlightCard(spotlight, park)
+    : html`<p class="spotlight-suggest"><a href="/nonprofits/suggest?city=${park.city_key}">Know a nonprofit that cares for this park?</a></p>`}
 
   ${park.city_url ? html`<p><a href="${park.city_url}" rel="noopener">More about ${park.name} on the City's website</a></p>` : ''}
   </div>
