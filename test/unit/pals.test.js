@@ -370,3 +370,31 @@ test('deleting an account removes its friend code and pal requests', async () =>
   assert.equal(db.prepare('SELECT COUNT(*) FROM pal_requests').pluck().get(), 0);
   assert.equal(db.prepare('SELECT COUNT(*) FROM pal_codes WHERE user_id = ?').pluck().get(people.ana.id), 0);
 });
+
+test("QA: cancelling doesn't give a daily request back; a non-code isn't a guess; accepting a request checks badges", async () => {
+  const { db, people } = await world();
+  const ana = await codeOf('ana', people);
+  for (let i = 0; i < 20; i++) {
+    assert.equal((await people.cat.c.post('/pals/code', { code: ana })).statusCode, 303);
+    const id = db.prepare('SELECT id FROM pal_requests').pluck().get();
+    await people.cat.c.post(`/pals/requests/${id}/cancel`);
+  }
+  assert.equal((await people.cat.c.post('/pals/code', { code: ana })).statusCode, 429);
+
+  for (let i = 0; i < 12; i++) {
+    const res = await people.ben.c.post('/pals/code', { code: i % 2 ? '' : 'hello' });
+    assert.equal(res.statusCode, 422);
+    assert.match(res.body, /Type the 8-character code/);
+  }
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_code_failures').pluck().get(), 0);
+
+  // Ana and Ben stamp the same park the same day, then become pals by request: Better Together.
+  for (const who of ['ana', 'ben']) await people[who].c.post('/parks/a-park/stamp', {});
+  await people.ben.c.post('/pals/code', { code: ana });
+  const rid = db.prepare('SELECT id FROM pal_requests').pluck().get();
+  await people.ana.c.post('/account/visibility', { default_visibility: 'pals' });
+  await people.ben.c.post('/account/visibility', { default_visibility: 'pals' });
+  await people.ana.c.post(`/pals/requests/${rid}/accept`);
+  const together = db.prepare(`SELECT COUNT(*) FROM user_badges ub JOIN badges b ON b.id = ub.badge_id WHERE b.slug = 'together'`).pluck().get();
+  assert.equal(together, 2);
+});

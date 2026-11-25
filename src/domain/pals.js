@@ -91,7 +91,7 @@ export function regenerateFriendCode(db, userId, { now = new Date() } = {}) {
 /**
  * Sends a pal request to the owner of a code. Returns { sent, to } or { paired, to } (they had
  * already asked me, so we're pals now) or { error, to? }:
- * 'limited' | 'invalid' | 'self' | 'already' | 'pending' | 'daily'.
+ * 'limited' | 'format' | 'invalid' | 'self' | 'already' | 'pending' | 'daily'.
  */
 export function requestByCode(db, user, input, { now = new Date(), random = Math.random } = {}) {
   const hourAgo = new Date(now.getTime() - 3600e3).toISOString();
@@ -100,7 +100,8 @@ export function requestByCode(db, user, input, { now = new Date(), random = Math
     return { error: 'limited' };
   }
   const code = normalizeCode(input);
-  const to = code && db.prepare(`SELECT u.id, u.display_name, u.handle FROM pal_codes c JOIN users u ON u.id = c.user_id
+  if (!code) return { error: 'format' }; // not a code at all: no lookup, so not a guess
+  const to = db.prepare(`SELECT u.id, u.display_name, u.handle FROM pal_codes c JOIN users u ON u.id = c.user_id
     WHERE c.code = ?`).get(code);
   if (!to) {
     db.prepare('INSERT INTO pal_code_failures (user_id, at) VALUES (?, ?)').run(user.id, now.toISOString());
@@ -114,11 +115,16 @@ export function requestByCode(db, user, input, { now = new Date(), random = Math
     return { paired: true, to };
   }
   if (db.prepare('SELECT 1 FROM pal_requests WHERE from_user = ? AND to_user = ?').get(user.id, to.id)) return { error: 'pending', to };
+  // Counted from a log that cancel, decline and accept never shorten.
   const dayAgo = new Date(now.getTime() - 86400e3).toISOString();
-  if (db.prepare('SELECT COUNT(*) FROM pal_requests WHERE from_user = ? AND created_at > ?').pluck().get(user.id, dayAgo) >= CODE_LIMITS.requestsPerDay) {
+  db.prepare('DELETE FROM pal_request_sends WHERE at < ?').run(dayAgo);
+  if (db.prepare('SELECT COUNT(*) FROM pal_request_sends WHERE user_id = ?').pluck().get(user.id) >= CODE_LIMITS.requestsPerDay) {
     return { error: 'daily' };
   }
-  db.prepare('INSERT INTO pal_requests (from_user, to_user, created_at) VALUES (?, ?, ?)').run(user.id, to.id, now.toISOString());
+  db.transaction(() => {
+    db.prepare('INSERT INTO pal_requests (from_user, to_user, created_at) VALUES (?, ?, ?)').run(user.id, to.id, now.toISOString());
+    db.prepare('INSERT INTO pal_request_sends (user_id, at) VALUES (?, ?)').run(user.id, now.toISOString());
+  })();
   return { sent: true, to };
 }
 

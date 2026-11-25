@@ -1184,3 +1184,4 @@ html:not(.js) .js-only { display: none !important; }
 .request-actions form { margin: 0; }
 .add-code { margin-top: 0.75rem; }
 .copy-row label:not(.visually-hidden) { flex-basis: 100%; font-weight: 700; }
+#requests { margin-bottom: 1.25rem; }

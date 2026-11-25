@@ -240,7 +240,7 @@ Checks: the template's CI passes; its README's quick start runs as written.
 
 ### M16 — Friend codes and pal requests (Flow 8)
 Outcome: the friend-code and pal-request bullets of SPEC Flow 8, and a clear page for dead invite links.
-- Migration 015 (`pal_codes`, `pal_requests`, `pal_code_failures`).
+- Migration 015 (`pal_codes`, `pal_requests`, `pal_request_sends`, `pal_code_failures`).
 - `src/domain/pals.js`: `friendCodeFor`, `regenerateFriendCode`, `normalizeCode`,
   `requestByCode` (rate limits, mutual request accepts), `answerRequest`, `cancelRequest`,
   `palRequests`; accepting reuses the invite's link-and-badges step.

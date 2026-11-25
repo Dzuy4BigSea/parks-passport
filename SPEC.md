@@ -179,7 +179,8 @@ Done when:
       sent (Cancel). Accepting makes us pals both ways and checks badges, like an invite link.
       If they already sent me a request, entering their code makes us pals at once. My own
       code, an existing pal, or a repeat request gets a clear message. Wrong codes are limited
-      to 10 per hour and requests to 20 per day per person, so codes can't be guessed.
+      to 10 per hour and requests sent to 20 per day per person (cancelling doesn't give one
+      back), so codes can't be guessed. Something that isn't a code at all doesn't count as a guess.
       Declining tells the sender nothing; their request just disappears.
 - [ ] **Pals feed** (`/pals`) shows my pals' recent stamps, photos and badges that are visible
       to me, newest first, 20 per page.
@@ -387,7 +388,7 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 - **activity_logs**: id, user_id, visit_id, activity_id, amount, minutes, miles, logged_on,
   created_at, unique(visit_id, activity_id). Private to the owner.
 - **pal_codes**: user_id, code (unique), created_at. **pal_requests**: from_user, to_user,
-  created_at, unique(from_user, to_user). **pal_code_failures**: user_id, at.
+  created_at, unique(from_user, to_user). **pal_request_sends** and **pal_code_failures**: user_id, at.
 - **pal_links**: user_a, user_b (a < b), created_at. **pal_invites**: user_id, token_hash,
   created_at, revoked_at
 - **feed** is a query over visits, photos and user_badges filtered by visibility, not a table.

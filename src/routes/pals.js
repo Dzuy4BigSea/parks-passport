@@ -21,7 +21,7 @@ export default async function palRoutes(app) {
     removed: 'Pal removed. Your invite link was renewed, so the old one no longer works.',
     code: 'New friend code made. The old one no longer works.',
     requested: "Request sent. You'll be Park Pals when they accept.",
-    declined: 'Request declined.',
+    declined: 'Request declined. If they keep asking, make a new friend code below.',
     cancelled: 'Request cancelled.',
   };
   const showPals = (req, reply, extra = {}) => {
@@ -40,6 +40,7 @@ export default async function palRoutes(app) {
 
   // Friend codes: typing a code sends a request; the code's owner accepts or declines it.
   const CODE_ERRORS = {
+    format: () => 'Type the 8-character code your friend shared, like ABCD-EFGH.',
     invalid: () => "That code doesn't match anyone. Check it and try again.",
     limited: () => 'Too many codes that didn\'t match. Try again in an hour.',
     self: () => "That's your own code. Share it with a friend.",

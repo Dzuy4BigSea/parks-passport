@@ -16,6 +16,13 @@ CREATE TABLE pal_requests (
 );
 CREATE INDEX pal_requests_to ON pal_requests (to_user);
 
+-- Every request sent (never deleted by cancel, decline or accept), for the daily limit.
+CREATE TABLE pal_request_sends (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  at      TEXT NOT NULL
+);
+CREATE INDEX pal_request_sends_user ON pal_request_sends (user_id, at);
+
 -- Wrong codes typed, so codes can't be guessed by trying many.
 CREATE TABLE pal_code_failures (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
