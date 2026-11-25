@@ -4,7 +4,7 @@ import {
   inviteTokenFor, regenerateInvite, inviterForToken, acceptInvite, removePal, palsOf, leaderboard, palsFeed,
   friendCodeFor, regenerateFriendCode, formatCode, requestByCode, palRequests, answerRequest, cancelRequest, CODE_LIMITS,
 } from '../domain/pals.js';
-import { areFriends, canViewOwner, VISIBILITY } from '../domain/visibility.js';
+import { areFriends, canViewOwner, withFaces, VISIBILITY } from '../domain/visibility.js';
 import { badgeBoard } from '../domain/badges/index.js';
 import { totalPoints } from '../domain/points.js';
 import { levelFor } from '../domain/levels.js';
@@ -12,6 +12,11 @@ import { palsPage, invitePage, deadInvitePage } from '../views/pages/pals.js';
 import { passportPage } from '../views/pages/passport.js';
 import { passportData, cityProgress } from '../domain/passport.js';
 import { listCities, cityByKey } from '../domain/city.js';
+
+const requestsWithFaces = (db, userId) => {
+  const { incoming, outgoing } = palRequests(db, userId);
+  return { incoming: withFaces(db, userId, incoming, 'user_id'), outgoing: withFaces(db, userId, outgoing, 'user_id') };
+};
 
 export default async function palRoutes(app) {
   const { db } = app;
@@ -35,7 +40,7 @@ export default async function palRoutes(app) {
       user, csrf: req.csrfToken(), page, notice: NOTICES[req.query?.done],
       // The link opens in the inviter's current city (?city=), so a Westminster friend lands in Westminster.
       inviteUrl: `${app.config.baseUrl}/pals/invite/${inviteTokenFor(db, user.id, { now: now(), onCreate: () => app.track(user.id, 'pal_invite_created') })}?city=${req.city.key}`,
-      friendCode: formatCode(friendCodeFor(db, user.id, { now: now() })), requests: palRequests(db, user.id),
+      friendCode: formatCode(friendCodeFor(db, user.id, { now: now() })), requests: requestsWithFaces(db, user.id),
       pals: palsOf(db, user.id).map((p) => ({ ...p, visible: canViewOwner(db, user.id, p.id, p.default_visibility) })), board: leaderboard(db, user.id), feed: palsFeed(db, user.id, { page }),
       groups: myGroups(db, user.id),
       ...extra,
@@ -103,7 +108,7 @@ export default async function palRoutes(app) {
     const inviter = inviterForToken(db, req.params.token);
     if (!inviter) return deadLink(req, reply);
     return reply.page(invitePage({
-      inviter, user: req.user, csrf: req.csrfToken(), token: req.params.token, state: inviteState(inviter, req.user),
+      inviter: withFaces(db, req.user?.id ?? null, [inviter])[0], user: req.user, csrf: req.csrfToken(), token: req.params.token, state: inviteState(inviter, req.user),
     }));
   });
 

@@ -51,7 +51,7 @@ export function canSeePhoto(db, viewer, photo) {
 
 // Photos of a park the viewer may see, newest first.
 export function photosForPark(db, viewer, parkId) {
-  const rows = db.prepare(`SELECT ph.*, u.display_name, u.handle FROM photos ph JOIN users u ON u.id = ph.user_id
+  const rows = db.prepare(`SELECT ph.*, u.display_name, u.handle, u.avatar_key, u.default_visibility FROM photos ph JOIN users u ON u.id = ph.user_id
     WHERE ph.park_id = ? ORDER BY ph.created_at DESC, ph.id DESC`).all(parkId);
   return rows.filter((p) => canSeePhoto(db, viewer, p)).slice(0, 200);
 }

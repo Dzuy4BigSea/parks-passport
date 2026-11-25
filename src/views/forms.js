@@ -25,3 +25,6 @@ export function field({ name, label, type = 'text', value = '', error, autocompl
   <input id="${name}" name="${name}" type="${type}" value="${type === 'password' ? '' : value}"${autocomplete ? html` autocomplete="${autocomplete}"` : ''}${required ? html` required` : ''}${maxlength ? html` maxlength="${maxlength}"` : ''}${describedBy ? html` aria-describedby="${describedBy}"` : ''}${error ? html` aria-invalid="true"` : ''}>
 </div>`;
 }
+
+// Photo pickers. HEIC too, so iPhones send the original photo instead of converting it first.
+export const PHOTO_ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif';

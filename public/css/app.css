@@ -403,6 +403,8 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; 
   background: var(--aqua-tint); color: var(--aqua-ink); font-size: 1.5rem;
 }
 .nextup .icon svg { width: 26px; height: 26px; }
+.nextup .icon:has(.avatar) { overflow: hidden; padding: 0; }
+.nextup .icon .avatar { width: 100% !important; height: 100% !important; font-size: 1.1rem !important; } /* beats the initials inline size */
 .nextup li:nth-child(2) .icon { background: var(--sun-tint); color: #a34d00; }
 .nextup li:nth-child(3) .icon { background: var(--pink-tint); color: var(--pink-ink); }
 .nextup .label { display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
@@ -698,6 +700,7 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; 
 }
 .photo a:hover img { transform: scale(1.03) rotate(-1deg); }
 .photo-meta { margin: 0.25rem 0 0; font-size: 0.9rem; overflow-wrap: anywhere; }
+.photo-by { display: inline-flex; align-items: center; gap: 0.3rem; }
 .photo-edit summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; font-size: 0.9rem; }
 .photo-edit form { margin: 0.25rem 0; }
 .feed-photo img { width: 72px; height: 72px; object-fit: cover; border-radius: 12px; display: block; }
