@@ -18,7 +18,7 @@ ${inviteNotice ? html`<p class="notice" role="status">${inviteNotice}</p>` : ''}
 ${errorSummary(errors, { display_name: 'Display name', email: 'Email', password: 'Password' })}
 <form method="post" action="/signup" class="card-form" novalidate>
   ${csrfField(csrf)}${nextField(next)}${inviteToken ? html`<input type="hidden" name="invite_token" value="${inviteToken}">` : ''}
-  ${field({ name: 'display_name', label: 'Display name', value: values.display_name, error: errors.display_name, autocomplete: 'nickname', hint: 'Shown to Park Pals you choose to share with.', maxlength: 40 })}
+  ${field({ name: 'display_name', label: 'Display name', value: values.display_name, error: errors.display_name, autocomplete: 'nickname', hint: "What others see. It doesn't have to be your real name: a nickname works. You can change it later in Account.", maxlength: 40 })}
   ${field({ name: 'email', label: 'Email', type: 'email', value: values.email, error: errors.email, autocomplete: 'email' })}
   ${field({ name: 'password', label: 'Password', type: 'password', error: errors.password, autocomplete: 'new-password', hint: 'At least 10 characters.' })}
   <div class="hp" aria-hidden="true"><label for="website">Leave this empty</label><input id="website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
@@ -155,7 +155,7 @@ function profilePhoto({ csrf, user, error }) {
 </section>`;
 }
 
-export function accountPage({ csrf, user, errors = {}, notice, ideas = false }) {
+export function accountPage({ csrf, user, errors = {}, notice, ideas = false, values = {} }) {
   return {
     title: 'Account',
     current: 'account',
@@ -164,8 +164,13 @@ export function accountPage({ csrf, user, errors = {}, notice, ideas = false }) 
 <h1>Account</h1>
 ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
 ${profilePhoto({ csrf, user, error: errors.photo })}
+<form method="post" action="/account/name" class="card-form" id="name" novalidate>
+  ${csrfField(csrf)}
+  ${field({ name: 'display_name', label: 'Display name', value: values.display_name ?? user.display_name, error: errors.display_name, autocomplete: 'nickname', maxlength: 40,
+    hint: `What Park Pals and groups see. It doesn't have to be your real name. Changing it also changes your passport link (now @${user.handle}); old links stop working.` })}
+  <button type="submit" class="btn">Save name</button>
+</form>
 <dl class="facts">
-  <dt>Display name</dt><dd>${user.display_name}</dd>
   <dt>Email</dt><dd>${user.email}</dd>
   <dt>Handle</dt><dd>@${user.handle}</dd>
 </dl>

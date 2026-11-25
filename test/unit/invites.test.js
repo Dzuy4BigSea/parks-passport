@@ -36,7 +36,7 @@ test('admin invites by email: branded invitation, /join link fills in sign-up, i
   assert.match(join.body, /You're invited/);
   assert.match(join.body, /Dee invited you/);
   assert.match(join.body, /value="ana@example\.com"/);
-  assert.match(join.body, /value="Ana"/);
+  assert.doesNotMatch(join.body, /name="display_name"[^>]*value="Ana"/); // they choose what others see
   assert.doesNotMatch(join.body, /\/stats\/script\.js|gtm\.js/); // no analytics on token URLs
 
   await ana.post('/signup', { display_name: 'Ana', email: 'ana@example.com', password: PW });

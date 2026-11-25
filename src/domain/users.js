@@ -66,6 +66,29 @@ export async function createUser(db, { display_name, email, password }, { now = 
   throw new Error('could not allocate a handle');
 }
 
+/**
+ * Changes a member's display name (it needn't be their real name). Their handle, which is made from
+ * the name and shows in their passport link, follows it, so an old name doesn't linger there.
+ * Returns { user } or { errors }.
+ */
+export function setDisplayName(db, userId, displayName) {
+  const name = String(displayName || '').replace(/\s+/g, ' ').trim();
+  if (!name) return { errors: { display_name: 'Enter a display name.' } };
+  if (name.length > 40) return { errors: { display_name: 'Use 40 characters or fewer.' } };
+  const current = findUserById(db, userId);
+  if (current.display_name === name) return { user: current };
+  const base = handleBase(name);
+  const taken = db.prepare('SELECT 1 FROM users WHERE handle = ? AND id != ?');
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const handle = attempt === 0 ? base : `${base}${Math.floor(1000 + Math.random() * 9000)}`;
+    if (handle === current.handle || !taken.get(handle, userId)) {
+      db.prepare('UPDATE users SET display_name = ?, handle = ? WHERE id = ?').run(name, handle, userId);
+      return { user: findUserById(db, userId) };
+    }
+  }
+  throw new Error('could not allocate a handle');
+}
+
 export async function setPassword(db, userId, password) {
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(await hashPassword(password), userId);
 }

@@ -339,3 +339,19 @@ test('sendgrid mailer posts to the v3 API with click tracking off, and fails lou
   const noKey = createMailer({ transport: 'sendgrid', resolve: () => ({ apiKey: null, fromAddress: 'a@b.co' }) });
   await assert.rejects(noKey.send({ to: 'x@y.co', subject: 's', text: 't' }), /No SendGrid API key/);
 });
+
+test('members can change their display name (it needn\'t be their real name); the handle follows', async () => {
+  const { app, db } = makeApp();
+  const c = client(app);
+  await c.post('/signup', { display_name: 'Jane Realname', email: 'jane@example.com', password: 'correct horse battery' });
+  assert.match((await c.get('/account')).body, /doesn&#39;t have to be your real name|doesn't have to be your real name/);
+  assert.equal((await c.post('/account/name', { display_name: '' })).statusCode, 422);
+  assert.equal((await c.post('/account/name', { display_name: 'x'.repeat(41) })).statusCode, 422);
+  const res = await c.post('/account/name', { display_name: '  Trail   Fox ' });
+  assert.equal(res.headers.location, '/account?done=name#name');
+  const u = db.prepare("SELECT display_name, handle FROM users WHERE email = 'jane@example.com'").get();
+  assert.deepEqual(u, { display_name: 'Trail Fox', handle: 'trailfox' });
+  assert.match((await c.get('/account?done=name')).body, /You&#39;re now Trail Fox \(@trailfox\)|You're now Trail Fox \(@trailfox\)/);
+  // Without the CSRF token: refused.
+  assert.equal((await c.post('/account/name', { display_name: 'Nope' }, { csrf: false })).statusCode, 403);
+});

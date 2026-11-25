@@ -10,7 +10,7 @@ import {
   createUser, findUserByEmail, findUserById, createSession, deleteSession, deleteAllSessions,
   createAuthToken, peekAuthToken, consumeAuthToken, isLoginLocked, recordLoginFailure,
   clearLoginFailures, setPassword, validatePassword, deleteUser, normalizeEmail,
-  canSendAuthToken, revokeAuthTokens,
+  canSendAuthToken, revokeAuthTokens, setDisplayName,
 } from '../domain/users.js';
 import {
   signupPage, loginPage, checkEmailPage, sendFailedPage, linkExpiredPage, magicConfirmPage,
@@ -84,7 +84,7 @@ export default async function authRoutes(app) {
     const invite = inviteForToken(db, req.params.token, { now: now() });
     return reply.page(signupPage({
       csrf: req.csrfToken(), invite, inviteToken: invite ? req.params.token : '', cityName: req.city.copy.short, next: safeNext(str(req.query.next)) === str(req.query.next) ? str(req.query.next) : '',
-      values: invite ? { email: invite.email, display_name: invite.name } : {},
+      values: invite ? { email: invite.email } : {},
       inviteNotice: invite ? null : 'This invite link has expired or was already used. You can still create a passport here.',
     }));
   });
@@ -232,8 +232,17 @@ export default async function authRoutes(app) {
       csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user),
       notice: req.query.done === 'visibility' ? `Saved. Your passport is now visible to ${VISIBILITY_SAVED[req.user.default_visibility]}.`
         : req.query.done === 'editions' ? 'Saved your editions.'
-          : { avatar: 'Profile photo saved.', avatar_removed: 'Profile photo removed.' }[req.query.done] || null,
+          : { avatar: 'Profile photo saved.', avatar_removed: 'Profile photo removed.', name: `Saved. You're now ${req.user.display_name} (@${req.user.handle}).` }[req.query.done] || null,
     })));
+
+  // Display name (and the handle made from it).
+  app.post('/account/name', { preHandler: requireUser }, async (req, reply) => {
+    const result = setDisplayName(db, req.user.id, str(req.body.display_name, 200));
+    if (result.errors) {
+      return reply.code(422).page(accountPage({ csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user), errors: result.errors, values: { display_name: str(req.body.display_name, 200) } }));
+    }
+    return reply.redirect('/account?done=name#name', 303);
+  });
 
   // Profile photo (SPEC Flow 8): one per member, seen by whoever can see their passport.
   withUploads(app, (scope) => scope.post('/account/avatar', { preHandler: requireUser }, async (req, reply) => {

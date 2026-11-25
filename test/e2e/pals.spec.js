@@ -53,7 +53,7 @@ test('invite a pal, share, see each other in the feed and leaderboard, then go p
   // Ana goes public; now anyone can see it.
   await page.goto('/account');
   await page.getByLabel('Anyone with the link').check();
-  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByRole('status').first()).toContainText('visible to anyone with the link');
   expect((await anon.goto(anaUrl)).status()).toBe(200);
   await expect(anon.locator('.passport-count')).toHaveText('1 of 102 parks stamped');

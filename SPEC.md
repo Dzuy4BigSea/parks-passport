@@ -31,6 +31,9 @@ so that my passport is saved.
 Done when:
 - [ ] Signing up with display name, a valid email and a password of at least 10 characters
       creates the account, signs me in, and lands me on `/passport`.
+- [ ] My display name is what others see, and it needn't be my real name (sign-up and Account say
+      so; an admin's invite doesn't fill it in). I can change it in Account (1 to 40 characters); my
+      handle and passport link follow the new name, and old links stop working.
 - [ ] Signing up with an email that's already registered shows "An account with this email
       already exists" inline, and no second user row is created.
 - [ ] An invalid email or a short password shows an inline error on that field, and nothing is
