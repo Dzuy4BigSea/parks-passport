@@ -1,0 +1,9 @@
+[
+  { "slug": "half-of-trinidad", "name": "Half of Trinidad", "art": "🌵", "kind": "known",
+    "description": "Stamped 5 different Trinidad parks.", "rule_type": "parks_count", "rule_params": { "n": 5 } },
+  { "slug": "every-trinidad-park", "name": "Every Trinidad Park", "art": "🏆", "kind": "known",
+    "description": "Stamped every park in Trinidad.", "rule_type": "all_parks", "rule_params": {} },
+  { "slug": "trail-boss", "name": "Trail Boss", "art": "🤠", "kind": "hidden",
+    "hint": "Hit the trail, again and again.",
+    "description": "Stamped 3 Trinidad parks with trails.", "rule_type": "category_count", "rule_params": { "category": "trails", "n": 3 } }
+]

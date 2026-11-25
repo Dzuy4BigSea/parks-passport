@@ -12,6 +12,7 @@ import { motifIcon } from '../motif.js';
 import { nextLine } from '../nextup.js';
 import { activitiesPanel } from '../activities.js';
 import { cityPath, parkPath } from '../urls.js';
+import { saveButton } from '../save-button.js';
 
 // Confetti particles for the celebration: angles and distances, decorative only.
 const BURST = [[0, 95], [30, 70], [60, 105], [95, 80], [125, 100], [160, 75], [195, 95], [225, 70], [260, 105], [290, 85], [320, 100], [345, 72]];
@@ -100,12 +101,12 @@ function stampPanel({ park, user, csrf, today, myVisits, problem: allProblems })
 
 export function parkPage({ park, user = null, csrf = '', today = '', myVisits = [], problem = null, stamped = null,
   photos = [], summary = { count: 0, average: null }, reviews = [], mine = null, flash = null, theme = { motifs: [], areas: [] }, area = null, palsHere = [],
-  celebrate = null, activities = null }) {
+  celebrate = null, activities = null, saved = false }) {
   const hasPin = park.lat != null && park.lng != null;
   const scripts = [];
   if (hasPin) scripts.push('/js/park-map.js');
   if (user && hasPin) scripts.push('/js/checkin.js');
-  if (user) scripts.push('/js/upload-check.js');
+  if (user) scripts.push('/js/upload-check.js', '/js/want-to-go.js');
   if (stamped) scripts.push('/js/celebrate.js');
   return {
     title: park.name,
@@ -127,6 +128,7 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
       ${user ? (myVisits.length
         ? html`<span class="pill pill-stamped">✓ Stamped ${myVisits.length === 1 ? 'once' : `${myVisits.length} times`}</span>`
         : html`<span class="pill pill-points">New for you · +10 pts</span>`) : ''}
+      ${user ? saveButton({ park, saved, csrf, back: parkPath(park), label: true }) : ''}
       ${summary.count ? html`<span class="pill"><span class="stars" aria-hidden="true">★</span> ${summary.average.toFixed(1)}<span class="visually-hidden"> out of 5 average rating</span></span>` : ''}
     </div>
   </header>

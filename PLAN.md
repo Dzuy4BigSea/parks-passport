@@ -310,3 +310,29 @@ validation), updated rule and level tests, and the existing suite.
 Checks: `test/e2e/celebrations.spec.js` (passport opening, surprise reveal tapped open, inspect and
 flip, Escape returns focus, axe clean and no sideways scroll at 375 px, off switch, reduced motion),
 the sign-up redirect in `test/unit/auth.test.js`, the existing suite, and `npm run lighthouse`.
+
+### M21 — Five more city packs (Flow 14)
+Outcome: Cookeville, TN; Marple Township (Broomall), PA; Bend, OR; Indianapolis, IN and Trinidad, CO
+as city packs. No app code changes: each is `seed/cities/<key>/` (`city.json`, `parks.csv`,
+`badges.json`) plus `public/og/<key>.jpg`.
+- Seed scripts (dev only, shared helpers in `scripts/lib/seed-fetch.js`): `seed-civicplus.js`
+  (Cookeville and Marple, the CivicPlus Facilities directory), `seed-bend.js` (the BPRD park
+  locator), `seed-indy.js` (Indy Parks' WordPress API, pins from each park's directions link,
+  else OSM, else Census) and `seed-trinidad.js` (the City's directory; pins from OSM or Census).
+- Trinidad ships 4 of its 10 places (the Riverwalk, two loop trails and Los Ninos Soccer Complex)
+  without a pin, flagged "Pin to check" for an admin to place.
+
+Checks: `test/unit/cities.test.js` (every pack valid with parks inside its bounds; city order and
+park counts), the existing suite, and the new cities' pages at 375 px.
+
+### M22 — Want to go (Flow 15)
+Outcome: SPEC Flow 15 (from PR #14, rebuilt on the city URLs). Migration `019_saved_parks.sql`,
+`src/domain/saved.js`, `POST /:city/parks/:slug/save` (redirect without JS, JSON for
+`public/js/want-to-go.js`), the heart partial `src/views/save-button.js` on postcards and the
+park page, the passport's "Want to go" section (per city), the `saved=1` filter, and `nextParks`
+preferring saved parks.
+
+Checks: `test/unit/saved.test.js` (save/unsave, idempotent, JSON, CSRF 403, signed-out redirect,
+404, safe `back`, filter, passport section, inactive parks, privacy on `/u/:handle` and Pals,
+next up, account deletion cascade), `test/e2e/saved.spec.js` (JS toggle, no-JS form, filter,
+park page, passport, privacy, axe on each changed page), and the existing suite.
