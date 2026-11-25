@@ -1476,10 +1476,14 @@ html.fx-locked { overflow: hidden; }
 }
 .feedback-fab svg { width: 18px; height: 18px; }
 .feedback-fab:hover svg { animation: fb-twinkle 0.9s var(--ease-spring); }
-.has-tabbar .feedback-fab { bottom: calc(5.25rem + env(safe-area-inset-bottom)); }
+.has-tabbar .feedback-fab { bottom: calc(var(--tabbar-h) + 1rem); }
+/* Park list on a phone: the Map/List toggle sits bottom center, so the button shrinks to its icon. */
+@media (max-width: 1023.98px) {
+  body:has(.map-toggle) .feedback-fab { width: 48px; padding: 0; justify-content: center; }
+  body:has(.map-toggle) .feedback-fab span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
 /* Room below the footer so the button never covers its last links. */
 body:has(.feedback-fab) .site-footer { padding-bottom: 5.5rem; }
-@media (min-width: 60rem) { .has-tabbar .feedback-fab { bottom: 1.25rem; } }
 @keyframes fb-twinkle { 50% { transform: rotate(45deg) scale(1.25); } }
 .feedback-dialog { width: min(30rem, calc(100vw - 2rem)); border: 0; border-radius: var(--radius); padding: 1.25rem; background: var(--surface); color: var(--ink);
   box-shadow: 0 30px 60px -20px rgba(14, 42, 51, 0.6), inset 0 0 0 3px #ffd166; }

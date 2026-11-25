@@ -16,7 +16,7 @@ function announcementsBlock(a, base) {
   ${a.levelUp ? html`<div class="announce announce-level" data-kind="level"><span class="announce-art" aria-hidden="true">🚀</span>
     <p><strong>Level up! You're now ${/^[AEIOU]/.test(a.levelUp.name) ? 'an' : 'a'} ${a.levelUp.name}.</strong></p></div>` : ''}
   ${a.badges.map((b) => html`<div class="announce${b.serial ? ' is-holo' : ''}" data-kind="${b.given_by ? 'gift' : b.kind}">${badgeArt(b.art, 'announce-art')}
-    <p><strong>New badge: ${b.name}</strong>${b.serial ? html`<br><span class="limited-no">Limited edition #${b.serial}${b.limited_count ? ` of ${b.limited_count}` : ''}</span>` : ''}${b.description ? html`<br><span class="announce-desc">${b.description}</span>` : ''}${b.given_by ? html`<br><span class="gift-note">From ${b.given_by}${b.award_note ? `: “${b.award_note}”` : ''}</span>` : ''}</p></div>`)}
+    <p><strong>New badge: ${b.name}</strong>${b.serial ? html`<br><span class="limited-no">${b.limited_count ? `Limited edition #${b.serial} of ${b.limited_count}` : `No. ${b.serial}`}</span>` : ''}${b.description ? html`<br><span class="announce-desc">${b.description}</span>` : ''}${b.given_by ? html`<br><span class="gift-note">From ${b.given_by}${b.award_note ? `: “${b.award_note}”` : ''}</span>` : ''}</p></div>`)}
   <p class="announce-more"><a href="${base}/passport#badges">See your badges</a></p>
 </div>`;
 }

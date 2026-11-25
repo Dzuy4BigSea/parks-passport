@@ -9,6 +9,7 @@ import { notify } from './notifications.js';
 export const FOUNDING_SLUG = 'founding-member';
 export const FOUNDING_LIMIT = 75;
 const KEY = 'founding_awarded';
+const BACKFILLED = 'founding_backfilled'; // the start-up backfill runs once, so a taken-back badge stays taken back
 // Holding either of these unlocks the feedback button.
 export const FEEDBACK_BADGES = [FOUNDING_SLUG, 'early-bird-100'];
 
@@ -37,6 +38,9 @@ export function awardFounding(db, userId, { now = new Date() } = {}) {
 
 /** At start: members who joined before this existed get their numbers, oldest first. Returns how many. */
 export function backfillFounding(db, { now = new Date() } = {}) {
+  if (!db.prepare("SELECT 1 FROM badges WHERE slug = ?").get(FOUNDING_SLUG)) return 0; // seeded first
+  if (db.prepare('SELECT 1 FROM settings WHERE key = ?').get(BACKFILLED)) return 0;
+  db.prepare('INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)').run(BACKFILLED, '1', now.toISOString());
   if (awardedSoFar(db) >= FOUNDING_LIMIT) return 0;
   let given = 0;
   for (const id of db.prepare('SELECT id FROM users ORDER BY created_at, id').pluck().all()) {

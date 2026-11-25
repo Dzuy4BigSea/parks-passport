@@ -140,3 +140,25 @@ test('feedback: send (form and JSON), validation, daily limit, admin inbox and d
   deleteUser(db, ben.id);
   assert.equal(db.prepare('SELECT COUNT(*) FROM feedback').pluck().get(), 0);
 });
+
+test('QA: a taken-back Founding Member stays taken back (the backfill runs once); token pages are never saved; "No. n" label', async () => {
+  const { db, signup, serialOf, founding } = await world();
+  addUsers(db, 2);
+  assert.equal(backfillFounding(db), 2);
+  const ana = await signup('ana'); // #3 at sign-up
+  assert.equal(serialOf(ana.id), 3);
+  assert.match((await ana.c.get('/st-pete/passport')).body, /No\. 3 · /);
+  assert.doesNotMatch((await ana.c.get('/st-pete/passport')).body, /Limited edition #3/);
+  // An admin takes it back; a restart doesn't give it back.
+  db.prepare('DELETE FROM user_badges WHERE user_id = ? AND badge_id = ?').run(ana.id, founding);
+  assert.equal(backfillFounding(db), 0);
+  assert.equal(serialOf(ana.id), undefined);
+
+  // Feedback from a page whose URL carries a token keeps no page.
+  const ids = db.prepare('SELECT id FROM users ORDER BY id').pluck().all();
+  const { sendFeedback } = await import('../../src/domain/feedback.js');
+  for (const page of ['/pals/invite/abcDEF123_secret', '/join/tok', '/reset', '/auth/magic', '/account/delete/confirm']) {
+    sendFeedback(db, ids[0], { text: 'x', page });
+    assert.equal(db.prepare('SELECT page FROM feedback ORDER BY id DESC').pluck().get(), '', page);
+  }
+});

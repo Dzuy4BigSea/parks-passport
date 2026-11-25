@@ -34,7 +34,8 @@ if (dialog && opener && typeof dialog.showModal === 'function') {
       thanks.hidden = false;
       thanks.querySelector('h2').focus();
     } catch (err) {
-      error.textContent = err.message;
+      // Our own messages as they are; anything else (offline, a network error) gets a friendly one.
+      error.textContent = err instanceof TypeError ? 'That didn’t send. Try again in a moment.' : err.message;
       error.hidden = false;
     } finally {
       busy = false;

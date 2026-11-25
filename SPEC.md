@@ -519,8 +519,8 @@ Done when:
       lower right (above the phone tab bar). It opens a small, special-feeling panel: "You're one of
       our first explorers. Tell us anything." with Idea / Something's broken / Love it, one text box
       (1,000 characters) and Send. It works without JavaScript (a `/feedback` page). The page
-      I was on is saved with it. After sending: "Thank you. We read every one." At most 20 a day.
-- [ ] Everyone else gets 404 for `/feedback`.
+      I was on is saved with it (the path only, never a page whose address carries a token). After sending: "Thank you. We read every one." At most 20 a day.
+- [ ] Members without either badge get 404 for `/feedback`; signed-out visitors go to log in.
 - [ ] **Admin › Feedback** lists every message newest first (name, kind, page, date) with "Mark
       done"; done ones are hidden behind a filter. Deleting an account deletes its feedback.
 

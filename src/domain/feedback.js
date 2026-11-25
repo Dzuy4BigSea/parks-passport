@@ -12,7 +12,9 @@ export function sendFeedback(db, userId, form, { now = new Date() } = {}) {
   };
   // Only the path: never a query string (it could carry tokens or a position).
   const path = typeof form.page === 'string' ? form.page.split(/[?#]/)[0] : '';
-  const page = /^\/(?!\/)[\w\-/.%~]{0,200}$/.test(path) ? path : ''; // a path in this app, never //host
+  // A path in this app, never //host, and never a page whose URL carries a secret (invite and sign-in tokens).
+  const secret = /^\/(pals\/invite\/|join\/|reset|auth\/|account\/delete\/confirm)/.test(path);
+  const page = !secret && /^\/(?!\/)[\w\-/.%~]{0,200}$/.test(path) ? path : '';
   if (!values.text) return { error: 'Write a few words first.', values };
   if (values.text.length > MAX_LENGTH) return { error: `Keep it to ${MAX_LENGTH.toLocaleString('en-US')} characters or fewer.`, values };
   const since = new Date(now.getTime() - 86400e3).toISOString();
