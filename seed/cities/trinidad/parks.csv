@@ -1,0 +1,11 @@
+slug,name,address,phone,lat,lng,checkin_radius_m,categories,city_url,needs_pin
+boulevard-loop-trail,Boulevard Loop Trail,,(719) 846-9843,,,300,trails,https://www.trinidad.co.gov/services/parks___recreation/business_detail_T66_R15.php,1
+central-park,Central Park,"700 Smith Ave, Trinidad, CO 81082",(719) 846-9843,37.166368,-104.516846,,ball-fields|lake|playground|trails,https://www.trinidad.co.gov/services/parks___recreation/business_detail_T66_R9.php,0
+jay-cimino-downtown-park,Jay Cimino Downtown Park,"Modica Drive and N. Convent Street, Trinidad, CO 81082",(719) 846-9843,37.169824,-104.508725,,playground|pool,https://www.trinidad.co.gov/services/parks___recreation/business_detail_T66_R7.php,0
+kit-carson-park,Kit Carson Park,"Kansas and San Pedro, Trinidad, CO 81082",(719) 846-9843,37.177250,-104.507020,,history-nature|playground,https://www.trinidad.co.gov/services/parks___recreation/business_detail_T66_R6.php,0
+los-ninos-soccer-complex,Los Ninos Soccer Complex,"Chestnut and Elm, Trinidad, CO 81082",(719) 846-9843,,,,ball-fields|playground,https://www.trinidad.co.gov/services/parks___recreation/business_detail_T66_R8.php,1
+riverwalk,Riverwalk,"Purgatoire Riverwalk, Trinidad, CO 81082",(719) 846-9843,,,300,trails,https://www.trinidad.co.gov/services/parks___recreation/business_detail_T66_R17.php,1
+southside-baseball-park,Southside Baseball Park,"1309 Beshoar Drive, Trinidad, CO 81082",(719) 846-9843,37.158884,-104.507201,,ball-fields,https://www.trinidad.co.gov/services/parks___recreation/business_detail_T66_R13.php,0
+trinidad-skate-park,Trinidad Skate Park,"1309 Beshoar Drive, Trinidad, CO 81082",(719) 846-9843,37.158884,-104.507201,,skatepark,https://www.trinidad.co.gov/services/parks___recreation/business_detail_T66_R12.php,0
+waggin-tails-dog-park,Waggin' Tails Dog Park,"200 N. Linden, Trinidad, CO 81082",(719) 846-9843,37.172110,-104.498479,,dog-park,https://www.trinidad.co.gov/services/parks___recreation/business_detail_T66_R11.php,0
+wormhole-loop-trail,Wormhole Loop Trail,"Wormhole Loop Trailhead, Trinidad, CO 81082",(719) 846-9843,,,300,trails,https://www.trinidad.co.gov/services/parks___recreation/business_detail_T66_R14.php,1

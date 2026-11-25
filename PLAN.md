@@ -287,3 +287,17 @@ EXIF strip, photo visibility for owner / pal / stranger / signed-out with 404, f
 replace, remove and deletion, pal faces only for sharing pals, the filter, stats counts and 404s),
 `test/e2e/cities.spec.js` (upload and pal faces at 375 px, axe clean), `/admin/stats` in the
 `pages.spec.js` sweep, and the existing suite.
+
+### M19 — Five more city packs (Flow 14)
+Outcome: Cookeville, TN; Marple Township (Broomall), PA; Bend, OR; Indianapolis, IN and Trinidad, CO
+as city packs. No app code changes: each is `seed/cities/<key>/` (`city.json`, `parks.csv`,
+`badges.json`) plus `public/og/<key>.jpg`.
+- Seed scripts (dev only, shared helpers in `scripts/lib/seed-fetch.js`): `seed-civicplus.js`
+  (Cookeville and Marple, the CivicPlus Facilities directory), `seed-bend.js` (the BPRD park
+  locator), `seed-indy.js` (Indy Parks' WordPress API, pins from each park's directions link,
+  else OSM, else Census) and `seed-trinidad.js` (the City's directory; pins from OSM or Census).
+- Trinidad ships 4 of its 10 places (the Riverwalk, two loop trails and Los Ninos Soccer Complex)
+  without a pin, flagged "Pin to check" for an admin to place.
+
+Checks: `test/unit/cities.test.js` (every pack valid with parks inside its bounds; city order and
+park counts), the existing suite, and the new cities' pages at 375 px.

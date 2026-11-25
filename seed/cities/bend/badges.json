@@ -1,0 +1,9 @@
+[
+  { "slug": "half-of-bend", "name": "Half of Bend", "art": "🌲", "kind": "known",
+    "description": "Stamped 38 different Bend parks.", "rule_type": "parks_count", "rule_params": { "n": 38 } },
+  { "slug": "every-bend-park", "name": "Every Bend Park", "art": "🏆", "kind": "known",
+    "description": "Stamped every park in Bend.", "rule_type": "all_parks", "rule_params": {} },
+  { "slug": "deschutes-drifter", "name": "Deschutes Drifter", "art": "🛟", "kind": "hidden",
+    "hint": "Follow the river through town.",
+    "description": "Stamped 3 Bend parks with river access.", "rule_type": "category_count", "rule_params": { "category": "water-access", "n": 3 } }
+]

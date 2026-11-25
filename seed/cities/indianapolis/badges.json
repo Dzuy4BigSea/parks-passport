@@ -1,0 +1,9 @@
+[
+  { "slug": "half-of-indy", "name": "Half of Indy", "art": "🏁", "kind": "known",
+    "description": "Stamped 83 different Indianapolis parks.", "rule_type": "parks_count", "rule_params": { "n": 83 } },
+  { "slug": "every-indy-park", "name": "Every Indy Park", "art": "🏆", "kind": "known",
+    "description": "Stamped every park in Indianapolis.", "rule_type": "all_parks", "rule_params": {} },
+  { "slug": "indy-splash", "name": "Hoosier Splash", "art": "💦", "kind": "hidden",
+    "hint": "Cool off three times.",
+    "description": "Stamped 3 Indianapolis parks with a pool or splash pad.", "rule_type": "category_count", "rule_params": { "category": "pool", "n": 3 } }
+]
