@@ -310,3 +310,15 @@ validation), updated rule and level tests, and the existing suite.
 Checks: `test/e2e/celebrations.spec.js` (passport opening, surprise reveal tapped open, inspect and
 flip, Escape returns focus, axe clean and no sideways scroll at 375 px, off switch, reduced motion),
 the sign-up redirect in `test/unit/auth.test.js`, the existing suite, and `npm run lighthouse`.
+
+### M22 — Want to go (Flow 15)
+Outcome: SPEC Flow 15 (from PR #14, rebuilt on the city URLs). Migration `019_saved_parks.sql`,
+`src/domain/saved.js`, `POST /:city/parks/:slug/save` (redirect without JS, JSON for
+`public/js/want-to-go.js`), the heart partial `src/views/save-button.js` on postcards and the
+park page, the passport's "Want to go" section (per city), the `saved=1` filter, and `nextParks`
+preferring saved parks.
+
+Checks: `test/unit/saved.test.js` (save/unsave, idempotent, JSON, CSRF 403, signed-out redirect,
+404, safe `back`, filter, passport section, inactive parks, privacy on `/u/:handle` and Pals,
+next up, account deletion cascade), `test/e2e/saved.spec.js` (JS toggle, no-JS form, filter,
+park page, passport, privacy, axe on each changed page), and the existing suite.

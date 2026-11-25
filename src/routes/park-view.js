@@ -7,6 +7,7 @@ import { areaForPark, motifForPark, cityById, defaultCity } from '../domain/city
 import { nextParks, closestBadge } from '../domain/engagement.js';
 import { badgeBoard } from '../domain/badges/index.js';
 import { palsWhoStamped } from '../domain/pals.js';
+import { isSaved } from '../domain/saved.js';
 import { activitiesForPark, visitToday, logsForVisit } from '../domain/activities.js';
 
 /**
@@ -46,5 +47,6 @@ export function renderParkPage(app, req, reply, park, { problem = null, stamped 
     summary: ratingSummary(db, park.id),
     reviews: visibleReviews(db, user, park.id),
     mine: user ? myRating(db, user.id, park.id) : null,
+    saved: user ? isSaved(db, user.id, park.id) : false,
   }) });
 }
