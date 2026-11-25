@@ -17,6 +17,9 @@ services:
       # Public address for links in emails and invites (sign-in, reset, Park Pals) and the email
       # logo. Set here, not only in .env, so production can never fall back to localhost.
       BASE_URL: https://parkspassport.dzuynguyen.com
+      # Google Tag Manager container (public id, not a secret). GA4 is configured inside GTM;
+      # the app loads it behind Consent Mode v2 (all denied until the visitor accepts).
+      GTM_ID: GTM-NZFVTGR8
     volumes:
       - parks-passport-data:/data
     expose:

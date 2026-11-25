@@ -136,6 +136,8 @@ export function buildApp({
       .send(String(layout({
         ...view, user: req.user, csrf: req.csrfToken(), announcements, nudge, events, consent, path,
         theme: getTheme(db),
+        baseUrl: config.baseUrl,
+        canonicalPath: private_ ? null : pathname,
         // Streak and points for the phone header (members only).
         status: req.user ? { streak: weeklyStreak(visitDates(db, req.user.id), localDate(now())), points: totalPoints(db, req.user.id) } : null,
         analytics: private_ ? null : config.analytics || null,

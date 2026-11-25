@@ -106,6 +106,7 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
   if (stamped) scripts.push('/js/celebrate.js');
   return {
     title: park.name,
+    description: `Visit ${park.name}${park.address ? ` (${park.address})` : ''} and stamp it in your Parks Passport. Map, photos, ratings and badges for St. Pete parks.`,
     current: 'parks',
     offerShare: Boolean(stamped),
     head: hasPin ? html`<link rel="stylesheet" href="/vendor/leaflet/leaflet.css"><link rel="preconnect" href="https://tile.openstreetmap.org">` : null,
