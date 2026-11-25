@@ -7,7 +7,8 @@ import { formatDate } from '../domain/time.js';
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 // "2 more parks" from a badge's unit ("parks", "visits", "weeks", "parks in a weekend").
-const more = (b) => `${b.remaining} more ${b.remaining === 1 ? b.unit.replace(/^(\w+?)s\b/, '$1') : b.unit}`;
+const singular = (unit) => unit.replace(/^(\w+?)(ies|s)\b/, (_, stem, end) => (end === 'ies' ? `${stem}y` : stem));
+export const more = (b) => `${b.remaining} more ${b.remaining === 1 ? singular(b.unit) : b.unit}`;
 
 export function streakText(streak) {
   if (!streak.weeks) return { title: 'Start a streak', meta: 'Stamp a park this week to start a weekly streak.' };
