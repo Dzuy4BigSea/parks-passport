@@ -1057,20 +1057,23 @@ html:not(.js) .js-only { display: none !important; }
 .home { display: grid; gap: 1.75rem; }
 .home h2 { margin: 0 0 0.6rem; }
 .gary-brief {
-  position: relative; display: grid; grid-template-columns: 88px 1fr; align-items: end; gap: 0.75rem;
-  padding: 1rem 1rem 0; border-radius: 18px; overflow: hidden; isolation: isolate;
+  position: relative; display: grid; grid-template-columns: 1fr 112px; align-items: end; gap: 0.25rem;
+  padding: 0.85rem 0 0 0.85rem; border-radius: 18px; overflow: hidden; isolation: isolate;
   background-color: var(--sun-tint);
   background-image: radial-gradient(rgba(214, 150, 0, 0.22) 1.1px, transparent 1.3px), radial-gradient(rgba(214, 150, 0, 0.22) 1.1px, transparent 1.3px);
   background-size: 8px 8px; background-position: 0 0, 4px 4px; border: 1px solid #f1d58a;
 }
-.gary-brief .gary-art { width: 100%; align-self: end; margin-bottom: -4px; }
-.gary-brief .gary-bubble { align-self: center; margin-bottom: 1rem; max-width: 44rem; padding: 1rem 1.15rem; border-radius: 14px; }
-.gary-brief .gary-bubble::before { left: -8px; top: auto; bottom: 26px; margin: 0; }
+/* Phones: the bubble on the left, Gary on the right, big enough to read as a person. */
+.gary-brief .gary-art { width: 100%; align-self: end; margin-bottom: -4px; order: 2; }
+.gary-brief .gary-bubble { align-self: center; margin-bottom: 0.85rem; max-width: 44rem; padding: 0.9rem 0.95rem; border-radius: 14px; }
+.gary-brief .gary-bubble::before { left: auto; right: -8px; top: auto; bottom: 26px; margin: 0; }
 .gary-brief h1 { margin: 0.15rem 0 0.35rem; font-size: clamp(1.8rem, 5vw, 2.6rem); }
 .gary-says { margin: 0 0 0.85rem; font-size: 1.08rem; line-height: 1.5; }
 .gary-says::before { content: "“"; font: italic 700 1.6rem/0 var(--serif-accent); color: var(--pink); vertical-align: -0.35em; margin-right: 0.15rem; }
 @media (min-width: 768px) {
   .gary-brief { grid-template-columns: 170px 1fr; gap: 1.5rem; padding: 1.5rem 2rem 0; }
+  .gary-brief .gary-art { order: 0; }
+  .gary-brief .gary-bubble::before { left: -8px; right: auto; }
   .gary-brief .gary-bubble { margin-bottom: 1.5rem; padding: 1.25rem 1.5rem; }
 }
 
