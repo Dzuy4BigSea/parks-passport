@@ -12,13 +12,15 @@ const RESEND_HOURS = 24;
  * Validates and records an invite. Returns { token, invite } or { error, values }.
  * Admin-only, so saying an address already has an account reveals nothing new.
  */
-export function createInvite(db, { email, name, inviter }, { now = new Date() } = {}) {
+// allowRecent: skip the once-a-day check (sharing badge ideas needs a link even if the person was
+// just invited from Admin › Members).
+export function createInvite(db, { email, name, inviter }, { now = new Date(), allowRecent = false } = {}) {
   const values = { email: normalizeEmail(email), name: String(name ?? '').replace(/\s+/g, ' ').trim() };
   if (!EMAIL_RE.test(values.email) || values.email.length > 254) return { error: 'Enter a valid email address, like name@example.com.', values };
   if (values.name.length > 40) return { error: 'Keep the name to 40 characters or fewer.', values };
   if (findUserByEmail(db, values.email)) return { error: `${values.email} already has an account.`, values };
   const since = new Date(now.getTime() - RESEND_HOURS * 3600e3).toISOString();
-  if (db.prepare('SELECT 1 FROM invites WHERE email = ? AND created_at > ?').get(values.email, since)) {
+  if (!allowRecent && db.prepare('SELECT 1 FROM invites WHERE email = ? AND created_at > ?').get(values.email, since)) {
     return { error: `${values.email} was invited in the last day. Give them a little time.`, values };
   }
   const token = randomToken();

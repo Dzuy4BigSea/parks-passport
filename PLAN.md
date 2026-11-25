@@ -25,6 +25,7 @@ where noted, by hand.
 src/
   app.js  server.js  config.js
   db/        index.js  migrations/
+  gamification/  badge engine, points ledger, levels (domain-free; M14)
   domain/    points.js levels.js badges/ visibility.js geo.js csv-import.js
   routes/    parks.js auth.js visits.js photos.js ratings.js passport.js pals.js admin.js
   views/     html.js layout.js pages/…
@@ -196,3 +197,43 @@ Outcome: SPEC Flow 12. Research and activity lists: `docs/healthy-activities.md`
 Checks: `test/unit/activities.test.js` (seed files valid, every new rule type, caps, undo and visit
 deletion reverse points, editions, Kids photo default, admin), `test/e2e/activities.spec.js`
 (stamp, then log at 375 px with axe clean and no sideways scroll), and the existing suite.
+
+### M13 — Badge ideas (Flow 13)
+Outcome: SPEC Flow 13.
+- Migration 014 (`users.is_super_admin`, `idea_contributors`, `badge_ideas`),
+  `scripts/make-super-admin.js` (`npm run make-super-admin -- <email> [--remove]`).
+- `src/domain/ideas.js` (access, submit with a daily cap, contributors, triage, combine,
+  build link, export brief), `src/domain/idea-job.js` + `src/lib/idea-ai.js` (Claude
+  suggestions as a background job, strict `save_triage` tool, validated output).
+- `src/routes/ideas.js` (`/ideas` and `/admin/ideas/*`), `src/views/pages/ideas.js`, the
+  `idea_share` email kind, `/join/<token>?next=` support, a "Badge ideas" link on Account and
+  the admin home, and "Create badge" prefilling `/admin/badges/new?from_idea=<id>`.
+
+Checks: `test/unit/ideas.test.js` (404 matrix for signed out / member / admin / super admin,
+submit and validation and cap, share to a member and a non-member with the join flow, remove,
+triage verdicts and combine, create badge links the idea, export has the right groups and no
+names or emails, AI job with a fake client drops bad output, account deletion removes ideas),
+`test/e2e/ideas.spec.js` (submit at 375 px and triage at 1440 px, axe clean, no sideways
+scroll), and the existing suite.
+
+### M14 — Gamification engine as a module
+Outcome: the engine works without knowing about parks, so it can be reused (M15).
+Behavior-preserving: no SPEC change.
+- `src/gamification/` holds the domain-free core: the rule registry (`defineRules`), award,
+  revoke with rule snapshots, the badge board, points ledger helpers and levels.
+- The parks-specific parts (the context loader, the 16 rule types, point values, level names,
+  edition filtering) live in `src/domain/badges/` and `src/domain/points.js` / `levels.js` as
+  an adapter the core is configured with.
+
+Checks: the existing suite passes unchanged (`badges.test.js`, `activities.test.js`,
+`visits.test.js`), plus `test/unit/gamification.test.js`, which runs the core against a toy
+adapter with no parks tables.
+
+### M15 — Gamification template repo
+Outcome: a private repo (`gamification-engine`) that starts a new app's gamification.
+- The M14 core, a README (concepts, adapter contract, how to add a rule type, the badge-ideas
+  workflow), an example adapter with its own SQL schema, and `node --test` tests with CI.
+- Parks Passport keeps its own copy of the core; the template is the starting point, not a
+  shared dependency (no publish step to maintain).
+
+Checks: the template's CI passes; its README's quick start runs as written.
