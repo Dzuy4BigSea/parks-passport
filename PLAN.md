@@ -369,8 +369,10 @@ reveal with the number and note, passport tile, close-up, axe at 375 px), and th
 - Signing up from a pal's invite link (`/signup?next=/pals/invite/<token>`) makes the two Park Pals
   straight away and lands on the passport; the sign-up page says so. A dead token in `next` just
   signs up. Existing members still log in and tap Accept.
-- Signing up after an admin's email invite (Admin › Members) makes the new member and that admin
-  Park Pals (`acceptInvites` returns the inviters).
+- Signing up from an admin's emailed `/join/<token>` link (Admin › Members; the token rides in a hidden
+  field and is re-checked, so it proves the mailbox and the 30 days) makes the new member and that
+  admin Park Pals. The address alone doesn't. Sign-up and log-in pages whose `next` is an invite link
+  load no analytics.
 
-Checks: `test/unit/pals.test.js` (pal link sign-up pals both ways, dead link, admin invite pals),
+Checks: `test/unit/pals.test.js` (pal link sign-up pals both ways, made-up and regenerated links, admin invite only via its link), `test/unit/analytics.test.js` (no analytics with an invite in `next`),
 `test/e2e/pals.spec.js` (sign up from the link, see the inviter's feed), and the existing suite.

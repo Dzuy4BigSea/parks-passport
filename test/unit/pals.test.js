@@ -10,7 +10,7 @@ const PW = 'correct horse battery';
 
 async function world() {
   const now = testClock('2026-06-06T16:00:00Z'); // a Saturday
-  const { app, db } = makeApp({ now });
+  const { app, db, mailer } = makeApp({ now });
   importParksCsv(db, [PARK_CSV_COLUMNS.join(','),
     'a-park,A Park,,,27.80,-82.70,,,,0', 'b-park,B Park,,,27.81,-82.71,,,,0'].join('\n'));
   seedBadgesIfEmpty(db, [
@@ -32,7 +32,7 @@ async function world() {
     return people[b].c.post(`${link}/accept`);
   };
   const setVis = (who, v) => people[who].c.post('/account/visibility', { default_visibility: v });
-  return { app, db, now, people, inviteLink, befriend, setVis };
+  return { app, db, mailer, now, people, inviteLink, befriend, setVis };
 }
 
 test('canSee: owner always; private owner only; pals for pals; public for anyone', () => {
@@ -103,7 +103,7 @@ test('joining from a pal\'s invite link makes you Park Pals right away, both way
   const page = await client(app).get(link);
   assert.ok(page.body.includes(`/signup?next=${encodeURIComponent(link)}`));
   const c = client(app);
-  assert.match((await c.get(`/signup?next=${encodeURIComponent(link)}`)).body, /you and ana are Park Pals straight away/);
+  assert.match((await c.get(`/signup?next=${encodeURIComponent(link)}`)).body, /you'll be Park Pals with ana straight away/);
   const res = await c.post('/signup', { display_name: 'Dee', email: 'dee@example.com', password: PW, next: link });
   assert.equal(res.headers.location, '/passport?welcome=1');
   const dee = db.prepare("SELECT id FROM users WHERE email = 'dee@example.com'").pluck().get();
@@ -115,14 +115,31 @@ test('joining from a pal\'s invite link makes you Park Pals right away, both way
   assert.equal(res2.headers.location, '/pals/invite/nope');
   const eve = db.prepare("SELECT id FROM users WHERE email = 'eve@example.com'").pluck().get();
   assert.equal(db.prepare('SELECT COUNT(*) FROM pal_links WHERE user_a = ? OR user_b = ?').pluck().get(eve, eve), 0);
+  // A link Ana regenerated no longer pals anyone.
+  await people.ana.c.post('/pals/invite/regenerate');
+  const g = client(app);
+  await g.post('/signup', { display_name: 'Gus', email: 'gus@example.com', password: PW, next: link });
+  const gus = db.prepare("SELECT id FROM users WHERE email = 'gus@example.com'").pluck().get();
+  assert.ok(!areFriends(db, people.ana.id, gus));
 });
 
-test('joining from an admin\'s email invite makes you Park Pals with that admin', async () => {
-  const { app, db, people } = await world();
+test('joining from an admin\'s emailed invite link makes you Park Pals with that admin; the address alone doesn\'t', async () => {
+  const { app, db, people, mailer } = await world();
   db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(people.ana.id);
+  const tokenFor = (email) => mailer.sent.filter((m) => m.to === email).map((m) => /\/join\/([A-Za-z0-9_-]+)/.exec(m.text || m.html)?.[1]).find(Boolean);
+  // Someone who only knows the invited address signs up without the link: Joined, but not pals.
+  await people.ana.c.post('/admin/invites', { invite_email: 'hal@example.com', invite_name: 'Hal' });
+  await client(app).post('/signup', { display_name: 'Hal', email: 'hal@example.com', password: PW });
+  const hal = db.prepare("SELECT id FROM users WHERE email = 'hal@example.com'").pluck().get();
+  assert.ok(!areFriends(db, hal, people.ana.id));
+  assert.ok(db.prepare("SELECT accepted_at FROM invites WHERE email = 'hal@example.com'").pluck().get());
+  // From the emailed link: pals both ways.
   await people.ana.c.post('/admin/invites', { invite_email: 'fay@example.com', invite_name: 'Fay' });
+  const token = tokenFor('fay@example.com');
+  assert.ok(token);
   const c = client(app);
-  await c.post('/signup', { display_name: 'Fay', email: 'fay@example.com', password: PW });
+  assert.match((await c.get(`/join/${token}`)).body, /name="invite_token"/);
+  await c.post('/signup', { display_name: 'Fay', email: 'fay@example.com', password: PW, invite_token: token });
   const fay = db.prepare("SELECT id FROM users WHERE email = 'fay@example.com'").pluck().get();
   assert.ok(areFriends(db, fay, people.ana.id) && areFriends(db, people.ana.id, fay));
 });

@@ -253,7 +253,8 @@ Done when:
       sign-up form and works for 30 days. Sign-up stays open to everyone. Existing members and
       addresses invited in the last 24 hours are refused. The list shows each invite as Pending or
       Joined. Only the token's hash is stored, and the join page loads no analytics.
-      Signing up from it makes the new member and the admin who invited them Park Pals.
+      Signing up from its emailed link (within the 30 days) makes the new member and the admin who
+      invited them Park Pals; signing up with the address alone only marks the invite Joined.
 - [ ] I can change the wording of every member email (subject, preview text, heading, message,
       button, small print, with {name}, {inviter} and {city}) and preview or reset it.
 - [ ] **Admin › Stats** shows counts only (no names, emails or locations): check-ins in 7 and 30

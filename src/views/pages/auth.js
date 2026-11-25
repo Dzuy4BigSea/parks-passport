@@ -6,18 +6,18 @@ import { visibilityForm } from './pals.js';
 const nextField = (next) => (next ? html`<input type="hidden" name="next" value="${next}">` : '');
 const withNext = (path, next) => (next ? `${path}?next=${encodeURIComponent(next)}` : path);
 
-export function signupPage({ csrf, values = {}, errors = {}, next, invite = null, inviteNotice = null, cityName = 'St. Pete', palInviter = null }) {
+export function signupPage({ csrf, values = {}, errors = {}, next, invite = null, inviteNotice = null, cityName = 'St. Pete', palInviter = null, inviteToken = '' }) {
   return {
     title: 'Create your passport',
     body: html`<div class="narrow">
 ${invite || palInviter ? html`<p class="eyebrow">You're invited</p>` : ''}
 <h1>Create your passport</h1>
 ${invite?.inviter_name ? html`<p class="lede">${invite.inviter_name} invited you. Stamp every ${cityName} park you visit, earn badges and explore with friends. You'll be Park Pals with ${invite.inviter_name} as soon as you join.</p>` : ''}
-${palInviter ? html`<p class="lede">Join and you and ${palInviter.display_name} are Park Pals straight away: you'll see each other's stamps and badges.</p>` : ''}
+${palInviter ? html`<p class="lede">Sign up and you'll be Park Pals with ${palInviter.display_name} straight away, so you can see each other's stamps and badges.</p>` : ''}
 ${inviteNotice ? html`<p class="notice" role="status">${inviteNotice}</p>` : ''}
 ${errorSummary(errors, { display_name: 'Display name', email: 'Email', password: 'Password' })}
 <form method="post" action="/signup" class="card-form" novalidate>
-  ${csrfField(csrf)}${nextField(next)}
+  ${csrfField(csrf)}${nextField(next)}${inviteToken ? html`<input type="hidden" name="invite_token" value="${inviteToken}">` : ''}
   ${field({ name: 'display_name', label: 'Display name', value: values.display_name, error: errors.display_name, autocomplete: 'nickname', hint: 'Shown to Park Pals you choose to share with.', maxlength: 40 })}
   ${field({ name: 'email', label: 'Email', type: 'email', value: values.email, error: errors.email, autocomplete: 'email' })}
   ${field({ name: 'password', label: 'Password', type: 'password', error: errors.password, autocomplete: 'new-password', hint: 'At least 10 characters.' })}

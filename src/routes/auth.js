@@ -83,7 +83,7 @@ export default async function authRoutes(app) {
     if (req.user) return reply.redirect('/passport');
     const invite = inviteForToken(db, req.params.token, { now: now() });
     return reply.page(signupPage({
-      csrf: req.csrfToken(), invite, cityName: req.city.copy.short, next: safeNext(str(req.query.next)) === str(req.query.next) ? str(req.query.next) : '',
+      csrf: req.csrfToken(), invite, inviteToken: invite ? req.params.token : '', cityName: req.city.copy.short, next: safeNext(str(req.query.next)) === str(req.query.next) ? str(req.query.next) : '',
       values: invite ? { email: invite.email, display_name: invite.name } : {},
       inviteNotice: invite ? null : 'This invite link has expired or was already used. You can still create a passport here.',
     }));
@@ -97,16 +97,22 @@ export default async function authRoutes(app) {
     const { user, errors } = await createUser(db, { ...values, password: str(req.body.password) }, { now: now() });
     if (errors) {
       reply.code(422);
-      return reply.page(signupPage({ csrf: req.csrfToken(), values, errors, next: str(req.body.next), palInviter: inviterForNext(db, str(req.body.next)) }));
+      const invite = inviteForToken(db, str(req.body.invite_token), { now: now() });
+      return reply.page(signupPage({ csrf: req.csrfToken(), values, errors, next: str(req.body.next), palInviter: inviterForNext(db, str(req.body.next)),
+        invite, inviteToken: invite ? str(req.body.invite_token) : '', cityName: req.city.copy.short }));
     }
     // Joining from an invite (a pal's link, or an admin's email invite) makes you Park Pals with the
     // person who sent it, both ways, so there's nothing left to accept.
+    // An admin's invite counts only through its emailed /join link (proof of the mailbox, within 30 days).
     const palInviter = inviterForNext(db, str(req.body.next));
-    const inviterIds = [...acceptInvites(db, user.email, user.id, { now: now() }), ...(palInviter ? [palInviter.id] : [])];
-    for (const id of new Set(inviterIds)) palUpOnSignup(db, id, user.id, { now: now(), random: app.random });
-    if (palInviter) app.track(user.id, 'pal_accepted');
+    const joinInvite = inviteForToken(db, str(req.body.invite_token), { now: now() });
+    acceptInvites(db, user.email, user.id, { now: now() });
+    const inviterIds = new Set([joinInvite?.invited_by, palInviter?.id].filter(Boolean));
+    let palled = false;
+    for (const id of inviterIds) palled = palUpOnSignup(db, id, user.id, { now: now(), random: app.random }) || palled;
     startSession(req, reply, user.id);
     app.track(user.id, 'sign_up', { method: 'password' });
+    if (palled) app.track(user.id, 'pal_accepted');
     // Straight to the passport: open it with a little ceremony (public/js/welcome.js).
     const to = palInviter ? '/passport' : safeNext(req.body.next);
     return reply.redirect(to === '/passport' ? '/passport?welcome=1' : to, 303);
