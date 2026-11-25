@@ -196,3 +196,24 @@ Outcome: SPEC Flow 12. Research and activity lists: `docs/healthy-activities.md`
 Checks: `test/unit/activities.test.js` (seed files valid, every new rule type, caps, undo and visit
 deletion reverse points, editions, Kids photo default, admin), `test/e2e/activities.spec.js`
 (stamp, then log at 375 px with axe clean and no sideways scroll), and the existing suite.
+
+### M13 — More cities: city packs, Westminster (Flow 13)
+Outcome: SPEC Flow 13. Westminster, CA and Asheville, NC as proofs of concept beside St. Pete.
+- Migration 014 (city time zone, bounds, copy, listed, sort, seeded_at; `parks` rebuilt with
+  `city_id` and per-city slugs; `badges.city_id`). The runner runs a migration marked
+  `-- migrate:foreign-keys-off` with foreign keys off and checks them before committing.
+- City packs in `seed/cities/<key>/` (St. Pete moved there), loaded on every start by
+  `seedCities` in `src/db/seed.js`; `seed/travel-badges.json`. `scripts/seed-westminster.js`
+  builds Westminster's `parks.csv` from the City's saved page (OSM, then Census/OSM address);
+  `scripts/seed-asheville.js` builds Asheville's from the City's locations directory.
+- `src/domain/city.js` (many cities, copy, nearest city, park time zone), `src/lib/city-context.js`
+  (`req.city`, `pp_city`), `src/lib/geoip.js` (`GEOIP_DB`, `maxmind`), `src/views/urls.js`,
+  `src/routes/city-params.js`; city URLs and redirects in the park, visit, photo, activity and
+  passport routes; city tabs; the admin city bar; the `cities_count` rule.
+
+Checks: `test/unit/cities.test.js` (packs valid, seeding idempotent, migration keeps every visit,
+photo and rating, city URLs and redirects, remembered city, park-local "today" and Early Bird,
+city and travel badges, the IP suggestion with a fake database, the admin city bar),
+`test/e2e/cities.spec.js` (Westminster pages axe clean at 375 px, GPS stamp at Sigler Park, city
+tabs), and the existing suite on `/st-pete/...` URLs. `npm run lighthouse` and
+`npm run check:memory` still pass.

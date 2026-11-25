@@ -1,5 +1,7 @@
 import { requireUser } from '../lib/auth.js';
-import { getParkBySlug } from '../domain/parks.js';
+import { getParkById } from '../domain/parks.js';
+import { parkPath } from '../views/urls.js';
+import { urlPark } from './city-params.js';
 import { logActivity, deleteActivityLog, LIMITS } from '../domain/activities.js';
 import { awardBadges, revokeUnmetBadges } from '../domain/badges/index.js';
 import { renderParkPage } from './park-view.js';
@@ -19,8 +21,8 @@ const PROBLEMS = {
 export default async function activityRoutes(app) {
   const { db } = app;
 
-  app.post('/parks/:slug/activities', { preHandler: requireUser }, async (req, reply) => {
-    const park = getParkBySlug(db, req.params.slug);
+  app.post('/:city/parks/:slug/activities', { preHandler: requireUser }, async (req, reply) => {
+    const park = urlPark(db, req);
     if (!park) return reply.callNotFound();
     const slug = typeof req.body.activity === 'string' ? req.body.activity : '';
     const result = logActivity(db, { user: req.user, park, slug, amount: req.body.amount }, { now: app.now() });
@@ -31,7 +33,7 @@ export default async function activityRoutes(app) {
     }
     app.track(req.user.id, 'activity_log', { activity_slug: result.activity.slug, pillar: result.activity.pillar });
     awardBadges(db, req.user.id, { type: 'activity', id: result.log.id }, { now: app.now(), random: app.random });
-    return reply.redirect(`/parks/${park.slug}?logged=${result.log.id}#activities`, 303);
+    return reply.redirect(parkPath(park, `?logged=${result.log.id}#activities`), 303);
   });
 
   app.post('/activities/:id/delete', { preHandler: requireUser }, async (req, reply) => {
@@ -40,8 +42,9 @@ export default async function activityRoutes(app) {
     const slug = log && db.prepare('SELECT slug FROM activities WHERE id = ?').pluck().get(log.activity_id);
     if (!log) return reply.callNotFound();
     revokeUnmetBadges(db, req.user.id);
-    const park = db.prepare('SELECT slug FROM parks WHERE id = ?').get(log.park_id);
-    return reply.redirect(`/parks/${park.slug}?undone=${slug}#activities`, 303);
+    // The park may have been deactivated since; then back to the passport.
+    const park = getParkById(db, log.park_id);
+    return reply.redirect(park ? parkPath(park, `?undone=${slug}#activities`) : '/passport', 303);
   });
 
   app.post('/account/editions', { preHandler: requireUser }, async (req, reply) => {

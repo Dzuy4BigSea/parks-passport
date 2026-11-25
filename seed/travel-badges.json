@@ -1,0 +1,7 @@
+[
+  { "slug": "two-cities", "name": "Two-City Explorer", "art": "✈️", "kind": "known",
+    "description": "Stamped parks in 2 different Parks Passport cities.", "rule_type": "cities_count", "rule_params": { "n": 2 } },
+  { "slug": "globetrotter", "name": "Globetrotter", "art": "🌎", "kind": "hidden",
+    "hint": "Some passports collect a lot of cities.",
+    "description": "Stamped parks in 3 different Parks Passport cities.", "rule_type": "cities_count", "rule_params": { "n": 3 } }
+]

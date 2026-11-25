@@ -16,13 +16,21 @@ export const cleanCategories = (input) => {
   return [...new Set(list.map(String).filter((c) => Object.hasOwn(CATEGORIES, c)))];
 };
 
+// Every park row carries its city's URL key (city_key) so views can link to /<city>/parks/<slug>.
+const CITY_KEY = '(SELECT key FROM city_themes WHERE id = p.city_id) AS city_key';
+
 /**
- * Active parks, filtered by name search (case-insensitive substring) and categories (all must match).
- * With `near`, sorted by distance (parks without coordinates last) and each has distance_m.
+ * Active parks in one city (every city when cityId is null), filtered by name search
+ * (case-insensitive substring) and categories (all must match). With `near`, sorted by distance
+ * (parks without coordinates last) and each has distance_m.
  */
-export function listParks(db, { q = '', categories = [], near = null } = {}) {
+export function listParks(db, { cityId = null, q = '', categories = [], near = null } = {}) {
   const where = ['p.active = 1'];
   const params = [];
+  if (cityId != null) {
+    where.push('p.city_id = ?');
+    params.push(cityId);
+  }
   const query = String(q).trim().slice(0, 100);
   if (query) {
     where.push("p.name LIKE ? ESCAPE '\\'"); // LIKE is case-insensitive for ASCII
@@ -32,7 +40,7 @@ export function listParks(db, { q = '', categories = [], near = null } = {}) {
     where.push('EXISTS (SELECT 1 FROM park_categories pc WHERE pc.park_id = p.id AND pc.category = ?)');
     params.push(c);
   }
-  const parks = db.prepare(`SELECT p.id, p.slug, p.name, p.address, p.lat, p.lng FROM parks p
+  const parks = db.prepare(`SELECT p.id, p.city_id, p.slug, p.name, p.address, p.lat, p.lng, ${CITY_KEY} FROM parks p
     WHERE ${where.join(' AND ')} ORDER BY p.name COLLATE NOCASE`).all(...params);
 
   let result = withCategories(db, parks);
@@ -44,17 +52,32 @@ export function listParks(db, { q = '', categories = [], near = null } = {}) {
   return result;
 }
 
-export const countActiveParks = (db) => db.prepare('SELECT COUNT(*) FROM parks WHERE active = 1').pluck().get();
+/** Active parks in a city (every city when cityId is null). */
+export const countActiveParks = (db, cityId = null) => (cityId == null
+  ? db.prepare('SELECT COUNT(*) FROM parks WHERE active = 1').pluck().get()
+  : db.prepare('SELECT COUNT(*) FROM parks WHERE active = 1 AND city_id = ?').pluck().get(cityId));
 
-export function getParkBySlug(db, slug) {
-  const park = db.prepare('SELECT * FROM parks WHERE slug = ? AND active = 1').get(String(slug));
+/** An active park by its slug in a city. Slugs are unique per city, not across cities. */
+export function getParkBySlug(db, cityId, slug) {
+  const park = db.prepare(`SELECT p.*, ${CITY_KEY} FROM parks p WHERE p.city_id = ? AND p.slug = ? AND p.active = 1`)
+    .get(cityId, String(slug));
   return park ? withCategories(db, [park])[0] : null;
 }
 
-// Categories that at least one active park has, in display order.
-export function categoriesInUse(db) {
+/** An active park by id (with city_key and categories), or null. */
+export function getParkById(db, id) {
+  const park = db.prepare(`SELECT p.*, ${CITY_KEY} FROM parks p WHERE p.id = ? AND p.active = 1`).get(id);
+  return park ? withCategories(db, [park])[0] : null;
+}
+
+/** Active parks with this slug in any city, oldest first (old /parks/:slug links redirect to the first). */
+export const parksWithSlug = (db, slug) => db.prepare(`SELECT p.id, p.slug, ${CITY_KEY} FROM parks p
+  WHERE p.slug = ? AND p.active = 1 ORDER BY p.id`).all(String(slug));
+
+// Categories that at least one active park in the city has, in display order.
+export function categoriesInUse(db, cityId = null) {
   const used = new Set(db.prepare(`SELECT DISTINCT pc.category FROM park_categories pc
-    JOIN parks p ON p.id = pc.park_id WHERE p.active = 1`).pluck().all());
+    JOIN parks p ON p.id = pc.park_id WHERE p.active = 1 AND (? IS NULL OR p.city_id = ?)`).pluck().all(cityId, cityId));
   return Object.keys(CATEGORIES).filter((c) => used.has(c));
 }
 

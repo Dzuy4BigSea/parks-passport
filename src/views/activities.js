@@ -1,3 +1,4 @@
+import { parkPath } from './urls.js';
 import { html } from './html.js';
 import { csrfField } from './forms.js';
 import { PILLARS, LIMITS } from '../domain/activities.js';
@@ -27,7 +28,7 @@ function item(a, { park, csrf, log, problem }) {
     ? html`<form method="post" action="/activities/${log.id}/delete" class="act-form">${csrfField(csrf)}
       <span class="act-check">✓ ${done(a, log)}</span>
       <button type="submit" class="btn btn-quiet btn-small">Undo<span class="visually-hidden"> ${a.name}</span></button></form>`
-    : html`<form method="post" action="/parks/${park.slug}/activities" class="act-form">${csrfField(csrf)}
+    : html`<form method="post" action="${parkPath(park, '/activities')}" class="act-form">${csrfField(csrf)}
       <input type="hidden" name="activity" value="${a.slug}">
       ${amt ? html`<label class="act-amount"><span>${amt.label}</span>
         <input type="number" name="amount" required min="${amt.step}" max="${amt.max}" step="${amt.step}" inputmode="${amt.mode}"${err ? html` aria-invalid="true"` : ''}></label>` : ''}

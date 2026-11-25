@@ -117,12 +117,12 @@ test('visit coordinates never appear in pages other people (or the owner) see', 
   await c.post('/signup', { display_name: 'Sam', email: 'sam@example.com', password: 'correct horse battery' });
   const lat = '27.80661234';
   const lng = '-82.75539876';
-  const res = await c.post('/parks/abercrombie-park/checkin', { lat, lng, accuracy: '12' });
+  const res = await c.post('/st-pete/parks/abercrombie-park/checkin', { lat, lng, accuracy: '12' });
   assert.equal(res.statusCode, 303);
   assert.equal(db.prepare('SELECT lat FROM visits').pluck().get(), Number(lat));
   const pages = [
-    await c.get(res.headers.location), await c.get('/parks'),
-    await client(app).get('/parks/abercrombie-park'), await client(app).get('/parks'),
+    await c.get(res.headers.location), await c.get('/st-pete/parks'),
+    await client(app).get('/st-pete/parks/abercrombie-park'), await client(app).get('/st-pete/parks'),
   ];
   for (const p of pages) {
     assert.ok(!p.body.includes('80661234') && !p.body.includes('75539876'), 'coordinates leaked');
@@ -133,7 +133,7 @@ test('deleting an account removes its visits and points', async () => {
   const { app, db } = setup();
   const c = client(app);
   await c.post('/signup', { display_name: 'Sam', email: 'sam@example.com', password: 'correct horse battery' });
-  await c.post('/parks/abercrombie-park/stamp', { visited_on: '2026-05-01' });
+  await c.post('/st-pete/parks/abercrombie-park/stamp', { visited_on: '2026-05-01' });
   assert.equal(db.prepare('SELECT COUNT(*) FROM visits').pluck().get(), 1);
   await c.post('/account/delete', { delete_password: 'correct horse battery' });
   assert.equal(db.prepare('SELECT COUNT(*) FROM visits').pluck().get(), 0);
@@ -144,10 +144,10 @@ test('a park without a location offers only the honor system', async () => {
   const { app } = setup();
   const c = client(app);
   await c.post('/signup', { display_name: 'Sam', email: 'sam@example.com', password: 'correct horse battery' });
-  const page = await c.get('/parks/auburn-street-park');
+  const page = await c.get('/st-pete/parks/auburn-street-park');
   assert.ok(!page.body.includes('Check in here'));
   assert.match(page.body, /Stamp on the honor system/);
-  const res = await c.post('/parks/auburn-street-park/checkin', { lat: '27.8', lng: '-82.7', accuracy: '5' });
+  const res = await c.post('/st-pete/parks/auburn-street-park/checkin', { lat: '27.8', lng: '-82.7', accuracy: '5' });
   assert.equal(res.statusCode, 422);
   assert.match(res.body, /GPS check-in isn&#39;t available/);
 });

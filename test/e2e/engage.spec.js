@@ -35,7 +35,7 @@ test.describe('on a phone at a park', () => {
     await expectNoAxeViolations(page);
 
     // The passport groups stamps into neighborhood collections.
-    await page.goto('/passport');
+    await page.goto('/st-pete/passport');
     await expect(page.locator('.collection')).not.toHaveCount(0);
     await expect(page.locator('.stamp.is-stamped', { hasText: 'Crescent Lake Park' }).locator('.seal')).toBeVisible();
   });
@@ -51,7 +51,7 @@ test.describe('on a phone away from parks', () => {
     await expect(page.locator('.finder-list li')).toHaveCount(3);
     await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
     await expectNoAxeViolations(page);
-    await page.goto('/passport');
+    await page.goto('/st-pete/passport');
     await expect(page.locator('.passport-count')).toHaveText('0 of 102 parks stamped');
   });
 });

@@ -1,16 +1,18 @@
 import { validateParkRow } from './csv-import.js';
+import { cityById, defaultCity } from './city.js';
 import { CATEGORIES } from './categories.js';
 import { RULES } from './badges/rules.js';
 
 // ---------- Parks ----------
 
-export const allParksForAdmin = (db, { filter = '' } = {}) => db.prepare(`SELECT p.*,
+// One city's parks (every city when cityId is null).
+export const allParksForAdmin = (db, { filter = '', cityId = null } = {}) => db.prepare(`SELECT p.*,
     (SELECT COUNT(*) FROM visits v WHERE v.park_id = p.id) AS visit_count
-  FROM parks p ${filter === 'needs_pin' ? 'WHERE p.needs_pin = 1' : filter === 'inactive' ? 'WHERE p.active = 0' : ''}
-  ORDER BY p.name COLLATE NOCASE`).all();
+  FROM parks p WHERE (? IS NULL OR p.city_id = ?) ${filter === 'needs_pin' ? 'AND p.needs_pin = 1' : filter === 'inactive' ? 'AND p.active = 0' : ''}
+  ORDER BY p.name COLLATE NOCASE`).all(cityId, cityId);
 
 export function parkForAdmin(db, id) {
-  const park = db.prepare('SELECT * FROM parks WHERE id = ?').get(id);
+  const park = db.prepare('SELECT p.*, (SELECT key FROM city_themes WHERE id = p.city_id) AS city_key FROM parks p WHERE p.id = ?').get(id);
   if (!park) return null;
   park.categories = db.prepare('SELECT category FROM park_categories WHERE park_id = ? ORDER BY category').pluck().all(id);
   return park;
@@ -19,9 +21,12 @@ export function parkForAdmin(db, id) {
 /**
  * Creates (id = null) or updates a park from the admin form. Uses the CSV import's validation.
  * Saving a park with coordinates clears needs_pin unless "needs a pin check" stays ticked.
+ * A new park goes in `city` (default: the first city); an existing one stays in its own.
  * Returns { park } or { error }.
  */
-export function saveParkFromForm(db, id, form, { now = new Date() } = {}) {
+export function saveParkFromForm(db, id, form, { now = new Date(), city = null } = {}) {
+  const cityId = id ? db.prepare('SELECT city_id FROM parks WHERE id = ?').pluck().get(id) : (city || defaultCity(db)).id;
+  const home = cityById(db, cityId) || defaultCity(db);
   const cats = [].concat(form.categories || []).map(String).filter((c) => Object.hasOwn(CATEGORIES, c));
   // Repeated fields arrive as arrays; only plain strings are accepted.
   const f = (k) => (typeof form[k] === 'string' ? form[k] : '');
@@ -29,13 +34,13 @@ export function saveParkFromForm(db, id, form, { now = new Date() } = {}) {
     slug: f('slug').trim(), name: f('name'), address: f('address'), phone: f('phone'),
     lat: f('lat').trim(), lng: f('lng').trim(), checkin_radius_m: f('checkin_radius_m').trim(),
     categories: cats.join('|'), city_url: f('city_url'), needs_pin: form.needs_pin === '1' ? '1' : '0',
-  });
+  }, home.bounds ? { name: home.name, bounds: home.bounds } : undefined);
   if (error) return { error: error.charAt(0).toUpperCase() + error.slice(1) + '.' };
   const loopRaw = f('loop_mi').trim();
   const loop = loopRaw === '' ? null : Number(loopRaw);
   if (loop !== null && !(loop >= 0.1 && loop <= 20)) return { error: 'Walking loop must be from 0.1 to 20 miles, or empty.' };
   park.loop_mi = loop === null ? null : Math.round(loop * 10) / 10;
-  const clash = db.prepare('SELECT id FROM parks WHERE slug = ? AND id IS NOT ?').get(park.slug, id);
+  const clash = db.prepare('SELECT id FROM parks WHERE city_id = ? AND slug = ? AND id IS NOT ?').get(cityId, park.slug, id);
   if (clash) return { error: 'Another park already uses that slug.' };
   const active = form.active === '1' ? 1 : 0;
   const ts = now.toISOString();
@@ -46,9 +51,9 @@ export function saveParkFromForm(db, id, form, { now = new Date() } = {}) {
         checkin_radius_m=@checkin_radius_m, loop_mi=@loop_mi, city_url=@city_url, needs_pin=@needs_pin, active=@active, updated_at=@ts
         WHERE id=@id`).run({ ...park, active, ts, id });
     } else {
-      parkId = db.prepare(`INSERT INTO parks (slug, name, address, phone, lat, lng, checkin_radius_m, loop_mi, city_url,
-        needs_pin, active, created_at, updated_at) VALUES (@slug, @name, @address, @phone, @lat, @lng,
-        @checkin_radius_m, @loop_mi, @city_url, @needs_pin, @active, @ts, @ts)`).run({ ...park, active, ts }).lastInsertRowid;
+      parkId = db.prepare(`INSERT INTO parks (city_id, slug, name, address, phone, lat, lng, checkin_radius_m, loop_mi, city_url,
+        needs_pin, active, created_at, updated_at) VALUES (@city_id, @slug, @name, @address, @phone, @lat, @lng,
+        @checkin_radius_m, @loop_mi, @city_url, @needs_pin, @active, @ts, @ts)`).run({ ...park, city_id: cityId, active, ts }).lastInsertRowid;
     }
     db.prepare('DELETE FROM park_categories WHERE park_id = ?').run(parkId);
     const add = db.prepare('INSERT INTO park_categories (park_id, category) VALUES (?, ?)');
@@ -158,10 +163,10 @@ export function saveBadge(db, id, badge, { now = new Date() } = {}) {
 
 // Newest shared (pals or public) photos and reviews with comments, hidden ones included so they can be unhidden.
 export function moderationQueue(db, { limit = 50 } = {}) {
-  const photos = db.prepare(`SELECT ph.*, u.display_name, u.email, p.name AS park_name, p.slug AS park_slug
+  const photos = db.prepare(`SELECT ph.*, u.display_name, u.email, p.name AS park_name, p.slug AS park_slug, (SELECT key FROM city_themes WHERE id = p.city_id) AS city_key
     FROM photos ph JOIN users u ON u.id = ph.user_id JOIN parks p ON p.id = ph.park_id
     WHERE ph.visibility IN ('pals', 'public') ORDER BY ph.created_at DESC, ph.id DESC LIMIT ?`).all(limit);
-  const reviews = db.prepare(`SELECT r.*, u.display_name, u.email, p.name AS park_name, p.slug AS park_slug
+  const reviews = db.prepare(`SELECT r.*, u.display_name, u.email, p.name AS park_name, p.slug AS park_slug, (SELECT key FROM city_themes WHERE id = p.city_id) AS city_key
     FROM ratings r JOIN users u ON u.id = r.user_id JOIN parks p ON p.id = r.park_id
     WHERE r.visibility IN ('pals', 'public') AND r.comment != '' ORDER BY r.updated_at DESC, r.id DESC LIMIT ?`).all(limit);
   return { photos, reviews };

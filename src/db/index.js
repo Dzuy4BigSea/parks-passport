@@ -22,9 +22,23 @@ export function migrate(db) {
   for (const name of files) {
     if (applied.has(name)) continue;
     const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, name), 'utf8');
-    db.transaction(() => {
-      db.exec(sql);
-      db.prepare('INSERT INTO schema_migrations (name, applied_at) VALUES (?, ?)').run(name, new Date().toISOString());
-    })();
+    // A migration that rebuilds a table (create new, copy, drop old, rename) must run with foreign
+    // keys off, or dropping the old table cascades into the rows that reference it. The pragma
+    // can't change inside a transaction, so it's switched around it, and every foreign key is
+    // checked before the migration commits.
+    const fkOff = sql.startsWith('-- migrate:foreign-keys-off');
+    if (fkOff) db.pragma('foreign_keys = OFF');
+    try {
+      db.transaction(() => {
+        db.exec(sql);
+        if (fkOff) {
+          const broken = db.pragma('foreign_key_check');
+          if (broken.length) throw new Error(`${name} broke ${broken.length} foreign keys (first: ${JSON.stringify(broken[0])})`);
+        }
+        db.prepare('INSERT INTO schema_migrations (name, applied_at) VALUES (?, ?)').run(name, new Date().toISOString());
+      })();
+    } finally {
+      if (fkOff) db.pragma('foreign_keys = ON');
+    }
   }
 }

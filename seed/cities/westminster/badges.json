@@ -1,0 +1,9 @@
+[
+  { "slug": "half-of-westminster", "name": "Half of Westminster", "art": "🏮", "kind": "known",
+    "description": "Stamped 13 different Westminster parks.", "rule_type": "parks_count", "rule_params": { "n": 13 } },
+  { "slug": "every-westminster-park", "name": "Every Westminster Park", "art": "🏆", "kind": "known",
+    "description": "Stamped every park in Westminster.", "rule_type": "all_parks", "rule_params": {} },
+  { "slug": "splash-day", "name": "Splash Day", "art": "💦", "kind": "hidden",
+    "hint": "Find the water on a hot day.",
+    "description": "Stamped a Westminster park with a splash pad.", "rule_type": "category_count", "rule_params": { "category": "pool", "n": 1 } }
+]

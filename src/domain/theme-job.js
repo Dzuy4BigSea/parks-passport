@@ -53,10 +53,10 @@ export function cleanThemeResult(result, existingNames = []) {
  * Starts a job unless one is running. Returns the promise (tests await it) or null when busy or
  * no generator is configured.
  */
-export function startThemeJob(db, generator, { now = () => new Date(), log = null } = {}) {
+export function startThemeJob(db, generator, { now = () => new Date(), log = null, cityKey = null } = {}) {
   if (!generator?.available) return null;
   if (themeJob(db, { now: now() })?.status === 'running') return null;
-  const theme = activeThemeRow(db);
+  const theme = activeThemeRow(db, cityKey);
   if (!theme) return null;
   const startedAt = now().toISOString();
   write(db, { status: 'running', started_at: startedAt }, now());

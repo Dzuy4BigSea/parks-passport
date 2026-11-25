@@ -4,19 +4,20 @@ import { badgeArt } from './badge-art.js';
 import { ICONS, BRAND_MARK } from './icons.js';
 import { motifIcon } from './motif.js';
 import { photosFor } from '../domain/city-photos.js';
+import { cityPath } from './urls.js';
 
 /**
  * Page shell. `head` adds per-page tags (e.g. Leaflet CSS); `scripts` are module URLs loaded with defer.
  * `current` marks the active nav item.
  */
-function announcementsBlock(a) {
+function announcementsBlock(a, base) {
   if (!a) return '';
   return html`<div class="announcements" role="status" tabindex="-1" data-announce>
   ${a.levelUp ? html`<div class="announce announce-level"><span class="announce-art" aria-hidden="true">🚀</span>
     <p><strong>Level up! You're now ${/^[AEIOU]/.test(a.levelUp.name) ? 'an' : 'a'} ${a.levelUp.name}.</strong></p></div>` : ''}
   ${a.badges.map((b) => html`<div class="announce">${badgeArt(b.art, 'announce-art')}
     <p><strong>New badge: ${b.name}</strong>${b.description ? html`<br>${b.description}` : ''}</p></div>`)}
-  <p class="announce-more"><a href="/passport#badges">See your badges</a></p>
+  <p class="announce-more"><a href="${base}/passport#badges">See your badges</a></p>
 </div>`;
 }
 
@@ -82,12 +83,12 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 const aria = (on) => (on ? html` aria-current="page"` : '');
 
 // Phones: members navigate with a bottom tab bar whose center button stamps the nearest park.
-function tabBar(current) {
+function tabBar(current, base) {
   const tab = (href, label, key, icon) => html`<li><a href="${href}"${aria(key === current)}>${icon}<span>${label}</span></a></li>`;
   return html`<nav class="tabbar" aria-label="Quick">
   <ul>
-    ${tab('/parks', 'Parks', 'parks', ICONS.parks)}
-    ${tab('/passport', 'Passport', 'passport', ICONS.passport)}
+    ${tab(`${base}/parks`, 'Parks', 'parks', ICONS.parks)}
+    ${tab(`${base}/passport`, 'Passport', 'passport', ICONS.passport)}
     <li><a href="/stamp" class="tab-stamp"${aria(current === 'stamp')}><span class="fab">${ICONS.stamp}</span><span>Stamp</span></a></li>
     ${tab('/pals', 'Pals', 'pals', ICONS.pals)}
     ${tab('/account', 'Account', 'account', ICONS.account)}
@@ -105,18 +106,22 @@ export function statusPills(status) {
 
 export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null, nudge = null,
   analytics = null, consent = { chosen: true, analytics: false, ads: false }, events = [], showConsentBanner = false, path = '/',
-  theme = null, status = null, description = DEFAULT_DESCRIPTION, baseUrl = '', canonicalPath = null }) {
+  theme = null, cities = [], status = null, description = null, baseUrl = '', canonicalPath = null }) {
+  // Parks and Passport links stay in the city being viewed (SPEC Flow 13).
+  const base = theme?.key && theme.key !== 'default' ? cityPath(theme) : '';
   const nav = user
-    ? [['/parks', 'Parks', 'parks'], ['/passport', 'Passport', 'passport'], ['/pals', 'Pals', 'pals'], ['/account', 'Account', 'account'],
+    ? [[`${base}/parks`, 'Parks', 'parks'], [`${base}/passport`, 'Passport', 'passport'], ['/pals', 'Pals', 'pals'], ['/account', 'Account', 'account'],
       ...(user.is_admin ? [['/admin', 'Admin', 'admin']] : [])]
-    : [['/parks', 'Parks', 'parks'], ['/login', 'Log in', 'login']];
+    : [[`${base}/parks`, 'Parks', 'parks'], ['/login', 'Log in', 'login']];
   const city = theme?.name && theme.key !== 'default' ? theme.name : null;
+  const short = theme?.copy?.short || city;
+  description = description || theme?.copy?.description || DEFAULT_DESCRIPTION;
   // City accent colors and background photos (paths come from our own registry, never input).
   const photos = theme ? photosFor(theme.key) : null;
   const photoVars = photos ? Object.entries(photos).map(([role, p]) => `--photo-${role}:url(${p.file});`).join('') : '';
   const accents = theme && HEX.test(theme.accent) && HEX.test(theme.accent_2)
     ? html`<style>:root{--city-accent:${theme.accent};--city-accent-2:${theme.accent_2};${raw(photoVars)}}</style>` : '';
-  const fullTitle = title ? `${title} · Parks Passport` : 'Parks Passport · St. Pete parks';
+  const fullTitle = title ? `${title} · Parks Passport` : `Parks Passport · ${short || 'St. Pete'} parks`;
   return html`<!doctype html>
 <html lang="en">
 <head>
@@ -156,18 +161,19 @@ ${scripts.map((src) => html`<script type="module" src="${src}"></script>`)}
   </div>
 </header>
 ${showConsentBanner ? consentBanner(csrf, path) : ''}
-<main id="main" class="wrap" tabindex="-1">${announcementsBlock(announcements)}${nudge}${body}</main>
+<main id="main" class="wrap" tabindex="-1">${announcementsBlock(announcements, base)}${nudge}${body}</main>
 <footer class="site-footer">
   <div class="wrap">
     ${theme?.motifs?.length ? html`<div class="motif-strip" aria-hidden="true">${theme.motifs.map((m) => motifIcon(m))}</div>` : ''}
-    ${city ? html`<p class="footer-city">Made for ${theme.tagline ? `the ${theme.tagline}` : city}.</p>` : ''}
-    <p>An independent project. Not affiliated with the City of St. Petersburg.</p>
+    ${city ? html`<p class="footer-city">Made for ${theme.copy?.made_for || (theme.tagline ? `the ${theme.tagline}` : city)}.</p>` : ''}
+    <p>An independent project. Not affiliated with ${theme?.copy?.official || 'any city government'}.</p>
+    ${cities.length > 1 ? html`<nav class="footer-cities" aria-label="Cities"><p>Cities: ${cities.map((c, i) => html`${i ? ' · ' : ''}<a href="${cityPath(c)}"${c.key === theme?.key ? html` aria-current="page"` : ''}>${c.copy.short}</a>`)}</p></nav>` : ''}
     <p><a href="/privacy">Privacy</a>${photos ? html` · <a href="/credits">Photo credits</a>` : ''}${analytics?.gtmId ? html` · <a href="/consent?back=${encodeURIComponent(path)}" id="cookie-settings">Cookie settings</a>` : ''}</p>
     <p class="credit"><span>© ${new Date().getFullYear()} Parks Passport</span>
       <a class="bigsea" href="https://bigsea.co" rel="noopener" title="Purpose built by Big Sea"><span>Purpose built by</span><img src="/brand/bigsea-logo.svg" alt="Big Sea" width="54" height="15"></a></p>
   </div>
 </footer>
-${user ? tabBar(current) : ''}
+${user ? tabBar(current, base) : ''}
 </body>
 </html>`;
 }

@@ -1,5 +1,6 @@
 // Healthy activities (docs/healthy-activities.md): things to do at a park once it's stamped today.
 // Logs are private to the member. Only badges earned from them follow the passport's visibility.
+import { parkTimeZone } from './city.js';
 import { localDate } from './time.js';
 import { dayNumber, mondayOf } from './badges/rules.js';
 
@@ -74,7 +75,7 @@ const dayTotals = (db, userId, day) => db.prepare(`SELECT COALESCE(SUM(minutes),
  * Errors: not_stamped, unknown, bad_amount, miles_cap, duplicate.
  */
 export function logActivity(db, { user, park, slug, amount: raw }, { now = new Date() } = {}) {
-  const today = localDate(now);
+  const today = localDate(now, parkTimeZone(db, park.id));
   const visit = visitToday(db, user.id, park.id, today);
   if (!visit) return { error: 'not_stamped' };
   const activity = activitiesForPark(db, user, park).find((a) => a.slug === slug);

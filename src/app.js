@@ -18,7 +18,8 @@ import { buildEvent, queueEvent, takeEvents, parseConsent, CONSENT_COOKIE } from
 import consentRoutes from './routes/consent.js';
 import { totalPoints } from './domain/points.js';
 import { levelFor } from './domain/levels.js';
-import { getTheme } from './domain/city.js';
+import { getTheme, listCities, nearestCity } from './domain/city.js';
+import { cityContext } from './lib/city-context.js';
 import { weeklyStreak, visitDates } from './domain/engagement.js';
 import { homeData } from './domain/home.js';
 import { garyTip } from './views/gary.js';
@@ -45,7 +46,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
  * config: { baseUrl, secureCookies, uploadsDir }
  */
 export function buildApp({
-  db, mailer, secretBox = null, now = () => new Date(), random = Math.random, logger = false, themeAi = null,
+  db, mailer, secretBox = null, now = () => new Date(), random = Math.random, logger = false, themeAi = null, geoip = null,
   config = { baseUrl: 'http://localhost:8080', secureCookies: false, uploadsDir: './data/uploads' },
 } = {}) {
   if (!db) throw new Error('buildApp needs a db');
@@ -59,7 +60,8 @@ export function buildApp({
   app.decorate('config', config);
   app.decorate('secretBox', secretBox); // encrypts the admin-saved SendGrid key
   // app.track(userId, name, params): an analytics event for the user's next page (see lib/analytics.js).
-  app.decorate('theme', () => getTheme(db));
+  app.decorate('theme', () => getTheme(db)); // the default city (emails); pages use req.city
+  app.decorate('geoip', geoip); // lib/geoip.js: { lookup(ip) } or null (nearest-city suggestion off)
   app.decorate('themeAi', themeAi); // Admin › City theme generator (lib/theme-ai.js); null = off
   app.decorate('track', (userId, name, params = {}) => queueEvent(db, userId, name, params, { now: now(), log: app.log }));
   app.decorate('emailSettings', () => emailSettings(db, { envFrom: config.mailFrom || '' }));
@@ -90,6 +92,7 @@ export function buildApp({
   // Multipart (uploads) is registered only around the photo routes: see lib/uploads.js.
   app.register(cookie);
   app.register(authPlugin, { db, now, secureCookies: config.secureCookies });
+  app.register(cityContext, { db, secureCookies: config.secureCookies }); // req.city (SPEC Flow 13)
   app.register(fastifyStatic, {
     root: path.join(ROOT, 'public'), prefix: '/', index: false, wildcard: false, maxAge: '1h',
   });
@@ -135,11 +138,11 @@ export function buildApp({
       .header('Cache-Control', 'no-store')
       .send(String(layout({
         ...view, user: req.user, csrf: req.csrfToken(), announcements, nudge, events, consent, path,
-        theme: getTheme(db),
+        theme: view.city || req.city, cities: listCities(db).filter((c) => c.listed),
         baseUrl: config.baseUrl,
         canonicalPath: private_ ? null : pathname,
         // Streak and points for the phone header (members only).
-        status: req.user ? { streak: weeklyStreak(visitDates(db, req.user.id), localDate(now())), points: totalPoints(db, req.user.id) } : null,
+        status: req.user ? { streak: weeklyStreak(visitDates(db, req.user.id), localDate(now(), req.city.time_zone)), points: totalPoints(db, req.user.id) } : null,
         analytics: private_ ? null : config.analytics || null,
         // The banner asks only when there is something to consent to (GTM) and no choice yet.
         showConsentBanner: !private_ && Boolean(config.analytics?.gtmId) && !consent.chosen && !path.startsWith('/consent'),
@@ -155,20 +158,36 @@ export function buildApp({
     }
   });
 
-  app.get('/', async (req, reply) => {
-    const total = countActiveParks(db);
+  // Home for one city: the landing page, or the member's dashboard. `suggest` is the nearest
+  // listed city to the visitor's IP when it isn't this one (only on "/" before they pick a city).
+  function home(req, reply, city, suggest = null) {
     const user = req.user;
     let dash = null;
     if (user) {
       // ?lat&lng comes from "Use my location"; it's used for this page only, never stored.
-      dash = homeData(db, user, getTheme(db), { now: now(), near: parseLatLng(req.query.lat, req.query.lng) });
+      dash = homeData(db, user, city, { now: now(), near: parseLatLng(req.query.lat, req.query.lng) });
       dash.tip = garyTip(dash.tipInput);
     }
-    return reply.page(homePage({ total, theme: getTheme(db), user, dash, today: localDate(now()) }));
+    return reply.page({ city, ...homePage({
+      total: countActiveParks(db, city.id), theme: city, user, dash, today: localDate(now(), city.time_zone),
+      cities: listCities(db).filter((c) => c.listed), suggest,
+    }) });
+  }
+
+  // Within this distance of a city's center, the home page offers to switch to it.
+  const SUGGEST_WITHIN_M = 160_000;
+  app.get('/', async (req, reply) => {
+    let suggest = null;
+    if (!req.cityRemembered && app.geoip) {
+      const near = nearestCity(db, app.geoip.lookup(req.ip));
+      if (near && near.city.key !== req.city.key && near.distance_m <= SUGGEST_WITHIN_M) suggest = near.city;
+    }
+    return home(req, reply, req.city, suggest);
   });
+  app.get('/:city', async (req, reply) => (req.cityFromUrl ? home(req, reply, req.city) : reply.callNotFound()));
   app.get('/privacy', async (req, reply) => reply.page(privacyPage()));
   app.get('/credits', async (req, reply) => {
-    const theme = getTheme(db);
+    const theme = req.city;
     const credits = photoCredits(theme.key);
     if (!credits.length) return reply.callNotFound();
     return reply.page(creditsPage({ theme, credits }));

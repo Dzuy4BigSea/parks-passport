@@ -1163,3 +1163,16 @@ html:not(.js) .js-only { display: none !important; }
 .home > *, .home-cards > *, .home-pair > * { min-width: 0; } /* the postcard strip scrolls inside its column */
 .home .btn svg, .spread-right > p a svg { width: 18px; height: 18px; flex: none; vertical-align: -0.2em; }
 .spread-right > p a { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 700; }
+
+/* ---- Cities (SPEC Flow 13) ---- */
+.city-list { list-style: none; padding: 0; margin: 0.75rem 0 0; display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.city-suggest { display: flex; gap: 0.5rem; align-items: flex-start; }
+.city-suggest svg { flex: none; width: 1.2rem; height: 1.2rem; margin-top: 0.15rem; }
+.city-tabs ul { list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.city-tabs a { display: inline-flex; gap: 0.4rem; align-items: baseline; padding: 0.4rem 0.85rem; border: 2px solid var(--ink); border-radius: 999px;
+  color: var(--ink); text-decoration: none; font-weight: 700; }
+.city-tabs a[aria-current="page"] { background: var(--ink); color: var(--sand, #f6f1e7); }
+.city-tab-count { font-variant-numeric: tabular-nums; font-weight: 600; }
+.footer-cities p { margin: 0.25rem 0; }
+.city-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0 0 1rem; }
+.city-bar label { font-weight: 700; }

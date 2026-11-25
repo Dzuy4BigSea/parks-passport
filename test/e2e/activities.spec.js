@@ -13,7 +13,7 @@ const noSideways = (page) => page.evaluate(() => document.documentElement.scroll
 
 test('stamp a park, log activities, undo one, and see the week on the passport', async ({ page }) => {
   await signUp(page, { name: 'Robin' });
-  await page.goto('/parks/crescent-lake-park');
+  await page.goto('/st-pete/parks/crescent-lake-park');
   const panel = page.locator('#activities');
   await expect(panel).toContainText('Stamp this park today to unlock');
   await expect(panel.getByRole('button', { name: /^Log/ })).toHaveCount(0);
@@ -50,7 +50,7 @@ test('stamp a park, log activities, undo one, and see the week on the passport',
   await panel.getByRole('button', { name: 'Undo Breathe' }).click();
   await expect(panel.getByRole('button', { name: 'Log Breathe' })).toBeVisible();
 
-  await page.goto('/passport');
+  await page.goto('/st-pete/passport');
   const week = page.locator('.week-card');
   await expect(week).toContainText('Movement 30 / 150 min');
   await expect(week).toContainText('Time in parks 30 / 120 min');
@@ -67,7 +67,7 @@ test('Paws and Kids editions add their activities', async ({ page }) => {
   await expect(page.getByRole('status').filter({ hasText: 'Saved your editions.' })).toBeVisible();
   await expectNoAxeViolations(page);
 
-  await page.goto('/parks/crescent-lake-park');
+  await page.goto('/st-pete/parks/crescent-lake-park');
   await expect(page.locator('#photo_visibility')).toHaveValue('private');
   await page.getByText('No GPS? Stamp on the honor system').click();
   await page.getByRole('button', { name: 'Stamp it' }).click();

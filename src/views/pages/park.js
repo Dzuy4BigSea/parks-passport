@@ -9,6 +9,7 @@ import { ICONS } from '../icons.js';
 import { motifIcon } from '../motif.js';
 import { nextLine } from '../nextup.js';
 import { activitiesPanel } from '../activities.js';
+import { cityPath, parkPath } from '../urls.js';
 
 // Confetti particles for the celebration: angles and distances, decorative only.
 const BURST = [[0, 95], [30, 70], [60, 105], [95, 80], [125, 100], [160, 75], [195, 95], [225, 70], [260, 105], [290, 85], [320, 100], [345, 72]];
@@ -46,7 +47,7 @@ function stampPanel({ park, user, csrf, today, myVisits, problem: allProblems })
   if (!user) {
     return html`<section class="stamp-panel" aria-labelledby="stamp-h">
   <h2 id="stamp-h">Stamp this park</h2>
-  <p><a class="btn btn-primary" href="/login?next=${encodeURIComponent(`/parks/${park.slug}`)}">Log in to stamp this park</a></p>
+  <p><a class="btn btn-primary" href="/login?next=${encodeURIComponent(parkPath(park))}">Log in to stamp this park</a></p>
 </section>`;
   }
   const stampedToday = myVisits.some((v) => v.visited_on === today);
@@ -59,7 +60,7 @@ function stampPanel({ park, user, csrf, today, myVisits, problem: allProblems })
   ${problem ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${problem.text}</p>` : ''}
   ${stampedToday
     ? html`<p class="stamped-today">✓ Stamped today.</p>`
-    : html`${hasPin ? html`<form method="post" action="/parks/${park.slug}/checkin" id="checkin-form" hidden>
+    : html`${hasPin ? html`<form method="post" action="${parkPath(park, '/checkin')}" id="checkin-form" hidden>
     ${csrfField(csrf)}
     <input type="hidden" name="lat"><input type="hidden" name="lng"><input type="hidden" name="accuracy">
     <button type="submit" class="btn btn-pop btn-big">${ICONS.stamp}Check in here</button>
@@ -68,7 +69,7 @@ function stampPanel({ park, user, csrf, today, myVisits, problem: allProblems })
   <p id="checkin-status" class="notice" role="status" aria-live="polite"></p>` : ''}
   <details class="honor"${problem || !hasPin ? html` open` : ''} id="honor">
     <summary>${hasPin ? 'No GPS? Stamp on the honor system' : 'Stamp on the honor system'}</summary>
-    <form method="post" action="/parks/${park.slug}/stamp" class="honor-form" enctype="multipart/form-data">
+    <form method="post" action="${parkPath(park, '/stamp')}" class="honor-form" enctype="multipart/form-data">
       ${csrfField(csrf)}
       <div class="field">
         <label for="visited_on">Date of your visit</label>
@@ -87,7 +88,7 @@ function stampPanel({ park, user, csrf, today, myVisits, problem: allProblems })
     ${myVisits.map((v) => html`<li>
       <span>${formatDate(v.visited_on)} · ${METHOD_LABELS[v.method]} · ${v.points} pts</span>
       <form method="post" action="/visits/${v.id}/delete">
-        ${csrfField(csrf)}<input type="hidden" name="back" value="/parks/${park.slug}">
+        ${csrfField(csrf)}<input type="hidden" name="back" value="${parkPath(park)}">
         <button type="submit" class="btn btn-quiet btn-small" aria-label="Delete visit on ${formatDate(v.visited_on)}">Delete</button>
       </form>
     </li>`)}
@@ -106,13 +107,13 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
   if (stamped) scripts.push('/js/celebrate.js');
   return {
     title: park.name,
-    description: `Visit ${park.name}${park.address ? ` (${park.address})` : ''} and stamp it in your Parks Passport. Map, photos, ratings and badges for St. Pete parks.`,
+    description: `Visit ${park.name}${park.address ? ` (${park.address})` : ''} and stamp it in your Parks Passport. Map, photos, ratings and badges for ${theme.copy?.short || 'local'} parks.`,
     current: 'parks',
     offerShare: Boolean(stamped),
     head: hasPin ? html`<link rel="stylesheet" href="/vendor/leaflet/leaflet.css"><link rel="preconnect" href="https://tile.openstreetmap.org">` : null,
     scripts,
     body: html`
-<p class="breadcrumb"><a href="/parks">All parks</a></p>
+<p class="breadcrumb"><a href="${cityPath(theme, '/parks')}">All parks</a></p>
 <article class="park">
   <header class="park-header">
     ${motifForPark(theme, park.slug) ? html`<span class="park-motif">${motifIcon(motifForPark(theme, park.slug))}</span>` : ''}
@@ -148,7 +149,7 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
   <section aria-labelledby="amenities-h">
     <h2 id="amenities-h">Amenities</h2>
     ${park.categories.length
-      ? html`<ul class="chips">${park.categories.map((c) => html`<li><a href="/parks?cat=${c}">${categoryLabel(c)}</a></li>`)}</ul>`
+      ? html`<ul class="chips">${park.categories.map((c) => html`<li><a href="${cityPath(theme, '/parks')}?cat=${c}">${categoryLabel(c)}</a></li>`)}</ul>`
       : html`<p>The City doesn't list amenities for this park.</p>`}
   </section>
 
@@ -171,7 +172,7 @@ function ratingsSection({ park, user, csrf, summary, reviews, mine, problem }) {
     ? html`<span class="stars" aria-hidden="true">${stars(Math.round(summary.average))}</span>
       <strong>${summary.average.toFixed(1)}</strong> out of 5 · ${summary.count} ${summary.count === 1 ? 'rating' : 'ratings'}`
     : 'No ratings yet.'}</p>
-  ${user ? html`<form method="post" action="/parks/${park.slug}/rating" class="card-form rating-form">
+  ${user ? html`<form method="post" action="${parkPath(park, '/rating')}" class="card-form rating-form">
     ${csrfField(csrf)}
     ${areaProblem(problem, 'rating')}
     <fieldset class="star-picker">
@@ -188,7 +189,7 @@ function ratingsSection({ park, user, csrf, summary, reviews, mine, problem }) {
     </div>
     <button type="submit" class="btn btn-primary">${mine ? 'Update rating' : 'Save rating'}</button>
   </form>
-  ${mine ? html`<form method="post" action="/parks/${park.slug}/rating/delete" class="inline-form">${csrfField(csrf)}
+  ${mine ? html`<form method="post" action="${parkPath(park, '/rating/delete')}" class="inline-form">${csrfField(csrf)}
     <button type="submit" class="btn btn-quiet btn-small">Delete my rating</button></form>` : ''}` : ''}
   ${reviews.length ? html`<ul class="reviews">${reviews.map((r) => html`<li>
     <p><span class="stars" aria-label="${r.stars} out of 5">${stars(r.stars)}</span> <strong>${r.display_name}</strong>
@@ -200,7 +201,7 @@ function ratingsSection({ park, user, csrf, summary, reviews, mine, problem }) {
 }
 
 function photosSection({ park, user, csrf, photos, problem }) {
-  const back = `/parks/${park.slug}#photos`;
+  const back = parkPath(park, '#photos');
   return html`<section aria-labelledby="photos-h" id="photos">
   <h2 id="photos-h">Photos</h2>
   ${photos.length ? html`<ul class="photo-grid">${photos.map((ph) => html`<li class="photo">
@@ -218,7 +219,7 @@ function photosSection({ park, user, csrf, photos, problem }) {
         <button type="submit" class="btn btn-quiet btn-small">Delete photo</button>
       </form></details>` : ''}
   </li>`)}</ul>` : html`<p>No photos yet.</p>`}
-  ${user ? html`<form method="post" action="/parks/${park.slug}/photos" class="card-form" enctype="multipart/form-data">
+  ${user ? html`<form method="post" action="${parkPath(park, '/photos')}" class="card-form" enctype="multipart/form-data">
     ${csrfField(csrf)}
     ${areaProblem(problem, 'photo')}
     <div class="field">

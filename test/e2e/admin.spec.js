@@ -30,7 +30,7 @@ test('members get 404 for /admin', async ({ page }) => {
 test('admin pages pass axe, and the pin picker sets coordinates from a map click', async ({ page }) => {
   const { email } = await signUp(page, { name: 'Admin' });
   makeAdmin(email);
-  await page.goto('/parks');
+  await page.goto('/st-pete/parks');
   await page.getByRole('link', { name: 'Admin' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Admin');
   await expectNoAxeViolations(page);
@@ -58,7 +58,7 @@ test('admin pages pass axe, and the pin picker sets coordinates from a map click
 
   // The park now has a map on its public page.
   try {
-    await page.goto('/parks/auburn-street-park');
+    await page.goto('/st-pete/parks/auburn-street-park');
     await expect(page.locator('#park-map')).toHaveCount(1);
   } finally {
     resetAuburn();

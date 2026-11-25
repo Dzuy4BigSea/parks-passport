@@ -3,14 +3,15 @@
 const el = document.getElementById('pin-map');
 const latInput = document.getElementById('lat');
 const lngInput = document.getElementById('lng');
-const ST_PETE = [27.7731, -82.64];
+// The city the park is in (data-center), else St. Pete.
+const CENTER = (el.dataset.center || '27.7731,-82.64').split(',').map(Number);
 
 async function init() {
   const L = await import('/vendor/leaflet/leaflet-src.esm.js');
   el.setAttribute('role', 'region');
   el.setAttribute('aria-label', 'Map for placing the park pin');
   const start = latInput.value && lngInput.value ? [Number(latInput.value), Number(lngInput.value)] : null;
-  const map = L.map(el).setView(start || ST_PETE, start ? 17 : 12);
+  const map = L.map(el).setView(start || CENTER, start ? 17 : 12);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',

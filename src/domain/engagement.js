@@ -28,11 +28,11 @@ export function nextParks(db, userId, { limit = 1 } = {}) {
   const anchor = db.prepare(`SELECT p.lat, p.lng FROM visits v JOIN parks p ON p.id = v.park_id
     WHERE v.user_id = ? AND p.lat IS NOT NULL ORDER BY v.visited_on DESC, v.id DESC LIMIT 1`).get(userId);
   if (!anchor) return [];
-  const candidates = db.prepare(`SELECT p.id, p.slug, p.name, p.lat, p.lng FROM parks p
+  const candidates = db.prepare(`SELECT p.id, p.slug, p.name, p.lat, p.lng, (SELECT key FROM city_themes WHERE id = p.city_id) AS city_key FROM parks p
     WHERE p.active = 1 AND p.lat IS NOT NULL
       AND NOT EXISTS (SELECT 1 FROM visits v WHERE v.park_id = p.id AND v.user_id = ?)`).all(userId);
   return candidates
-    .map((p) => ({ slug: p.slug, name: p.name, distance_m: distanceMeters(anchor, p) }))
+    .map((p) => ({ slug: p.slug, city_key: p.city_key, name: p.name, distance_m: distanceMeters(anchor, p) }))
     .sort((a, b) => a.distance_m - b.distance_m)
     .slice(0, limit);
 }
@@ -52,9 +52,9 @@ export function visitDates(db, userId) {
 }
 
 /** Everything the home dashboard and the "next up" cards need for one user. */
-export function nextUp(db, userId, board, { now = new Date() } = {}) {
+export function nextUp(db, userId, board, { now = new Date(), timeZone } = {}) {
   return {
-    streak: weeklyStreak(visitDates(db, userId), localDate(now)),
+    streak: weeklyStreak(visitDates(db, userId), localDate(now, timeZone)),
     nextPark: nextParks(db, userId)[0] || null,
     nextBadge: closestBadge(board),
   };

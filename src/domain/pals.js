@@ -91,14 +91,14 @@ export function palsFeed(db, userId, { page = 1 } = {}) {
       SELECT u.id FROM users u WHERE u.default_visibility IN ('pals', 'public') AND u.id IN
         (SELECT user_b FROM pal_links WHERE user_a = @me UNION SELECT user_a FROM pal_links WHERE user_b = @me))
     SELECT 'stamp' AS type, v.created_at AS at, v.user_id, v.visited_on, v.method,
-           p.name AS park_name, p.slug AS park_slug, NULL AS badge_name, NULL AS badge_art,
+           p.name AS park_name, p.slug AS park_slug, (SELECT key FROM city_themes WHERE id = p.city_id) AS city_key, NULL AS badge_name, NULL AS badge_art,
            NULL AS photo_id, NULL AS caption
       FROM visits v JOIN parks p ON p.id = v.park_id WHERE v.user_id IN (SELECT id FROM visible)
     UNION ALL
-    SELECT 'badge', ub.awarded_at, ub.user_id, NULL, NULL, NULL, NULL, b.name, b.art, NULL, NULL
+    SELECT 'badge', ub.awarded_at, ub.user_id, NULL, NULL, NULL, NULL, NULL, b.name, b.art, NULL, NULL
       FROM user_badges ub JOIN badges b ON b.id = ub.badge_id WHERE ub.user_id IN (SELECT id FROM visible)
     UNION ALL
-    SELECT 'photo', ph.created_at, ph.user_id, NULL, NULL, p.name, p.slug, NULL, NULL, ph.id, ph.caption
+    SELECT 'photo', ph.created_at, ph.user_id, NULL, NULL, p.name, p.slug, (SELECT key FROM city_themes WHERE id = p.city_id), NULL, NULL, ph.id, ph.caption
       FROM photos ph JOIN parks p ON p.id = ph.park_id
       WHERE ph.visibility IN ('pals', 'public') AND ph.hidden = 0 AND ph.user_id IN
         (SELECT user_b FROM pal_links WHERE user_a = @me UNION SELECT user_a FROM pal_links WHERE user_b = @me)

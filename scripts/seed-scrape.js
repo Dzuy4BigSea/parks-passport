@@ -1,5 +1,5 @@
-// Dev-only: builds seed/parks.csv from the City of St. Petersburg parks directory.
-//   npm run seed:scrape            (writes seed/parks.csv and seed/park-features.txt)
+// Dev-only: builds seed/cities/st-pete/parks.csv from the City of St. Petersburg parks directory.
+//   npm run seed:scrape            (writes seed/cities/st-pete/parks.csv and park-features.txt)
 // Coordinates come from the City map embedded on each park's info page; if missing,
 // the address is geocoded (US Census, then Nominatim). Never run in production.
 import fs from 'node:fs';
@@ -10,7 +10,7 @@ import { featureToCategories } from '../seed/categories.js';
 
 const DIRECTORY_URL = 'https://www.stpeteparksrec.org/parks___facilities/_parks.php';
 const UA = 'parks-passport-seed/1.0 (personal project)';
-const OUT_DIR = path.join(import.meta.dirname, '..', 'seed');
+const OUT_DIR = path.join(import.meta.dirname, '..', 'seed', 'cities', 'st-pete');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

@@ -8,7 +8,8 @@ import { totalPoints } from '../domain/points.js';
 import { levelFor } from '../domain/levels.js';
 import { palsPage, invitePage } from '../views/pages/pals.js';
 import { passportPage } from '../views/pages/passport.js';
-import { passportData } from '../domain/passport.js';
+import { passportData, cityProgress } from '../domain/passport.js';
+import { listCities, cityByKey } from '../domain/city.js';
 
 export default async function palRoutes(app) {
   const { db } = app;
@@ -84,9 +85,15 @@ export default async function palRoutes(app) {
     if (!owner || !canViewOwner(db, req.user?.id ?? null, owner.id, owner.default_visibility)) return reply.callNotFound();
     if (req.user?.id === owner.id && req.query.preview !== '1') return reply.redirect('/passport');
     const points = totalPoints(db, owner.id);
+    // One city's stamps at a time: ?city=, else the city they've stamped most, else the viewer's.
+    const cities = cityProgress(db, owner.id, listCities(db));
+    const most = [...cities].sort((a, b) => b.stamped - a.stamped)[0];
+    const city = cityByKey(db, String(req.query.city || '')) || (most?.stamped ? most.city : req.city);
+    const handle = encodeURIComponent(owner.handle);
     return reply.page(passportPage({
-      ...passportData(db, owner.id), user: owner, csrf: req.csrfToken(), points, level: levelFor(points),
-      badges: badgeBoard(db, owner.id).filter((b) => b.state === 'earned'), readOnly: true, theme: app.theme(),
+      ...passportData(db, owner.id, { cityId: city.id }), user: owner, csrf: req.csrfToken(), points, level: levelFor(points),
+      badges: badgeBoard(db, owner.id).filter((b) => b.state === 'earned'), readOnly: true, theme: city,
+      cities, cityHref: (c) => `/u/${handle}?city=${c.key}${req.query.preview === '1' ? '&preview=1' : ''}`,
     }));
   });
 }

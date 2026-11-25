@@ -1,3 +1,4 @@
+import { cityPath, parkPath } from '../urls.js';
 import { html } from '../html.js';
 import { categoryLabel } from '../../domain/categories.js';
 import { formatMiles, travelTime } from '../../domain/geo.js';
@@ -51,7 +52,7 @@ export function postcard(p, i, { theme, stamped, stampDates, near, selected, ext
   </div>
   <div class="pc-body">
     ${area ? html`<p class="pc-area">${area.name}</p>` : ''}
-    <h2><a href="/parks/${p.slug}">${p.name}</a></h2>
+    <h2><a href="${parkPath(p)}">${p.name}</a></h2>
     ${stamped ? (isStamped
       ? html`<p class="stamp-badge"><span aria-hidden="true">✓ </span>Stamped</p>`
       : html`<p class="stamp-badge unstamped">Not visited yet</p>`) : ''}
@@ -67,10 +68,11 @@ export function postcard(p, i, { theme, stamped, stampDates, near, selected, ext
 export function parksPage({ parks, total, q, selected, categories, near, unvisited = false, stamped = null, stampDates = null,
   signedIn = false, theme = { motifs: [], areas: [] }, extras = new Map() }) {
   const filtered = q || selected.length || unvisited;
+  const listPath = theme.key ? cityPath(theme, '/parks') : '/parks';
   const countText = filtered ? `${parks.length} of ${total} parks match` : `${total} parks`;
   // Map data: only what the map needs, no private fields.
   const mapData = parks.filter((p) => p.lat != null).map((p) => ({
-    slug: p.slug, name: p.name, lat: p.lat, lng: p.lng, stamped: Boolean(stamped?.has(p.id)),
+    slug: p.slug, url: parkPath(p), name: p.name, lat: p.lat, lng: p.lng, stamped: Boolean(stamped?.has(p.id)),
     area: areaForPark(theme, p)?.name || '', travel: near && p.distance_m != null ? travelTime(p.distance_m) : '',
   }));
   return {
@@ -83,15 +85,15 @@ export function parksPage({ parks, total, q, selected, categories, near, unvisit
 <header class="explore-head">
   <div class="page-head">
     <div>
-      <h1>St. Pete parks</h1>
+      <h1>${theme.copy?.short || 'All'} parks</h1>
       <p class="explore-sub">${total} green spaces, one passport<span class="squiggle" aria-hidden="true"><svg viewBox="0 0 120 10" preserveAspectRatio="none"><path d="M2 6c10-5 18 4 28 0s18-5 28 0 18 4 28 0 18-5 32 0" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span></p>
     </div>
     ${stamped ? html`<p class="pill pill-stamped">${stamped.size} of ${total} stamped</p>` : ''}
   </div>
-  <form class="park-search explore-bar" method="get" action="/parks" role="search">
+  <form class="park-search explore-bar" method="get" action="${listPath}" role="search">
     <div class="field search-field">
       <label for="q">Search by park name</label>
-      <span class="search-input">${ICONS.search}<input id="q" name="q" type="search" value="${q}" maxlength="100" autocomplete="off" placeholder="Crescent Lake, Vinoy, North Shore…"></span>
+      <span class="search-input">${ICONS.search}<input id="q" name="q" type="search" value="${q}" maxlength="100" autocomplete="off" placeholder="${theme.copy?.search_examples || 'Park name…'}"></span>
     </div>
     <div class="toolbar">
       <button type="button" class="btn btn-near js-only" id="near-me">${ICONS.pin}Sort by nearest</button>
@@ -107,7 +109,7 @@ export function parksPage({ parks, total, q, selected, categories, near, unvisit
       ${signedIn ? html`<label class="check chip-check toggle-chip"><input type="checkbox" name="unvisited" value="1"${unvisited ? html` checked` : ''}> Not visited yet</label>` : ''}
       ${near ? html`<input type="hidden" name="lat" value="${near.lat}"><input type="hidden" name="lng" value="${near.lng}">` : ''}
       <button type="submit" class="btn btn-primary">Search</button>
-      ${filtered || near ? html`<a class="btn btn-quiet" href="/parks">Clear</a>` : ''}
+      ${filtered || near ? html`<a class="btn btn-quiet" href="${listPath}">Clear</a>` : ''}
     </div>
     <p id="near-me-status" class="notice" role="status" aria-live="polite"></p>
   </form>

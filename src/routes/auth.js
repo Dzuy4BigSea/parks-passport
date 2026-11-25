@@ -63,7 +63,7 @@ export default async function authRoutes(app) {
     if (req.user) return reply.redirect('/passport');
     const invite = inviteForToken(db, req.params.token, { now: now() });
     return reply.page(signupPage({
-      csrf: req.csrfToken(), invite,
+      csrf: req.csrfToken(), invite, cityName: req.city.copy.short,
       values: invite ? { email: invite.email, display_name: invite.name } : {},
       inviteNotice: invite ? null : 'This invite link has expired or was already used. You can still create a passport here.',
     }));

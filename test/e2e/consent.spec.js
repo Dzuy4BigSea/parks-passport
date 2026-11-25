@@ -14,7 +14,7 @@ test.beforeEach(async ({ page }) => {
 const gaCookie = async (context) => (await context.cookies()).find((c) => c.name.startsWith('_ga'));
 
 test('banner on first visit; no _ga cookie until Accept, then one; choice remembered', async ({ page, context }) => {
-  await page.goto('/parks');
+  await page.goto('/st-pete/parks');
   const banner = page.getByRole('region', { name: 'Cookies' });
   await expect(banner).toBeVisible();
   await expect(banner.getByRole('button', { name: 'Accept' })).toBeVisible();
@@ -36,10 +36,10 @@ test('banner on first visit; no _ga cookie until Accept, then one; choice rememb
 });
 
 test('Reject keeps _ga away, even after navigating', async ({ page, context }) => {
-  await page.goto('/parks');
+  await page.goto('/st-pete/parks');
   await page.getByRole('button', { name: 'Reject' }).click();
   await expect(page.getByRole('region', { name: 'Cookies' })).toHaveCount(0);
-  await page.goto('/parks/abercrombie-park');
+  await page.goto('/st-pete/parks/abercrombie-park');
   await expect.poll(() => page.evaluate(() => window.__fakeGtmLoaded)).toBe(true);
   expect(await gaCookie(context)).toBeUndefined();
 });
@@ -47,7 +47,7 @@ test('Reject keeps _ga away, even after navigating', async ({ page, context }) =
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
   test('the banner forms work and return to the page', async ({ page, context }) => {
-    await page.goto('/parks/abercrombie-park');
+    await page.goto('/st-pete/parks/abercrombie-park');
     await page.getByRole('button', { name: 'Reject' }).click();
     await expect(page).toHaveURL(/\/parks\/abercrombie-park$/);
     await expect(page.getByRole('region', { name: 'Cookies' })).toHaveCount(0);
@@ -86,14 +86,14 @@ test('dataLayer gets the spec events with exact keys and no personal data', asyn
     await page.waitForFunction(() => Array.isArray(window.dataLayer));
     return page.evaluate(() => window.dataLayer.filter((e) => e && e.event && !e.event.startsWith('gtm.')));
   };
-  await page.goto('/parks?q=lake&cat=dog-park');
+  await page.goto('/st-pete/parks?q=lake&cat=dog-park');
   expect(await events()).toEqual([{ event: 'park_search', has_query: true, filter_count: 1 }]);
   await page.getByRole('button', { name: 'Reject' }).click();
 
   await signUp(page, { name: 'Dee Tester', email: `dee-${Date.now()}@example.com` });
   expect(await events()).toEqual([{ event: 'sign_up', method: 'password' }]);
 
-  await page.goto('/parks/woodlawn-park');
+  await page.goto('/st-pete/parks/woodlawn-park');
   expect(await events()).toEqual([{ event: 'park_view', park_slug: 'woodlawn-park' }]);
   await page.locator('#honor summary').click();
   await page.getByRole('button', { name: 'Stamp it' }).click();

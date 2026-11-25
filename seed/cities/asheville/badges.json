@@ -1,0 +1,9 @@
+[
+  { "slug": "half-of-asheville", "name": "Half of Asheville", "art": "⛰️", "kind": "known",
+    "description": "Stamped 34 different Asheville parks.", "rule_type": "parks_count", "rule_params": { "n": 34 } },
+  { "slug": "every-asheville-park", "name": "Every Asheville Park", "art": "🏆", "kind": "known",
+    "description": "Stamped every park in Asheville.", "rule_type": "all_parks", "rule_params": {} },
+  { "slug": "river-rat", "name": "River Rat", "art": "🛶", "kind": "hidden",
+    "hint": "Follow the French Broad.",
+    "description": "Stamped 3 Asheville parks with river access.", "rule_type": "category_count", "rule_params": { "category": "water-access", "n": 3 } }
+]

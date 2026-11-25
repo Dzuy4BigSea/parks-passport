@@ -51,7 +51,7 @@ test('canSee: owner always; private owner only; pals for pals; public for anyone
 test('permissions matrix over HTTP: passport, visits and badges for owner / pal / stranger / signed-out', async () => {
   const { app, people, befriend, setVis } = await world();
   await befriend('ana', 'ben'); // ana and ben are pals; cat is a stranger
-  await people.ana.c.post('/parks/a-park/stamp', {}); // ana: a visit and the First Stamp badge
+  await people.ana.c.post('/st-pete/parks/a-park/stamp', {}); // ana: a visit and the First Stamp badge
   const viewers = { owner: people.ana.c, pal: people.ben.c, stranger: people.cat.c, anon: client(app) };
   const expected = {
     private: { owner: true, pal: false, stranger: false, anon: false },
@@ -69,7 +69,7 @@ test('permissions matrix over HTTP: passport, visits and badges for owner / pal 
       assert.equal(res.body.includes('First Stamp'), allowed, `badge ${visibility}/${who}`);
       if (who === 'pal') {
         const feed = (await c.get('/pals')).body;
-        assert.equal(feed.includes('stamped <a href="/parks/a-park">'), visibility !== 'private', `feed visit ${visibility}`);
+        assert.equal(feed.includes('stamped <a href="/st-pete/parks/a-park">'), visibility !== 'private', `feed visit ${visibility}`);
         assert.equal(feed.includes('First Stamp'), visibility !== 'private', `feed badge ${visibility}`);
       }
     }
@@ -112,9 +112,9 @@ test('removing a pal unlinks both and revokes Better Together', async () => {
   await befriend('ana', 'ben');
   await setVis('ana', 'pals');
   await setVis('ben', 'pals');
-  await people.ana.c.post('/parks/a-park/stamp', {});
+  await people.ana.c.post('/st-pete/parks/a-park/stamp', {});
   now.advanceMinutes(30);
-  await people.ben.c.post('/parks/a-park/stamp', {});
+  await people.ben.c.post('/st-pete/parks/a-park/stamp', {});
   const together = (who) => db.prepare(`SELECT COUNT(*) FROM user_badges ub JOIN badges b ON b.id = ub.badge_id
     WHERE b.slug = 'together' AND ub.user_id = ?`).pluck().get(people[who].id);
   // Whoever stamped first also gets it when the pal stamps later.
@@ -130,8 +130,8 @@ test('accepting an invite after stamping together awards Better Together', async
   const { db, people, befriend, setVis } = await world();
   await setVis('ana', 'pals');
   await setVis('ben', 'public');
-  await people.ana.c.post('/parks/b-park/stamp', {});
-  await people.ben.c.post('/parks/b-park/stamp', {});
+  await people.ana.c.post('/st-pete/parks/b-park/stamp', {});
+  await people.ben.c.post('/st-pete/parks/b-park/stamp', {});
   await befriend('ana', 'ben');
   const n = db.prepare("SELECT COUNT(*) FROM user_badges ub JOIN badges b ON b.id = ub.badge_id WHERE b.slug = 'together'").pluck().get();
   assert.equal(n, 2);
@@ -141,9 +141,9 @@ test('leaderboard: me and visible pals by parks, then points; private pals are l
   const { people, befriend, setVis } = await world();
   await befriend('ana', 'ben');
   await befriend('ana', 'cat');
-  await people.ben.c.post('/parks/a-park/stamp', {});
-  await people.ben.c.post('/parks/b-park/stamp', {});
-  await people.cat.c.post('/parks/a-park/stamp', { visited_on: '2026-06-01' });
+  await people.ben.c.post('/st-pete/parks/a-park/stamp', {});
+  await people.ben.c.post('/st-pete/parks/b-park/stamp', {});
+  await people.cat.c.post('/st-pete/parks/a-park/stamp', { visited_on: '2026-06-01' });
   await setVis('ben', 'pals');
   // cat stays private
   const body = (await people.ana.c.get('/pals')).body;
@@ -177,18 +177,18 @@ test('feed pages hold 20 items, newest first', async () => {
 test('share nudge after a stamp while private; 3 dismissals stop it; sharing sets pals', async () => {
   const { db, people } = await world();
   const stampPage = async (slug, date) => {
-    const res = await people.ana.c.post(`/parks/${slug}/stamp`, date ? { visited_on: date } : {});
+    const res = await people.ana.c.post(`/st-pete/parks/${slug}/stamp`, date ? { visited_on: date } : {});
     return (await people.ana.c.get(res.headers.location)).body;
   };
   const dates = ['2026-06-01', '2026-06-02', '2026-06-03', '2026-06-04'];
   for (let i = 0; i < 3; i++) {
     const body = await stampPage('a-park', dates[i]);
     assert.match(body, /Share your passport with Park Pals\?/);
-    await people.ana.c.post('/account/nudge/dismiss', { back: '/parks/a-park' });
+    await people.ana.c.post('/account/nudge/dismiss', { back: '/st-pete/parks/a-park' });
   }
   assert.ok(!(await stampPage('a-park', dates[3])).includes('Share your passport with Park Pals?'));
-  const res = await people.ana.c.post('/account/visibility', { default_visibility: 'pals', back: '/parks/a-park' });
-  assert.equal(res.headers.location, '/parks/a-park');
+  const res = await people.ana.c.post('/account/visibility', { default_visibility: 'pals', back: '/st-pete/parks/a-park' });
+  assert.equal(res.headers.location, '/st-pete/parks/a-park');
   assert.equal(db.prepare('SELECT default_visibility FROM users WHERE id = ?').pluck().get(people.ana.id), 'pals');
   assert.equal((await people.ana.c.post('/account/visibility', { default_visibility: 'everyone' })).statusCode, 422);
 });
@@ -208,16 +208,16 @@ test('new accounts are private; deleting an account removes its pal links and it
 test("Better Together never reveals a private pal's visits", async () => {
   const { db, people, befriend, setVis } = await world();
   await befriend('ana', 'ben'); // ana stays private
-  await people.ana.c.post('/parks/b-park/stamp', { visited_on: '2026-05-10' });
+  await people.ana.c.post('/st-pete/parks/b-park/stamp', { visited_on: '2026-05-10' });
   const benHasIt = () => db.prepare(`SELECT COUNT(*) FROM user_badges ub JOIN badges b ON b.id = ub.badge_id
     WHERE b.slug = 'together' AND ub.user_id = ?`).pluck().get(people.ben.id);
   // Ben probes Ana's real park and day: no badge, because Ana's passport is private.
-  const res = await people.ben.c.post('/parks/b-park/stamp', { visited_on: '2026-05-10' });
+  const res = await people.ben.c.post('/st-pete/parks/b-park/stamp', { visited_on: '2026-05-10' });
   assert.ok(!(await people.ben.c.get(res.headers.location)).body.includes('Better Together'));
   assert.equal(benHasIt(), 0);
   // Once Ana shares with pals, the same shared day earns it on the next check.
   await setVis('ana', 'pals');
-  await people.ben.c.post('/parks/a-park/stamp', {});
+  await people.ben.c.post('/st-pete/parks/a-park/stamp', {});
   assert.equal(benHasIt(), 1);
 });
 
@@ -226,8 +226,8 @@ test('deleting the shared visit revokes Better Together for the pal too', async 
   await befriend('ana', 'ben');
   await setVis('ana', 'pals');
   await setVis('ben', 'pals');
-  await people.ana.c.post('/parks/a-park/stamp', {});
-  await people.ben.c.post('/parks/a-park/stamp', {});
+  await people.ana.c.post('/st-pete/parks/a-park/stamp', {});
+  await people.ben.c.post('/st-pete/parks/a-park/stamp', {});
   const count = () => db.prepare("SELECT COUNT(*) FROM user_badges ub JOIN badges b ON b.id = ub.badge_id WHERE b.slug = 'together'").pluck().get();
   assert.equal(count(), 2);
   const benVisit = db.prepare('SELECT id FROM visits WHERE user_id = ?').pluck().get(people.ben.id);

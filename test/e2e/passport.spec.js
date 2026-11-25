@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function honorStamp(page, slug, date) {
-  await page.goto(`/parks/${slug}`);
+  await page.goto(`/st-pete/parks/${slug}`);
   await page.locator('#honor summary').click();
   if (date) await page.getByLabel('Date of your visit').fill(date);
   await page.getByRole('button', { name: 'Stamp it' }).click();
@@ -38,7 +38,7 @@ test('stamping announces the badge once and fills in the passport', async ({ pag
   // Backdated, so it has no real time of day and can never earn a time_of_day badge (Early Bird,
   // Golden Hour), whenever the test runs. A Monday, so it doesn't pair with the Saturday above.
   await honorStamp(page, 'crescent-lake-park', '2026-03-16');
-  await page.goto('/passport');
+  await page.goto('/st-pete/passport');
   await expect(page.locator('.passport-count')).toHaveText('2 of 102 parks stamped');
   await expect(page.locator('.points')).toHaveText('20 points');
 
@@ -79,7 +79,7 @@ test('stamping announces the badge once and fills in the passport', async ({ pag
 test('deleting from history revokes a badge that is no longer met', async ({ page }) => {
   await signUp(page);
   await honorStamp(page, 'abercrombie-park');
-  await page.goto('/passport');
+  await page.goto('/st-pete/passport');
   await expect(page.locator('.badge.earned', { hasText: 'First Stamp' })).toHaveCount(1);
   await page.getByRole('button', { name: /Delete visit to Abercrombie Park/ }).click();
   await expect(page).toHaveURL(/\/passport$/);
@@ -93,7 +93,7 @@ for (const width of [375, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await signUp(page);
     await honorStamp(page, 'abercrombie-park');
-    await page.goto('/passport');
+    await page.goto('/st-pete/passport');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overflow).toBe(false);
     await page.screenshot({ path: info.outputPath(`passport-${width}.png`), fullPage: true });
@@ -108,12 +108,12 @@ test('park names are shown as text in map tooltips, never run as HTML', async ({
   db.prepare("UPDATE parks SET name = ? WHERE slug = 'allendale-park'").run(evil);
   try {
     await signUp(page);
-    await page.goto('/passport');
+    await page.goto('/st-pete/passport');
     const marker = page.getByTitle(`${evil}: not yet`, { exact: true });
     await marker.hover();
     await expect(page.locator('.leaflet-tooltip')).toHaveText(`${evil}: not yet`);
     expect(await page.evaluate(() => window.__xss)).toBeUndefined();
-    await page.goto('/parks/allendale-park');
+    await page.goto('/st-pete/parks/allendale-park');
     await page.locator('.leaflet-interactive').hover();
     await expect(page.locator('.leaflet-tooltip')).toHaveText(evil);
     expect(await page.evaluate(() => window.__xss)).toBeUndefined();

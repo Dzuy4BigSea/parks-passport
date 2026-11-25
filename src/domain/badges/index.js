@@ -1,3 +1,4 @@
+import { DEFAULT_TIME_ZONE } from '../time.js';
 import { RULES, badgeEdition } from './rules.js';
 
 const parseParams = (b) => {
@@ -8,8 +9,12 @@ const parseParams = (b) => {
 export function buildContext(db, userId, { trigger = null, random = Math.random, palSameDay = null } = {}) {
   // All of the user's visits, including to parks an admin later deactivated, so deactivating a
   // park never takes badges away. Only all_parks is limited to active parks (activeParkIds).
-  const visits = db.prepare(`SELECT id, park_id, visited_on, visited_at, created_at, method
-    FROM visits WHERE user_id = ? ORDER BY visited_on, id`).all(userId);
+  // Each visit carries its park's city and that city's time zone (time_of_day reads the local clock there).
+  const visits = db.prepare(`SELECT v.id, v.park_id, v.visited_on, v.visited_at, v.created_at, v.method,
+      p.city_id, COALESCE(c.time_zone, '${DEFAULT_TIME_ZONE}') AS time_zone
+    FROM visits v JOIN parks p ON p.id = v.park_id LEFT JOIN city_themes c ON c.id = p.city_id
+    WHERE v.user_id = ? ORDER BY v.visited_on, v.id`).all(userId);
+  const parkCity = new Map(db.prepare('SELECT id, city_id FROM parks').raw().all());
   const parkCategories = new Map();
   for (const r of db.prepare('SELECT park_id, category FROM park_categories').all()) {
     if (!parkCategories.has(r.park_id)) parkCategories.set(r.park_id, new Set());
@@ -20,7 +25,7 @@ export function buildContext(db, userId, { trigger = null, random = Math.random,
     FROM activity_logs l JOIN activities a ON a.id = l.activity_id JOIN visits v ON v.id = l.visit_id
     WHERE l.user_id = ? ORDER BY l.logged_on, l.id`).all(userId);
   return {
-    visits, parkCategories, activeParkIds, activityLogs, trigger, random,
+    visits, parkCategories, activeParkIds, parkCity, activityLogs, trigger, random,
     palSameDay: palSameDay ?? hasPalSameDay(db, userId),
   };
 }
@@ -35,10 +40,22 @@ const hasPalSameDay = (db, userId) => Boolean(db.prepare(`SELECT 1 FROM visits m
     (SELECT user_b FROM pal_links WHERE user_a = ? UNION SELECT user_a FROM pal_links WHERE user_b = ?)
   LIMIT 1`).get(userId, userId, userId));
 
+// A city badge (badge.city_id set) sees only that city's visits, parks and activity logs, so
+// "Stamp 50 parks" or "Every park" mean parks in that city. Other badges count every city.
+function scopeToCity(ctx, cityId) {
+  const inCity = (parkId) => ctx.parkCity.get(parkId) === cityId;
+  return {
+    ...ctx,
+    visits: ctx.visits.filter((v) => inCity(v.park_id)),
+    activeParkIds: new Set([...ctx.activeParkIds].filter(inCity)),
+    activityLogs: ctx.activityLogs.filter((l) => inCity(l.park_id)),
+  };
+}
+
 export function evaluateRule(badge, ctx) {
   const rule = RULES[badge.rule_type];
   if (!rule) return { earned: false };
-  return rule.evaluate(parseParams(badge), ctx);
+  return rule.evaluate(parseParams(badge), badge.city_id && ctx.parkCity ? scopeToCity(ctx, badge.city_id) : ctx);
 }
 
 /**
@@ -89,10 +106,13 @@ export function revokeUnmetBadges(db, userId) {
  * The user's badge board: earned (with date), then known (with progress), hidden and lucky
  * (no criteria shown). Disabled badges are shown only if already earned.
  */
-export function badgeBoard(db, userId) {
+export function badgeBoard(db, userId, { cityId = null } = {}) {
+  // City badges show on their own city's board (and anywhere once earned). Without a city: every badge.
   const rows = db.prepare(`SELECT b.*, ub.awarded_at FROM badges b
     LEFT JOIN user_badges ub ON ub.badge_id = b.id AND ub.user_id = ?
-    WHERE b.enabled = 1 OR ub.awarded_at IS NOT NULL ORDER BY b.sort, b.id`).all(userId);
+    WHERE (b.enabled = 1 OR ub.awarded_at IS NOT NULL)
+      AND (ub.awarded_at IS NOT NULL OR b.city_id IS NULL OR ? IS NULL OR b.city_id = ?)
+    ORDER BY b.sort, b.id`).all(userId, cityId, cityId);
   const ctx = buildContext(db, userId, { random: () => 1 });
   // Paws and Kids badges show only to members who turned that edition on (or already earned them).
   const user = db.prepare('SELECT paws, kids FROM users WHERE id = ?').get(userId) || {};
@@ -117,15 +137,17 @@ export function takeUnseenBadges(db, userId, { now = new Date() } = {}) {
 }
 
 // Adds badges from a seed list whose slugs aren't in the table yet (later seed files, e.g.
-// seed/activity-badges.json, reach databases that were seeded before they existed).
-export function addMissingBadges(db, list, { now = new Date() } = {}) {
-  const ins = db.prepare(`INSERT OR IGNORE INTO badges (slug, name, description, hint, art, rule_type, rule_params, kind, sort, created_at)
-    VALUES (@slug, @name, @description, @hint, @art, @rule_type, @rule_params, @kind, @sort, @created_at)`);
+// seed/activity-badges.json, reach databases that were seeded before they existed). A city pack's
+// badges.json passes its cityId.
+export function addMissingBadges(db, list, { now = new Date(), cityId = null } = {}) {
+  const ins = db.prepare(`INSERT OR IGNORE INTO badges (slug, name, description, hint, art, rule_type, rule_params, kind, sort, created_at, city_id)
+    VALUES (@slug, @name, @description, @hint, @art, @rule_type, @rule_params, @kind, @sort, @created_at, @city_id)`);
   let sort = db.prepare('SELECT COALESCE(MAX(sort), 0) FROM badges').pluck().get();
   let added = 0;
   db.transaction(() => list.forEach((b) => {
     added += ins.run({
       description: '', hint: '', art: '🏅', ...b, rule_params: JSON.stringify(b.rule_params || {}), sort: sort + 1, created_at: now.toISOString(),
+      city_id: cityId,
     }).changes;
     sort += 1;
   }))();

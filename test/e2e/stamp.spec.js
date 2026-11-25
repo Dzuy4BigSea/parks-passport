@@ -11,9 +11,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('signed out: the park page asks you to log in to stamp', async ({ page }) => {
-  await page.goto('/parks/abercrombie-park');
+  await page.goto('/st-pete/parks/abercrombie-park');
   await expect(page.getByRole('link', { name: 'Log in to stamp this park' }))
-    .toHaveAttribute('href', '/login?next=%2Fparks%2Fabercrombie-park');
+    .toHaveAttribute('href', '/login?next=%2Fst-pete%2Fparks%2Fabercrombie-park');
 });
 
 test.describe('at the park', () => {
@@ -21,7 +21,7 @@ test.describe('at the park', () => {
 
   test('GPS check-in stamps the park, shows points, and blocks a second stamp today', async ({ page }) => {
     await signUp(page);
-    await page.goto('/parks/abercrombie-park');
+    await page.goto('/st-pete/parks/abercrombie-park');
     await expectNoAxeViolations(page);
     await page.getByRole('button', { name: 'Check in here' }).click();
     await expect(page).toHaveURL(/\/parks\/abercrombie-park\?stamped=\d+$/);
@@ -34,7 +34,7 @@ test.describe('at the park', () => {
     await expectNoAxeViolations(page);
 
     // The list marks the park as stamped, and "Not visited yet" hides it.
-    await page.goto('/parks');
+    await page.goto('/st-pete/parks');
     const card = page.locator('.park-card', { hasText: 'Abercrombie Park' });
     await expect(card.locator('.stamp-badge')).toHaveText('✓ Stamped');
     await page.getByLabel('Not visited yet').check();
@@ -44,8 +44,8 @@ test.describe('at the park', () => {
     await expect(page.locator('.result-count')).toHaveText('101 of 102 parks match');
 
     // A second stamp the same day (honor form posted directly) is refused.
-    await page.goto('/parks/abercrombie-park');
-    const res = await page.request.post('/parks/abercrombie-park/stamp', {
+    await page.goto('/st-pete/parks/abercrombie-park');
+    const res = await page.request.post('/st-pete/parks/abercrombie-park/stamp', {
       form: { _csrf: (await page.context().cookies()).find((c) => c.name === 'pp_csrf').value, visited_on: '' },
     });
     expect(res.status()).toBe(422);
@@ -58,7 +58,7 @@ test.describe('away from the park', () => {
 
   test('shows the distance and offers "Stamp anyway (honor system)"', async ({ page }) => {
     await signUp(page);
-    await page.goto('/parks/abercrombie-park');
+    await page.goto('/st-pete/parks/abercrombie-park');
     await page.getByRole('button', { name: 'Check in here' }).click();
     await expect(page.getByRole('alert')).toContainText(/You're \d+\.\d mi from this park/);
     await page.getByRole('button', { name: 'Stamp anyway (honor system)' }).click();
@@ -73,7 +73,7 @@ test.describe('location denied', () => {
   test('falls back to the honor system; backdating works, future dates are refused', async ({ page, context }) => {
     await context.clearPermissions();
     await signUp(page);
-    await page.goto('/parks/abercrombie-park');
+    await page.goto('/st-pete/parks/abercrombie-park');
     await page.getByRole('button', { name: 'Check in here' }).click();
     await expect(page.locator('#checkin-status')).toContainText("couldn't get your location");
     await expect(page.locator('#honor')).toHaveAttribute('open', '');
@@ -97,7 +97,7 @@ test.describe('deleting a visit', () => {
 
   test('removes it from your visits', async ({ page }) => {
     await signUp(page);
-    await page.goto('/parks/abercrombie-park');
+    await page.goto('/st-pete/parks/abercrombie-park');
     await page.getByRole('button', { name: 'Check in here' }).click();
     await expect(page.locator('.my-visits li')).toHaveCount(1);
     await page.getByRole('button', { name: /Delete visit on/ }).click();
@@ -112,7 +112,7 @@ test.describe('on a phone', () => {
 
   test('the stamp panel fits and the result screenshot is taken', async ({ page }, info) => {
     await signUp(page);
-    await page.goto('/parks/abercrombie-park');
+    await page.goto('/st-pete/parks/abercrombie-park');
     await page.getByRole('button', { name: 'Check in here' }).click();
     await expect(page.locator('.stamp-result')).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);

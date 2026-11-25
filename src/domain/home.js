@@ -10,22 +10,24 @@ import { palsFeed } from './pals.js';
 import { collections } from './city.js';
 import { localDate } from './time.js';
 
-// Everything the signed-in home page shows, for one member (the route adds Gary's tip). Only their own data, plus what
-// their Park Pals share. `near` is a position the member just shared (never stored).
+// Everything the signed-in home page shows, for one member in one city (theme; the route adds
+// Gary's tip). Only their own data, plus what their Park Pals share. `near` is a position the
+// member just shared (never stored). Points, level, streak and recent stamps count every city.
 export function homeData(db, user, theme, { now = new Date(), near = null } = {}) {
   const points = totalPoints(db, user.id);
-  const { parks, history } = passportData(db, user.id);
+  const { parks, history } = passportData(db, user.id, { cityId: theme.id });
   const stampedSet = new Set(parks.filter((p) => p.first_visit).map((p) => p.id));
-  const today = localDate(now);
+  const today = localDate(now, theme.time_zone);
   const dates = visitDates(db, user.id);
   const streak = weeklyStreak(dates, today);
 
   // Where "closest" is measured from: the member's shared position, else the park of their latest
   // stamp, else the city's first area (downtown).
-  const lastStamp = history.length ? parks.find((p) => p.slug === history[0].park_slug && p.lat != null) : null;
-  const anchor = near || (lastStamp ? { lat: lastStamp.lat, lng: lastStamp.lng } : theme.areas[0] || null);
+  const lastHere = history.find((v) => v.city_key === theme.key);
+  const lastStamp = lastHere ? parks.find((p) => p.slug === lastHere.park_slug && p.lat != null) : null;
+  const anchor = near || (lastStamp ? { lat: lastStamp.lat, lng: lastStamp.lng } : theme.areas[0] || theme.center || null);
   const nearby = anchor
-    ? listParks(db, { near: anchor }).filter((p) => !stampedSet.has(p.id) && p.distance_m != null).slice(0, 8)
+    ? listParks(db, { cityId: theme.id, near: anchor }).filter((p) => !stampedSet.has(p.id) && p.distance_m != null).slice(0, 8)
     : [];
   const nearestSet = new Set(nearby.slice(0, 3).map((p) => p.slug));
 
@@ -33,9 +35,9 @@ export function homeData(db, user, theme, { now = new Date(), near = null } = {}
   const groups = collections(theme, parks).filter((g) => g.slug !== 'other' && g.stamped < g.total);
   const almost = groups.sort((a, b) => (Boolean(b.stamped) - Boolean(a.stamped)) || (a.total - a.stamped) - (b.total - b.stamped)).slice(0, 2);
 
-  const board = badgeBoard(db, user.id);
+  const board = badgeBoard(db, user.id, { cityId: theme.id });
   const nextBadge = closestBadge(board);
-  const recent = history.slice(0, 4).map((v) => ({ slug: v.park_slug, name: v.park_name, visited_on: v.visited_on }));
+  const recent = history.slice(0, 4).map((v) => ({ slug: v.park_slug, city_key: v.city_key, name: v.park_name, visited_on: v.visited_on }));
   const stampedToday = history.find((v) => v.visited_on === today);
   const day = Math.floor(Date.parse(`${today}T00:00:00Z`) / 86400000);
   const lore = theme.motifs.length ? theme.motifs[day % theme.motifs.length] : null;
@@ -54,8 +56,8 @@ export function homeData(db, user, theme, { now = new Date(), near = null } = {}
     // What Gary needs to pick his tip (views/gary.js).
     tipInput: {
       stamped: stampedSet.size,
-      stampedToday: stampedToday ? { slug: stampedToday.park_slug, name: stampedToday.park_name } : null,
-      streak, nextBadge, nearest, almost: almost[0] || null, lore,
+      stampedToday: stampedToday ? { slug: stampedToday.park_slug, city_key: stampedToday.city_key, name: stampedToday.park_name } : null,
+      streak, nextBadge, nearest, almost: almost[0] || null, lore, cityKey: theme.key,
     },
   };
 }

@@ -1,12 +1,13 @@
 import path from 'node:path';
 import { loadConfig } from './config.js';
 import { openDb } from './db/index.js';
-import { seedParksIfEmpty, seedBadges, seedCityTheme, seedActivityData } from './db/seed.js';
+import { seedBadges, seedCities, seedActivityData } from './db/seed.js';
 import { createMailer } from './lib/mail.js';
 import { createSecretBox } from './lib/secret-box.js';
 import { emailSettings, sendgridKey } from './domain/settings.js';
 import { buildApp } from './app.js';
 import { createThemeGenerator } from './lib/theme-ai.js';
+import { createGeoIp } from './lib/geoip.js';
 
 const config = loadConfig();
 const db = openDb(path.join(config.dataDir, 'app.db'));
@@ -23,8 +24,12 @@ const mailer = createMailer({
     };
   },
 });
+const geoip = await createGeoIp({ file: config.geoipDb, log: { warn: (obj, msg) => console.warn(msg, obj) } }).catch((err) => {
+  console.error(`GEOIP_DB could not be opened (${err.message}); the nearest-city suggestion is off`);
+  return null;
+});
 const app = buildApp({
-  db, mailer, secretBox, logger: config.nodeEnv !== 'test', themeAi: createThemeGenerator({ apiKey: config.anthropicApiKey }),
+  db, mailer, secretBox, geoip, logger: config.nodeEnv !== 'test', themeAi: createThemeGenerator({ apiKey: config.anthropicApiKey }),
   config: {
     baseUrl: config.baseUrl, secureCookies: config.secureCookies, uploadsDir: path.join(config.dataDir, 'uploads'),
     mailTransport: config.mail.transport, mailFrom: config.mail.from, sendgridEnvKey: config.mail.sendgridApiKey,
@@ -32,14 +37,17 @@ const app = buildApp({
   },
 });
 
-const seeded = seedParksIfEmpty(db);
-if (seeded) app.log.info({ ...seeded, invalid: seeded.invalid.length }, 'seeded parks from seed/parks.csv');
+// Badges for every city first: seedBadges only runs on an empty badges table.
 const badgeCount = seedBadges(db);
 if (badgeCount) app.log.info({ badges: badgeCount }, 'seeded badges from seed/badges.json');
 const activityBadges = seedActivityData(db);
 if (activityBadges) app.log.info({ badges: activityBadges }, 'added activity badges from seed/activity-badges.json');
-const motifCount = seedCityTheme(db);
-if (motifCount) app.log.info({ motifs: motifCount }, 'seeded the city theme from seed/city-st-pete.json');
+for (const c of seedCities(db)) {
+  if (c.motifs || c.parks || c.badges) {
+    app.log.info({ city: c.key, motifs: c.motifs, parks: c.parks?.added ?? 0, invalidParks: c.parks?.invalid.length ?? 0, badges: c.badges },
+      `seeded city pack seed/cities/${c.key}`);
+  }
+}
 
 try {
   await app.listen({ port: config.port, host: config.host });

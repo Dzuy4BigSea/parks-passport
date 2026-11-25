@@ -30,7 +30,7 @@ const run = (type, params, c) => RULES[type].evaluate(params, c);
 
 test('every spec rule type exists', () => {
   assert.deepEqual(RULE_TYPES.sort(), ['all_parks', 'category_count', 'lucky', 'pal_same_day', 'parks_count',
-    'same_park_count', 'time_of_day', 'weekend_parks', 'weekly_streak',
+    'same_park_count', 'time_of_day', 'weekend_parks', 'weekly_streak', 'cities_count',
     // Healthy activities (docs/healthy-activities.md)
     'activity_count', 'activity_parks', 'activity_sum', 'weekly_sum', 'weekly_days', 'pillar_variety', 'activity_categories'].sort());
 });
@@ -183,7 +183,7 @@ test('a stamp announces new badges and a level-up once, on the next page', async
   // 60 points for the level-up: pretend earlier activity.
   const uid = db.prepare('SELECT id FROM users').pluck().get();
   db.prepare("INSERT INTO point_events (user_id, source_type, source_id, points, reason, created_at) VALUES (?, 'test', 0, 45, 'test', ?)").run(uid, now().toISOString());
-  const res = await c.post('/parks/a-park/stamp', {});
+  const res = await c.post('/st-pete/parks/a-park/stamp', {});
   const page = await c.get(res.headers.location);
   assert.match(page.body, /role="status"[\s\S]*New badge: First Stamp/);
   assert.match(page.body, /Level up! You're now a Trail Finder\./);

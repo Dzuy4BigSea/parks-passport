@@ -10,10 +10,11 @@ import { collections, motifForPark } from '../../domain/city.js';
 import { motifIcon } from '../motif.js';
 import { ICONS } from '../icons.js';
 import { nextUpCards, streakText } from '../nextup.js';
+import { cityPath, parkPath } from '../urls.js';
 
 function stampTile(p, theme, i) {
   return html`<li class="stamp${p.first_visit ? ' is-stamped' : ''}" style="--i:${i}">
-      <a href="/parks/${p.slug}">
+      <a href="${parkPath(p)}">
         ${p.first_visit ? html`<span class="seal" aria-hidden="true">${motifIcon(motifForPark(theme, p.slug))}</span>` : ''}
         <span class="stamp-name">${p.name}</span>
         <span class="stamp-date">${p.first_visit ? html`<span aria-hidden="true">✓ </span>Stamped ${shortDate(p.first_visit)}` : 'Not yet'}</span>
@@ -65,12 +66,25 @@ function badgeCard(b) {
 </li>`;
 }
 
-export function passportPage({ user, csrf, parks, history, points, level, badges, readOnly = false, theme = { motifs: [], areas: [] }, next = null, week = null }) {
+// One tab per city: its stamped count. Own passport: /<city>/passport; someone else's: ?city=.
+function cityTabs(cities, theme, href) {
+  if (!cities || cities.length < 2) return '';
+  return html`<nav class="city-tabs" aria-label="Cities in this passport"><ul>
+  ${cities.map(({ city, stamped, total }) => html`<li><a href="${href(city)}"${city.key === theme.key ? html` aria-current="page"` : ''}>
+    <span class="city-tab-name">${city.copy.short}</span> <span class="city-tab-count">${stamped}<span class="visually-hidden"> of </span><span aria-hidden="true">/</span>${total}</span></a></li>`)}
+</ul></nav>`;
+}
+
+export function passportPage({ user, csrf, parks, history, points, level, badges, readOnly = false, theme = { motifs: [], areas: [] }, next = null, week = null,
+  cities = null, cityHref = (city) => cityPath(city, '/passport') }) {
   const stamped = parks.filter((p) => p.first_visit);
   const total = parks.length;
   const mapData = parks.filter((p) => p.lat != null).map((p) => ({
-    slug: p.slug, name: p.name, lat: p.lat, lng: p.lng, stamped: Boolean(p.first_visit),
+    url: parkPath(p), name: p.name, lat: p.lat, lng: p.lng, stamped: Boolean(p.first_visit),
   }));
+  // Visits in more than one city: say which city each history row is in.
+  const manyCities = new Set(history.map((v) => v.city_key)).size > 1;
+  const here = theme.key ? cityPath(theme, '/passport') : '/passport';
   const earned = badges.filter((b) => b.state === 'earned');
   const levelPct = Math.round(level.progress * 100);
 
@@ -97,7 +111,8 @@ export function passportPage({ user, csrf, parks, history, points, level, badges
   </div>
 </header>
 
-${next ? nextUpCards(next) : ''}
+${cityTabs(cities, theme, cityHref)}
+${next ? nextUpCards(next, { city: theme }) : ''}
 ${week && !readOnly ? weekCard({ week, goals: WEEKLY_GOALS }) : ''}
 
 <section aria-labelledby="stamps-h">
@@ -110,7 +125,7 @@ ${week && !readOnly ? weekCard({ week, goals: WEEKLY_GOALS }) : ''}
   <h2 id="map-h">Map</h2>
   <p class="map-legend"><span class="legend-stamped" aria-hidden="true">✓</span> Stamped
     <span class="legend-unstamped" aria-hidden="true">○</span> Not yet</p>
-  <div id="passport-map" class="park-map passport-map" data-parks="${JSON.stringify(mapData)}"></div>
+  <div id="passport-map" class="park-map passport-map" data-parks="${JSON.stringify(mapData)}"${theme.center ? html` data-center="${theme.center.lat},${theme.center.lng}"` : ''}></div>
 </section>
 
 <section aria-labelledby="badges-h" id="badges">
@@ -122,14 +137,14 @@ ${week && !readOnly ? weekCard({ week, goals: WEEKLY_GOALS }) : ''}
   <h2 id="history-h">Visit history</h2>
   ${history.length ? html`<ul class="history">
     ${history.map((v) => html`<li>
-      <span><a href="/parks/${v.park_slug}">${v.park_name}</a><br>
-        <span class="muted">${formatDate(v.visited_on)} · ${METHOD_LABELS[v.method]} · ${v.points} pts</span></span>
+      <span><a href="${parkPath({ city_key: v.city_key, slug: v.park_slug })}">${v.park_name}</a><br>
+        <span class="muted">${manyCities ? `${v.city_name} · ` : ''}${formatDate(v.visited_on)} · ${METHOD_LABELS[v.method]} · ${v.points} pts</span></span>
       ${readOnly ? '' : html`<form method="post" action="/visits/${v.id}/delete">
-        ${csrfField(csrf)}<input type="hidden" name="back" value="/passport">
+        ${csrfField(csrf)}<input type="hidden" name="back" value="${here}">
         <button type="submit" class="btn btn-quiet btn-small" aria-label="Delete visit to ${v.park_name} on ${formatDate(v.visited_on)}">Delete</button>
       </form>`}
     </li>`)}
-  </ul>` : html`<p>${readOnly ? 'No visits yet.' : html`No visits yet. <a href="/parks">Find a park</a> and stamp it.`}</p>`}
+  </ul>` : html`<p>${readOnly ? 'No visits yet.' : html`No visits yet. <a href="${theme.key ? cityPath(theme, '/parks') : '/parks'}">Find a park</a> and stamp it.`}</p>`}
 </section>`,
   };
 }
