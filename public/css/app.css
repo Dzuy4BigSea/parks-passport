@@ -202,6 +202,7 @@ input[type="file"]::file-selector-button {
   font: 700 0.9rem var(--sans); border: 2px solid var(--ink); background: #fff; color: var(--ink);
   border-radius: 999px; padding: 0.45rem 0.9rem; margin-right: 0.75rem; cursor: pointer;
 }
+.camera-btn { justify-self: start; margin-top: 0.35rem; }
 .field { display: grid; gap: 0.3rem; margin-bottom: 0.9rem; }
 .field > * { min-width: 0; }
 .check { display: flex; align-items: center; gap: 0.6rem; font-weight: 500; min-height: 44px; }
@@ -595,6 +596,9 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; 
   .park-main { grid-column: 1; grid-row: 1; }
 }
 .park-map { height: 240px; border-radius: var(--radius); border: 1px solid var(--line); background: #e3ecea; overflow: hidden; }
+/* Leaflet stacks its panes at z-index 400+. Keep those inside the map so Gary, the tab bar
+   and the header stay on top. */
+.leaflet-container { isolation: isolate; }
 @media (min-width: 768px) { .park-map { height: 320px; } }
 
 /* Stamping. */

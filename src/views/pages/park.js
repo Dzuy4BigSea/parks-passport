@@ -80,7 +80,7 @@ function stampPanel({ park, user, csrf, today, myVisits, problem: allProblems })
       </div>
       <div class="field">
         <label for="stamp_photo">Add a photo (optional, +3 points)</label>
-        <input type="file" id="stamp_photo" name="photo" accept="${ACCEPT}">
+        <input type="file" id="stamp_photo" name="photo" accept="${ACCEPT}" data-camera="environment">
       </div>
       <button type="submit" class="btn">${problem?.offerHonor ? 'Stamp anyway (honor system)' : 'Stamp it'}</button>
     </form>
@@ -254,7 +254,7 @@ function photosSection({ park, user, csrf, photos, problem }) {
     <div class="field">
       <label for="photo">Add a photo</label>
       <p class="hint" id="photo-hint">JPEG, PNG or WebP, up to 10 MB. Location data in the file is removed.</p>
-      <input type="file" id="photo" name="photo" accept="${ACCEPT}" required aria-describedby="photo-hint">
+      <input type="file" id="photo" name="photo" accept="${ACCEPT}" required aria-describedby="photo-hint" data-camera="environment">
     </div>
     <div class="field">
       <label for="caption">Caption (optional)</label>
