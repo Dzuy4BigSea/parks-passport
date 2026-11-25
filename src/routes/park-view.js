@@ -22,7 +22,7 @@ export function renderParkPage(app, req, reply, park, { problem = null, stamped 
   // After a stamp: the park's motif on the stamp, and what to go for next.
   const celebrate = stamped && user ? {
     motif: motifForPark(theme, park.slug),
-    next: { nextPark: nextParks(db, user.id)[0] || null, nextBadge: closestBadge(badgeBoard(db, user.id, { cityId: theme.id })) },
+    next: { nextPark: nextParks(db, user.id, { cityId: theme.id })[0] || null, nextBadge: closestBadge(badgeBoard(db, user.id, { cityId: theme.id })) },
   } : null;
   // Healthy activities: what this member can do here, and what they've logged today.
   let activities = null;

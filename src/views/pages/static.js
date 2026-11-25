@@ -272,7 +272,8 @@ These never include your email, name, handle, comments, captions or location.</p
 
 <h2 id="location">Finding your city</h2>
 <p>When you first open the home page, we may suggest the Parks Passport city closest to you. To do that, your IP address is
-looked up in a location database on our own server. It isn't stored, logged or sent to anyone, and we only use the nearest city.</p>
+looked up in a location database on our own server. The lookup doesn't store it or send it to anyone, and we only use the nearest city.
+(Like most web servers, our server's request log records the IP address of each request.)</p>
 
 <h2>Email</h2>
 <p>Emails are sent through SendGrid, which processes your address only to deliver them.</p>

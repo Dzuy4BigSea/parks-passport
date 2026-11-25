@@ -63,7 +63,10 @@ const parseAreas = (json) => {
 const parseBounds = (json) => {
   const b = parseJson(json, {});
   const ok = b && ['minLat', 'maxLat', 'minLng', 'maxLng'].every((k) => Number.isFinite(b[k])) && b.minLat < b.maxLat && b.minLng < b.maxLng;
-  return ok ? { minLat: b.minLat, maxLat: b.maxLat, minLng: b.minLng, maxLng: b.maxLng } : null;
+  if (!ok) return null;
+  // An optional center (e.g. downtown) for maps; otherwise the middle of the box.
+  const c = b.center && Number.isFinite(b.center.lat) && Number.isFinite(b.center.lng) ? { lat: b.center.lat, lng: b.center.lng } : null;
+  return { minLat: b.minLat, maxLat: b.maxLat, minLng: b.minLng, maxLng: b.maxLng, center: c };
 };
 
 export const inBounds = (bounds, lat, lng) => !bounds
@@ -75,7 +78,7 @@ function themeFromRow(db, row) {
     .map((m) => ({ ...m, svg: sanitizeSvg(m.svg) })).filter((m) => m.svg);
   const areas = parseAreas(row.areas);
   const bounds = parseBounds(row.bounds);
-  const center = bounds ? { lat: (bounds.minLat + bounds.maxLat) / 2, lng: (bounds.minLng + bounds.maxLng) / 2 } : areas[0] || null;
+  const center = bounds ? bounds.center || { lat: (bounds.minLat + bounds.maxLat) / 2, lng: (bounds.minLng + bounds.maxLng) / 2 } : areas[0] || null;
   return Object.freeze({
     id: row.id, key: row.key, name: row.name, tagline: row.tagline,
     accent: HEX.test(row.accent) ? row.accent : FALLBACK.accent,

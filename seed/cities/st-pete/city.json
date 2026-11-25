@@ -9,7 +9,11 @@
     "minLat": 27.6,
     "maxLat": 27.93,
     "minLng": -82.8,
-    "maxLng": -82.55
+    "maxLng": -82.55,
+    "center": {
+      "lat": 27.7731,
+      "lng": -82.64
+    }
   },
   "copy": {
     "short": "St. Pete",

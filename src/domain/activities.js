@@ -119,8 +119,8 @@ export const deleteVisitActivityPoints = (db, visitId) => db.prepare(`DELETE FRO
   WHERE source_type = 'activity' AND source_id IN (SELECT id FROM activity_logs WHERE visit_id = ?)`).run(visitId);
 
 /** This week's (Monday to Sunday, local) totals for the passport. */
-export function weekSummary(db, userId, { now = new Date() } = {}) {
-  const today = dayNumber(localDate(now));
+export function weekSummary(db, userId, { now = new Date(), timeZone } = {}) {
+  const today = dayNumber(localDate(now, timeZone)); // the week of the city being viewed
   const monday = mondayOf(today);
   const rows = db.prepare(`SELECT l.logged_on, l.minutes, l.miles, a.pillar FROM activity_logs l
     JOIN activities a ON a.id = l.activity_id WHERE l.user_id = ?`).all(userId)

@@ -11,7 +11,7 @@ import {
 import { saveEmailSettings, saveSendgridKey, clearSendgridKey, sendgridKey } from '../domain/settings.js';
 import {
   activeThemeRow, listMotifs, saveThemeSettings, cleanMotif, addAdminMotif, updateMotif, setMotifStatus, deleteMotif,
-  listCities, cityByKey,
+  listCities, cityByKey, cityById,
 } from '../domain/city.js';
 import { themeJob, startThemeJob } from '../domain/theme-job.js';
 import { testEmail, memberEmail } from '../views/email.js';
@@ -48,12 +48,15 @@ export default async function adminRoutes(app) {
       .send(fs.createReadStream(file));
   });
 
-  // Admin pages for parks, import and the city theme work on one city: the current one (req.city),
-  // switched with the city bar (POST /admin/city/use).
-  const cityBar = (req) => ({ city: req.city, cities: listCities(db), csrf: req.csrfToken(), back: req.url.split('#')[0] });
+  // Admin pages for parks, import and the city theme work on one city: ?city= (every form posts
+  // back the city it showed, so another tab switching cities can't redirect a save), else the
+  // current one (req.city), switched with the city bar (POST /admin/city/use).
+  const pageCity = (req) => cityByKey(db, String(req.query.city || '')) || req.city;
+  const cityBar = (req) => ({ city: pageCity(req), cities: listCities(db), csrf: req.csrfToken(), back: req.url.split('#')[0] });
+  const cityDone = (req, done = '') => `/admin/city?${done ? `done=${done}&` : ''}city=${pageCity(req).key}`;
 
   function cityRoutes(r) {
-    const theme = (req) => activeThemeRow(db, req.city.key);
+    const theme = (req) => activeThemeRow(db, pageCity(req).key);
     r.post('/city/use', async (req, reply) => {
       const city = cityByKey(db, String(req.body.city || ''));
       if (!city) return reply.callNotFound();
@@ -78,12 +81,12 @@ export default async function adminRoutes(app) {
       if (!t) return reply.callNotFound();
       const result = saveThemeSettings(db, t.id, { ...req.body, name: req.body.city_name }, { now: now() });
       if (result.errors) return show(req, reply.code(422), { errors: result.errors, values: result.values });
-      return reply.redirect('/admin/city?done=saved', 303);
+      return reply.redirect(cityDone(req, 'saved'), 303);
     });
     r.post('/city/generate', async (req, reply) => {
-      const job = startThemeJob(db, app.themeAi, { now, log: req.log, cityKey: req.city.key });
+      const job = startThemeJob(db, app.themeAi, { now, log: req.log, cityKey: pageCity(req).key });
       if (job) app.trackJob(job);
-      return reply.redirect(`/admin/city${job ? '?done=started' : ''}`, 303);
+      return reply.redirect(cityDone(req, job ? 'started' : ''), 303);
     });
     r.post('/city/motifs/new', async (req, reply) => {
       const t = theme(req);
@@ -91,7 +94,7 @@ export default async function adminRoutes(app) {
       const { motif, errors } = cleanMotif(req.body);
       if (errors) return show(req, reply.code(422), { motifErrors: errors, motifValues: req.body });
       addAdminMotif(db, t.id, motif, { now: now() });
-      return reply.redirect('/admin/city?done=added', 303);
+      return reply.redirect(cityDone(req, 'added'), 303);
     });
     r.post('/city/motifs/:id', async (req, reply) => {
       const t = theme(req);
@@ -103,7 +106,7 @@ export default async function adminRoutes(app) {
         return show(req, reply.code(422), { editing: { id, errors, values: { name: field('name') ?? '', blurb: field('blurb') ?? '', svg: field('svg') ?? '' } } });
       }
       if (!updateMotif(db, t.id, id, motif)) return reply.callNotFound();
-      return reply.redirect('/admin/city?done=saved', 303);
+      return reply.redirect(cityDone(req, 'saved'), 303);
     });
     for (const [action, fn, done] of [
       ['approve', (t, id) => setMotifStatus(db, t.id, id, 'approved'), 'approved'],
@@ -114,7 +117,7 @@ export default async function adminRoutes(app) {
         const t = theme(req);
         const id = motifId(req);
         if (!t || !id || !fn(t, id)) return reply.callNotFound();
-        return reply.redirect(`/admin/city?done=${done}`, 303);
+        return reply.redirect(cityDone(req, done), 303);
       });
     }
   }
@@ -137,11 +140,11 @@ export default async function adminRoutes(app) {
     // Parks
     r.get('/parks', async (req, reply) => {
       const filter = ['needs_pin', 'inactive'].includes(req.query.filter) ? req.query.filter : '';
-      return reply.page(adminParks({ parks: allParksForAdmin(db, { filter, cityId: req.city.id }), filter, cityBar: cityBar(req) }));
+      return reply.page(adminParks({ parks: allParksForAdmin(db, { filter, cityId: pageCity(req).id }), filter, cityBar: cityBar(req) }));
     });
     r.get('/parks/new', async (req, reply) => reply.page(adminParkForm({ csrf: req.csrfToken(), isNew: true, cityBar: cityBar(req) })));
     r.post('/parks/new', async (req, reply) => {
-      const result = saveParkFromForm(db, null, req.body, { now: now(), city: req.city });
+      const result = saveParkFromForm(db, null, req.body, { now: now(), city: pageCity(req) });
       if (result.error) {
         reply.code(422);
         return reply.page(adminParkForm({ csrf: req.csrfToken(), isNew: true, park: formPark(req.body), error: result.error, cityBar: cityBar(req) }));
@@ -151,7 +154,7 @@ export default async function adminRoutes(app) {
     r.get('/parks/:id', async (req, reply) => {
       const park = parkForAdmin(db, Number(req.params.id));
       if (!park) return reply.callNotFound();
-      return reply.page(adminParkForm({ csrf: req.csrfToken(), park, notice: req.query.saved ? 'Saved.' : null }));
+      return reply.page(adminParkForm({ csrf: req.csrfToken(), park, notice: req.query.saved ? 'Saved.' : null, center: cityById(db, park.city_id)?.center }));
     });
     r.post('/parks/:id', async (req, reply) => {
       const existing = parkForAdmin(db, Number(req.params.id));
@@ -159,7 +162,7 @@ export default async function adminRoutes(app) {
       const result = saveParkFromForm(db, existing.id, req.body, { now: now() });
       if (result.error) {
         reply.code(422);
-        return reply.page(adminParkForm({ csrf: req.csrfToken(), park: { ...formPark(req.body), id: existing.id, city_key: existing.city_key }, error: result.error }));
+        return reply.page(adminParkForm({ csrf: req.csrfToken(), park: { ...formPark(req.body), id: existing.id, city_key: existing.city_key }, error: result.error, center: cityById(db, existing.city_id)?.center }));
       }
       return reply.redirect(`/admin/parks/${existing.id}?saved=1`, 303);
     });
@@ -170,13 +173,13 @@ export default async function adminRoutes(app) {
       const file = cityPackFile(city.key, 'parks.csv');
       return fs.existsSync(file) ? file : null;
     };
-    r.get('/import', async (req, reply) => reply.page(adminImport({ csrf: req.csrfToken(), cityBar: cityBar(req), seedFile: Boolean(seedCsv(req.city)) })));
+    r.get('/import', async (req, reply) => reply.page(adminImport({ csrf: req.csrfToken(), cityBar: cityBar(req), seedFile: Boolean(seedCsv(pageCity(req))) })));
     r.post('/import/seed', async (req, reply) => {
-      const file = seedCsv(req.city);
+      const file = seedCsv(pageCity(req));
       if (!file) return reply.callNotFound();
       return reply.page(adminImport({
         csrf: req.csrfToken(), cityBar: cityBar(req), seedFile: true,
-        result: importParksCsv(db, fs.readFileSync(file, 'utf8'), { now, cityId: req.city.id }),
+        result: importParksCsv(db, fs.readFileSync(file, 'utf8'), { now, cityId: pageCity(req).id }),
       }));
     });
 
@@ -332,10 +335,10 @@ export default async function adminRoutes(app) {
       const file = Buffer.isBuffer(req.body.csv) ? req.body.csv : null;
       const csrf = req.csrfToken();
       // Imports into the current city (the city bar on the page).
-      const view = { csrf, cityBar: cityBar(req), seedFile: fs.existsSync(cityPackFile(req.city.key, 'parks.csv')) };
+      const view = { csrf, cityBar: cityBar(req), seedFile: fs.existsSync(cityPackFile(pageCity(req).key, 'parks.csv')) };
       if (!file?.length) return reply.code(422).page(adminImport({ ...view, error: 'Choose a CSV file.' }));
       if (file.length > MAX_CSV_BYTES) return reply.code(422).page(adminImport({ ...view, error: 'The CSV must be under 1 MB.' }));
-      return reply.page(adminImport({ ...view, result: importParksCsv(db, file.toString('utf8'), { now, cityId: req.city.id }) }));
+      return reply.page(adminImport({ ...view, result: importParksCsv(db, file.toString('utf8'), { now, cityId: pageCity(req).id }) }));
     });
 
     const saveBadgeRoute = async (req, reply, existing) => {

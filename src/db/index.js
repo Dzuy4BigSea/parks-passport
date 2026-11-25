@@ -15,18 +15,20 @@ export function openDb(file) {
   return db;
 }
 
-export function migrate(db) {
+export function migrate(db, dir = MIGRATIONS_DIR) {
   db.exec('CREATE TABLE IF NOT EXISTS schema_migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)');
   const applied = new Set(db.prepare('SELECT name FROM schema_migrations').pluck().all());
-  const files = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
   for (const name of files) {
     if (applied.has(name)) continue;
-    const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, name), 'utf8');
+    const sql = fs.readFileSync(path.join(dir, name), 'utf8').replace(/^\uFEFF/, ''); // an editor's BOM must not hide the marker
     // A migration that rebuilds a table (create new, copy, drop old, rename) must run with foreign
     // keys off, or dropping the old table cascades into the rows that reference it. The pragma
     // can't change inside a transaction, so it's switched around it, and every foreign key is
     // checked before the migration commits.
     const fkOff = sql.startsWith('-- migrate:foreign-keys-off');
+    // Dropping a table with foreign keys on deletes every row that references it (cascades).
+    if (!fkOff && /\bDROP\s+TABLE\b/i.test(sql)) throw new Error(`${name} drops a table: start it with -- migrate:foreign-keys-off`);
     if (fkOff) db.pragma('foreign_keys = OFF');
     try {
       db.transaction(() => {

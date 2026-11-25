@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import { makeApp, client, testClock } from './helpers.js';
@@ -225,4 +226,45 @@ test('admin: the city bar switches parks, import and theme to a city; new parks 
   assert.equal(ok.statusCode, 303);
   assert.equal(db.prepare("SELECT c.key FROM parks p JOIN city_themes c ON c.id = p.city_id WHERE p.slug = 'new-park'").pluck().get(), 'westminster');
   assert.equal((await admin.post('/admin/city/use', { city: 'atlantis', back: '/admin' })).statusCode, 404);
+});
+
+test('QA: admin forms keep the city they showed; next park and the week stay in the viewed city', async () => {
+  const { app, db } = citiesApp({ now: testClock('2026-06-03T16:00:00Z') });
+  const admin = await member(app, 'admin@example.com');
+  db.prepare("UPDATE users SET is_admin = 1 WHERE email = 'admin@example.com'").run();
+  const page = (await admin.get('/admin/city')).body; // shown for St. Pete
+  assert.match(page, /action="\/admin\/city\/settings\?city=st-pete"/);
+  await admin.get('/westminster'); // another tab switches the current city
+  const save = await admin.post('/admin/city/settings?city=st-pete', { city_name: 'St. Petersburg', tagline: 'Sunshine City', accent: '#FF7A59', accent_2: '#7C6CF2' });
+  assert.equal(save.headers.location, '/admin/city?done=saved&city=st-pete');
+  assert.equal(cityByKey(db, 'westminster').tagline, 'Little Saigon'); // untouched
+  assert.match((await admin.get('/admin/parks/new')).body, /action="\/admin\/parks\/new\?city=westminster"/);
+  const sigler = db.prepare("SELECT id FROM parks WHERE slug = 'sigler-park'").pluck().get();
+  db.prepare('UPDATE parks SET lat = NULL, lng = NULL WHERE id = ?').run(sigler);
+  assert.match((await admin.get(`/admin/parks/${sigler}`)).body, /data-center="33\.755,-117\.985"/);
+
+  // Next park: from the last stamp in the city being viewed, not a stamp in another city.
+  await admin.post('/st-pete/parks/abercrombie-park/stamp', {});
+  await admin.post('/westminster/parks/liberty-park/stamp', {});
+  await admin.post('/st-pete/parks/crescent-lake-park/stamp', {});
+  const wm = (await admin.get('/westminster/passport')).body;
+  const next = wm.match(/Closest new park<\/span><strong>([^<]+)</)[1];
+  assert.ok(db.prepare("SELECT 1 FROM parks p JOIN city_themes c ON c.id = p.city_id WHERE c.key = 'westminster' AND p.name = ?").get(next), next);
+});
+
+test('QA: a migration that drops a table must say so and runs with foreign keys off', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-mig-'));
+  try {
+    const db = new Database(':memory:');
+    db.pragma('foreign_keys = ON');
+    fs.writeFileSync(path.join(dir, '001_a.sql'), 'CREATE TABLE a (id INTEGER PRIMARY KEY); CREATE TABLE b (a_id INTEGER REFERENCES a(id) ON DELETE CASCADE); INSERT INTO a VALUES (1); INSERT INTO b VALUES (1);');
+    fs.writeFileSync(path.join(dir, '002_rebuild.sql'), 'CREATE TABLE a2 (id INTEGER PRIMARY KEY); INSERT INTO a2 SELECT id FROM a; DROP TABLE a; ALTER TABLE a2 RENAME TO a;');
+    assert.throws(() => migrate(db, dir), /drops a table/);
+    assert.equal(db.prepare('SELECT COUNT(*) FROM b').pluck().get(), 1);
+    // With the marker (even behind a BOM) it runs with foreign keys off: the rows that point at a stay.
+    fs.writeFileSync(path.join(dir, '002_rebuild.sql'), '\uFEFF-- migrate:foreign-keys-off\n' + fs.readFileSync(path.join(dir, '002_rebuild.sql'), 'utf8'));
+    migrate(db, dir);
+    assert.equal(db.prepare('SELECT COUNT(*) FROM b').pluck().get(), 1);
+    assert.equal(db.pragma('foreign_keys', { simple: true }), 1);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

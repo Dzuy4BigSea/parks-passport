@@ -48,7 +48,7 @@ export function homeData(db, user, theme, { now = new Date(), near = null } = {}
   return {
     stamped: stampedSet.size, stampedSet, points, level: levelFor(points), streak, nextBadge, recent,
     punches: weekPunches(dates, today, 8),
-    week: weekSummary(db, user.id, { now }),
+    week: weekSummary(db, user.id, { now, timeZone: theme.time_zone }),
     nearby, anchor, nearFromYou: Boolean(near), extras: parkCardExtras(db, nearby.map((p) => p.id)),
     almost,
     dots: parks.map((p) => ({ lat: p.lat, lng: p.lng, stamped: stampedSet.has(p.id), next: nearestSet.has(p.slug) })),

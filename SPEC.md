@@ -335,8 +335,9 @@ Done when:
 - [ ] **Nearest-city suggestion:** on `/`, before a visitor has picked a city, the home page
       suggests the listed city nearest their IP address ("Looks like you're near Westminster")
       when it's within 160 km and isn't the city shown. It never switches by itself. The IP is
-      looked up in a MaxMind GeoLite2-City file on our server (`GEOIP_DB`), never sent out, stored
-      or logged; private addresses have no location. Without the file, there is no suggestion.
+      looked up in a MaxMind GeoLite2-City file on our server (`GEOIP_DB`); the lookup never sends
+      it out, stores or logs it (the server's ordinary request log is unchanged). Private
+      addresses have no location. Without the file, there is no suggestion.
 - [ ] **One passport, many cities:** points, levels, the streak, Park Pals and most badges count
       every city. `/<city>/passport` shows that city's stamps, collections and map, with a tab per
       city ("Westminster 3/25"); history lists every city's visits and names the city once there

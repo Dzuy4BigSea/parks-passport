@@ -12,6 +12,10 @@ const page = (title, body, extra = {}) => ({ title: `Admin · ${title}`, current
 const crumb = html`<p class="breadcrumb"><a href="/admin">Admin</a></p>`;
 const dateOf = (iso) => formatDate(localDate(new Date(iso)));
 
+// Forms post back the city they were shown for (?city=), so a city switch in another tab can't
+// send a save to a different city.
+const cityQ = (bar) => (bar ? `?city=${bar.city.key}` : '');
+
 // Parks, import and the city theme work on one city at a time; this switches it.
 function cityBarBlock(bar) {
   if (!bar) return '';
@@ -63,9 +67,10 @@ ${cityBarBlock(cityBar)}
 ${parks.length ? '' : html`<p>No parks here.</p>`}`);
 }
 
-export function adminParkForm({ park, csrf, isNew, error, notice, cityBar = null }) {
+export function adminParkForm({ park, csrf, isNew, error, notice, cityBar = null, center = null }) {
   const p = park || { checkin_radius_m: 150, active: 1, categories: [] };
-  const action = isNew ? '/admin/parks/new' : `/admin/parks/${p.id}`;
+  const action = isNew ? `/admin/parks/new${cityQ(cityBar)}` : `/admin/parks/${p.id}`;
+  const mapCenter = center || cityBar?.city.center;
   return page(isNew ? 'Add a park' : p.name, html`<p class="breadcrumb"><a href="/admin">Admin</a> › <a href="/admin/parks">Parks</a></p>
 <h1>${isNew ? `Add a park${cityBar ? ` in ${cityBar.city.copy.short}` : ''}` : `Edit ${p.name}`}</h1>
 ${isNew ? cityBarBlock(cityBar) : ''}
@@ -81,7 +86,7 @@ ${!isNew && p.active ? html`<p><a href="${parkPath(p)}">View the public page</a>
   <fieldset class="pin-fieldset">
     <legend>Location</legend>
     <p class="hint">Click the map or drag the pin to set it, or type the coordinates.</p>
-    <div id="pin-map" class="park-map" data-lat="${p.lat ?? ''}" data-lng="${p.lng ?? ''}"${cityBar?.city.center ? html` data-center="${cityBar.city.center.lat},${cityBar.city.center.lng}"` : ''}></div>
+    <div id="pin-map" class="park-map" data-lat="${p.lat ?? ''}" data-lng="${p.lng ?? ''}"${mapCenter ? html` data-center="${mapCenter.lat},${mapCenter.lng}"` : ''}></div>
     <div class="two-col">
       ${input('lat', 'Latitude', p.lat, { attrs: html`inputmode="decimal"` })}
       ${input('lng', 'Longitude', p.lng, { attrs: html`inputmode="decimal"` })}
@@ -110,7 +115,7 @@ ${result ? html`<div class="notice import-result" role="status" tabindex="-1" da
   <p><strong>${result.added} added, ${result.updated} updated, ${result.unchanged} unchanged, ${result.invalid.length} invalid.</strong></p>
   ${result.invalid.length ? html`<ul>${result.invalid.map((r) => html`<li>Line ${r.line}${r.slug ? html` (${r.slug})` : ''}: ${r.reason}</li>`)}</ul>` : ''}
 </div>` : ''}
-<form method="post" action="/admin/import" class="card-form" enctype="multipart/form-data">
+<form method="post" action="/admin/import${cityQ(cityBar)}" class="card-form" enctype="multipart/form-data">
   ${csrfField(csrf)}
   <div class="field">
     <label for="csv">CSV file</label>
@@ -119,7 +124,7 @@ ${result ? html`<div class="notice import-result" role="status" tabindex="-1" da
   </div>
   <button type="submit" class="btn btn-primary">Import CSV</button>
 </form>
-${seedFile ? html`<form method="post" action="/admin/import/seed" class="card-form">
+${seedFile ? html`<form method="post" action="/admin/import/seed${cityQ(cityBar)}" class="card-form">
   ${csrfField(csrf)}
   <p>Or re-import the seed file that ships with the app (<code>seed/cities/${cityBar?.city.key || 'st-pete'}/parks.csv</code>).</p>
   <button type="submit" class="btn">Import the seed parks.csv</button>
@@ -362,7 +367,7 @@ const textarea = (name, label, value, { rows = 3, hint, error } = {}) => html`<d
   <textarea id="${name}" name="${name}" rows="${rows}"${hint || error ? html` aria-describedby="${[hint ? `${name}-hint` : '', error ? `${name}-error` : ''].filter(Boolean).join(' ')}"` : ''}${error ? html` aria-invalid="true"` : ''}>${value ?? ''}</textarea>
 </div>`;
 
-function jobPanel(job, aiAvailable, csrf) {
+function jobPanel(job, aiAvailable, csrf, q = '') {
   const running = job?.status === 'running';
   return html`<section class="card" aria-labelledby="ai-h">
   <h2 id="ai-h">Generate with AI</h2>
@@ -373,18 +378,18 @@ function jobPanel(job, aiAvailable, csrf) {
   ${job?.status === 'error' ? html`<p class="notice" role="alert">${job.error}</p>` : ''}
   ${job?.status === 'done' ? html`<p class="notice" role="status">Added ${job.added} draft${job.added === 1 ? '' : 's'}${job.rejected ? ` (${job.rejected} skipped: duplicate or an icon that didn't pass the safety check)` : ''}.
     ${job.suggestion?.accent ? html`Suggested colors: <span class="swatch" style="background:${job.suggestion.accent}"></span> ${job.suggestion.accent}${job.suggestion.accent_2 ? html` and <span class="swatch" style="background:${job.suggestion.accent_2}"></span> ${job.suggestion.accent_2}` : ''}${job.suggestion.tagline ? `, tagline "${job.suggestion.tagline}"` : ''}. Use them in the settings below if you like.` : ''}</p>` : ''}
-  <form method="post" action="/admin/city/generate">${csrfField(csrf)}
+  <form method="post" action="/admin/city/generate${q}">${csrfField(csrf)}
     <button type="submit" class="btn btn-pop"${!aiAvailable || running ? html` disabled` : ''}>${running ? 'Generating…' : 'Generate landmark drafts'}</button>
   </form>
 </section>`;
 }
 
-function motifCard(m, csrf, editing = null) {
+function motifCard(m, csrf, editing = null, q = '') {
   const draft = m.status === 'draft';
   const ed = editing?.id === m.id ? editing : null;
   const val = ed ? ed.values : m;
   const err = ed?.errors || {};
-  const action = (path, label, cls = 'btn btn-small') => html`<form method="post" action="/admin/city/motifs/${m.id}/${path}">${csrfField(csrf)}<button type="submit" class="${cls}">${label}</button></form>`;
+  const action = (path, label, cls = 'btn btn-small') => html`<form method="post" action="/admin/city/motifs/${m.id}/${path}${q}">${csrfField(csrf)}<button type="submit" class="${cls}">${label}</button></form>`;
   return html`<li class="${draft ? 'is-draft' : ''}">
   <div class="motif-row">
     <span class="tile"><span class="motif" aria-hidden="true">${raw(sanitizeSvg(m.svg) || '')}</span></span>
@@ -397,7 +402,7 @@ function motifCard(m, csrf, editing = null) {
     ${action('delete', `Delete ${m.name}`, 'btn btn-small btn-quiet')}
   </div>
   <details${ed ? html` open` : ''}><summary>Edit</summary>
-    <form method="post" action="/admin/city/motifs/${m.id}">${csrfField(csrf)}
+    <form method="post" action="/admin/city/motifs/${m.id}${q}">${csrfField(csrf)}
       ${ed ? html`<p class="error-text" role="alert" tabindex="-1" data-announce>Not saved. Fix the problems below.</p>` : ''}
       ${input(`name-${m.id}`, 'Name', val.name, { error: err.name })}
       ${textarea(`blurb-${m.id}`, 'Blurb', val.blurb, { error: err.blurb })}
@@ -410,21 +415,22 @@ function motifCard(m, csrf, editing = null) {
 
 export function adminCity({ csrf, theme, motifs, job, aiAvailable, errors = {}, values = null, notice = null, motifErrors = {}, motifValues = null, editing = null, cityBar = null }) {
   const v = values || theme;
+  const q = `?city=${theme.key}`; // forms post back the city they show
   const drafts = motifs.filter((m) => m.status === 'draft').length;
   return page('City theme', html`${crumb}<h1>City theme</h1>
 ${cityBarBlock(cityBar)}
 <p class="lede">${theme.name}'s landmark icons, history and colors appear on stamps, the home page, passports and the footer.</p>
 ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
-${jobPanel(job, aiAvailable, csrf)}
+${jobPanel(job, aiAvailable, csrf, q)}
 
 <section aria-labelledby="motifs-h">
   <h2 id="motifs-h">Motifs <span class="count">(${motifs.length - drafts} live${drafts ? `, ${drafts} to review` : ''})</span></h2>
-  <ul class="motif-admin">${motifs.map((m) => motifCard(m, csrf, editing))}</ul>
+  <ul class="motif-admin">${motifs.map((m) => motifCard(m, csrf, editing, q))}</ul>
 </section>
 
 <section aria-labelledby="add-h">
   <h2 id="add-h">Add a motif by hand</h2>
-  <form method="post" action="/admin/city/motifs/new" class="card-form admin-form">${csrfField(csrf)}
+  <form method="post" action="/admin/city/motifs/new${q}" class="card-form admin-form">${csrfField(csrf)}
     ${errorSummary(motifErrors)}
     ${input('name', 'Name', motifValues?.name, { error: motifErrors.name, required: true })}
     ${textarea('blurb', 'Blurb (optional)', motifValues?.blurb, { error: motifErrors.blurb })}
@@ -435,7 +441,7 @@ ${jobPanel(job, aiAvailable, csrf)}
 
 <section aria-labelledby="settings-h">
   <h2 id="settings-h">Settings</h2>
-  <form method="post" action="/admin/city/settings" class="card-form admin-form">${csrfField(csrf)}
+  <form method="post" action="/admin/city/settings${q}" class="card-form admin-form">${csrfField(csrf)}
     ${errorSummary(Object.fromEntries(Object.entries(errors).map(([k, msg]) => [k === 'name' ? 'city_name' : k, msg])))}
     ${input('city_name', 'City name', v.name, { error: errors.name, required: true })}
     ${input('tagline', 'Nickname', v.tagline, { error: errors.tagline, hint: 'Shown on the home page and in the footer, e.g. "Sunshine City".' })}

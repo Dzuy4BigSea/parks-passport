@@ -26,8 +26,8 @@ export default async function passportRoutes(app) {
     return reply.page(passportPage({
       ...passportData(db, user.id, { cityId: city.id }), user, csrf: req.csrfToken(), points, level: levelFor(points),
       badges, theme: city, cities: cityProgress(db, user.id, listCities(db)),
-      next: nextUp(db, user.id, badges, { now: app.now(), timeZone: city.time_zone }),
-      week: weekSummary(db, user.id, { now: app.now() }),
+      next: nextUp(db, user.id, badges, { now: app.now(), timeZone: city.time_zone, cityId: city.id }),
+      week: weekSummary(db, user.id, { now: app.now(), timeZone: city.time_zone }),
     }));
   });
 }
