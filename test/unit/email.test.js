@@ -62,7 +62,14 @@ test('email and site footers carry the copyright and the Big Sea credit', async 
   const home = (await client(app).get('/')).body;
   assert.match(home, /© \d{4} Parks Passport<\/span>/);
   assert.match(home, /<a class="bigsea" href="https:\/\/bigsea\.co"[^>]*><span>Purpose built by<\/span><img src="\/brand\/bigsea-logo\.svg" alt="Big Sea"/);
+  // Big Sea's B Corp and 1% for the Planet marks under the credit line.
+  assert.match(home, /Big Sea is a Certified B Corporation and a member of 1% for the Planet\./);
+  assert.match(home, /<img src="\/brand\/b-corp\.png" alt="Certified B Corporation"/);
+  assert.match(home, /<img src="\/brand\/one-percent-for-the-planet\.png" alt="1% for the Planet member"/);
   assert.equal((await client(app).get('/brand/bigsea-logo.png')).statusCode, 200);
+  for (const logo of ['b-corp.png', 'one-percent-for-the-planet.png']) {
+    assert.equal((await client(app).get(`/brand/${logo}`)).statusCode, 200);
+  }
 });
 
 test('production pins the public address, so email links and the logo never point at localhost', async () => {

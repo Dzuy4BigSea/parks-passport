@@ -1,12 +1,21 @@
 import { defineConfig, devices } from '@playwright/test';
 import os from 'node:os';
 import path from 'node:path';
+import { openDb } from './src/db/index.js';
 
 const PORT = 8181;
 // Fresh data dir per run, so tests never touch real data. Set once in the main process so
 // workers (which inherit env) read the same outbox.
 process.env.PP_E2E_DATA_DIR ??= path.join(os.tmpdir(), `parks-passport-e2e-${process.pid}`);
 const DATA_DIR = process.env.PP_E2E_DATA_DIR;
+// The 75 Founding Member numbers start used up, so sign-ups in other specs don't get a welcome
+// pop-up and notification they don't expect. Founding Members: test/unit/founding.test.js.
+{
+  const db = openDb(path.join(DATA_DIR, 'app.db'));
+  db.prepare(`INSERT INTO settings (key, value, updated_at) VALUES ('founding_awarded', '75', ?)
+    ON CONFLICT(key) DO NOTHING`).run(new Date().toISOString());
+  db.close();
+}
 
 export default defineConfig({
   testDir: 'test/e2e',

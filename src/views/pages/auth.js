@@ -168,6 +168,7 @@ ${profilePhoto({ csrf, user, error: errors.photo })}
   <dt>Email</dt><dd>${user.email}</dd>
   <dt>Handle</dt><dd>@${user.handle}</dd>
 </dl>
+<p><a href="/sunshine"><span aria-hidden="true">☀️</span> Send a drop of sunshine</a> to the people who look after your parks.</p>
 ${ideas ? html`<p><a href="/ideas">Share a badge idea</a></p>` : ''}
 <form method="post" action="/logout" class="inline-form">
   ${csrfField(csrf)}

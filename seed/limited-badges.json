@@ -9,5 +9,15 @@
     "rule_type": "manual",
     "rule_params": {},
     "limited_count": 100
+  },
+  {
+    "slug": "founding-member",
+    "name": "Founding Member",
+    "art": "🌱",
+    "kind": "hidden",
+    "hint": "For the first explorers who helped shape Parks Passport.",
+    "description": "One of the first members of Parks Passport. Thank you for helping it grow.",
+    "rule_type": "manual",
+    "rule_params": {}
   }
 ]
