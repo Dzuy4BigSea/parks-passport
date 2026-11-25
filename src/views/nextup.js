@@ -3,6 +3,7 @@ import { ICONS } from './icons.js';
 import { badgeArt } from './badge-art.js';
 import { formatMiles } from '../domain/geo.js';
 import { parkPath } from './urls.js';
+import { formatDate } from '../domain/time.js';
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 // "2 more parks" from a badge's unit ("parks", "visits", "weeks", "parks in a weekend").
@@ -14,8 +15,19 @@ export function streakText(streak) {
   return { title: `${plural(streak.weeks, 'week')} in a row`, meta: 'Stamp a park by Sunday to keep your streak.' };
 }
 
-/** The "what next" cards: closest unstamped park, closest badge, the streak. */
-export function nextUpCards({ nextPark, nextBadge, streak }, { heading = 'Up next', id = 'nextup-h', city = null } = {}) {
+// The Park Pals card: a pal's newest stamp, else how many pals, else an invite.
+function palsCard(pals) {
+  const { title, meta } = pals.latest
+    ? { title: `${pals.latest.user.display_name} stamped ${pals.latest.park_name}`, meta: `${formatDate(pals.latest.visited_on)} · See your pals' stamps` }
+    : pals.count
+      ? { title: plural(pals.count, 'Park Pal'), meta: 'No pal stamps yet. Invite another pal?' }
+      : { title: 'Invite a Park Pal', meta: "Explore together and see each other's stamps." };
+  return html`<li class="reveal" style="--i:3"><a href="/pals"><span class="icon">${ICONS.pals}</span><span>
+    <span class="label">Park Pals</span><strong>${title}</strong><span class="meta">${meta}</span></span></a></li>`;
+}
+
+/** The "what next" cards: closest unstamped park, closest badge, the streak, Park Pals. */
+export function nextUpCards({ nextPark, nextBadge, streak, pals }, { heading = 'Up next', id = 'nextup-h', city = null } = {}) {
   const s = streakText(streak);
   const base = city?.key ? `/${city.key}` : '';
   return html`<section aria-labelledby="${id}">
@@ -33,6 +45,7 @@ export function nextUpCards({ nextPark, nextBadge, streak }, { heading = 'Up nex
       <span class="meta">${more(nextBadge)} to go (${nextBadge.progress} / ${nextBadge.target})</span></span></a></li>` : ''}
     <li class="reveal" style="--i:2"><div class="nextup-card"><span class="icon">${ICONS.flame}</span><span>
       <span class="label">Weekly streak</span><strong>${s.title}</strong><span class="meta">${s.meta}</span></span></div></li>
+    ${pals ? palsCard(pals) : ''}
   </ul>
 </section>`;
 }
