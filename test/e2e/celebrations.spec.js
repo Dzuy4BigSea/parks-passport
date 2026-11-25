@@ -166,6 +166,7 @@ test('a message from the team opens first, then its badge is revealed', async ({
   await expect(message).toBeVisible();
   await expect(page.locator('.fx-drift')).toHaveCount(1); // falling leaves
   await expect(page.locator('.fx-reveal')).toHaveCount(0); // not yet
+  await message.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((x) => x.finished))); // popped in
   await expectNoAxeViolations(page);
   await message.getByRole('button', { name: 'Let’s go!' }).click();
   const reveal = page.locator('.fx-reveal'); // "Badge unlocked!" (this test message has no author)

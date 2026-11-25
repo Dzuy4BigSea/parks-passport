@@ -12,6 +12,8 @@ test.beforeEach(async ({ page }) => {
   await page.route('https://tile.openstreetmap.org/**', (route) => route.fulfill({ status: 204, body: '' }));
 });
 
+// The dialogs pop in (opacity and scale): let that finish before axe measures contrast.
+const settled = (dialog) => dialog.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
 const noSideScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 
 test('write, preview and send a message with a badge; the member sees it, then the badge', async ({ browser, page }, testInfo) => {
@@ -42,6 +44,7 @@ test('write, preview and send a message with a badge; the member sees it, then t
   const preview = page.getByRole('dialog', { name: 'Thank you for being an early adopter!' });
   await expect(preview).toBeVisible();
   await expect(preview.getByRole('button', { name: 'Let’s go!' })).toBeFocused();
+  await settled(preview);
   await expectNoAxeViolations(page);
   await page.keyboard.press('Escape');
   await expect(preview).toBeHidden();
@@ -62,6 +65,7 @@ test('write, preview and send a message with a badge; the member sees it, then t
   await expect(message).toBeVisible();
   await expect(message).toContainText('Here’s a little something.');
   await expect(message).toContainText('Two-City Explorer');
+  await settled(message);
   await expectNoAxeViolations(member);
   expect(await noSideScroll(member)).toBe(true);
   await message.getByRole('button', { name: 'Let’s go!' }).click();
