@@ -1477,6 +1477,8 @@ html.fx-locked { overflow: hidden; }
 .feedback-fab svg { width: 18px; height: 18px; }
 .feedback-fab:hover svg { animation: fb-twinkle 0.9s var(--ease-spring); }
 .has-tabbar .feedback-fab { bottom: calc(5.25rem + env(safe-area-inset-bottom)); }
+/* Room below the footer so the button never covers its last links. */
+body:has(.feedback-fab) .site-footer { padding-bottom: 5.5rem; }
 @media (min-width: 60rem) { .has-tabbar .feedback-fab { bottom: 1.25rem; } }
 @keyframes fb-twinkle { 50% { transform: rotate(45deg) scale(1.25); } }
 .feedback-dialog { width: min(30rem, calc(100vw - 2rem)); border: 0; border-radius: var(--radius); padding: 1.25rem; background: var(--surface); color: var(--ink);
@@ -1492,3 +1494,43 @@ html.fx-locked { overflow: hidden; }
 @keyframes fb-pop { from { transform: scale(0.3); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .feedback-heart, .feedback-fab:hover svg { animation: none; } }
 @media print { .feedback-fab { display: none; } }
+
+/* ---------- Drops of Sunshine (Flow 17) ---------- */
+.sunshine-eyebrow { margin: 0; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.8rem; color: #9a5b00; }
+.sunshine-form textarea { width: 100%; font: inherit; padding: 0.7rem; border: 2px solid var(--line); border-radius: var(--radius-sm); }
+.sunshine-to { margin: 0 0 0.5rem; }
+.sunshine-change { margin: 0.6rem 0 0.9rem; }
+.sunshine-change summary { cursor: pointer; font-weight: 600; min-height: 24px; }
+.sunshine-change select { display: block; width: 100%; margin: 0.4rem 0; }
+.sunshine-send { font-size: 1.05rem; }
+.pill-sunshine { background: #fff1cc; color: #7a4800; text-decoration: none; }
+.sunshine-nudge { margin: 0.5rem 0 1.25rem; }
+.sunshine { text-align: left; }
+.sunshine-burst { position: relative; width: 180px; height: 180px; margin: 0.5rem auto 0.25rem; }
+.sunshine-burst svg { width: 100%; height: 100%; overflow: visible; }
+.sun-rays line { stroke: #ffb703; stroke-width: 7; stroke-linecap: round; }
+.sun-core { fill: #ffd166; stroke: #ffb703; stroke-width: 4; }
+.sun-smile { fill: none; stroke: #7a4800; stroke-width: 5; stroke-linecap: round; }
+.sun-eye { fill: #7a4800; }
+.sun-drop {
+  position: absolute; left: 50%; top: 50%; width: 12px; height: 16px; margin: -8px 0 0 -6px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: radial-gradient(circle at 35% 35%, #fffaf0, #ffd166 45%, #ff9f1c);
+  opacity: 0; transform: rotate(calc(var(--d) * 36deg)) translateY(0);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sun-core { transform-origin: 100px 100px; animation: sun-pop 0.7s var(--ease-spring) both; }
+  .sun-rays { transform-origin: 100px 100px; animation: sun-spin 12s linear infinite, sun-rays-in 0.8s 0.15s ease-out both; }
+  .sun-smile, .sun-eye { animation: sun-fade 0.4s 0.5s ease-out both; }
+  .sun-drop { animation: sun-drop 1.6s calc(0.35s + var(--d) * 0.07s) cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+  .sunshine-burst + h1 { animation: sun-fade 0.5s 0.4s ease-out both; }
+}
+@media (prefers-reduced-motion: reduce) { .sun-drop { display: none; } }
+@keyframes sun-pop { from { transform: scale(0.2); } }
+@keyframes sun-spin { to { transform: rotate(360deg); } }
+@keyframes sun-rays-in { from { opacity: 0; } }
+@keyframes sun-fade { from { opacity: 0; transform: translateY(6px); } }
+@keyframes sun-drop {
+  0% { opacity: 0; transform: rotate(calc(var(--d) * 36deg)) translateY(0) scale(0.4); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(calc(var(--d) * 36deg)) translateY(-120px) scale(1); }
+}

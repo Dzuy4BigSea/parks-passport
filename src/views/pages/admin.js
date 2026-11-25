@@ -47,6 +47,7 @@ export function adminHome({ counts }) {
   <li><a href="/admin/parks?filter=needs_pin"><strong>Pins to check</strong><span>${counts.needsPin} parks</span></a></li>
   <li><a href="/admin/import"><strong>Import parks</strong><span>CSV upload or seed file</span></a></li>
   <li><a href="/admin/badges"><strong>Badges</strong><span>${counts.badges} badges</span></a></li>
+  <li><a href="/admin/sunshine"><strong>Drops of Sunshine</strong><span>${counts.newSunshine ?? 0} new thank-you notes</span></a></li>
   <li><a href="/admin/feedback"><strong>Feedback</strong><span>${counts.openFeedback ?? 0} open · from founding explorers</span></a></li>
   <li><a href="/admin/ideas"><strong>Badge ideas</strong><span>${counts.newIdeas ?? 0} new · share with contributors</span></a></li>
   <li><a href="/admin/activities"><strong>Activities</strong><span>Healthy things to do at parks</span></a></li>
