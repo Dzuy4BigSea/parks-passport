@@ -1,3 +1,7 @@
+import { setSourcePoints } from '../gamification/index.js';
+
+export { totalPoints } from '../gamification/index.js';
+
 // Point values (SPEC Flow 7). Changing them here changes every future recalculation.
 export const POINTS = {
   firstStamp: 10,     // first stamp at a park
@@ -30,16 +34,6 @@ export function rebuildParkVisitPoints(db, userId, parkId, { now = new Date() } 
     FROM visits v WHERE v.user_id = ? AND v.park_id = ? ORDER BY v.visited_on, v.id`).all(userId, parkId);
   const computed = visitPoints(visits.map((v) => ({ ...v, hasPhoto: v.has_photo === 1 })));
 
-  const del = db.prepare("DELETE FROM point_events WHERE source_type = 'visit' AND source_id = ?");
-  const ins = db.prepare(`INSERT INTO point_events (user_id, source_type, source_id, points, reason, created_at)
-    VALUES (?, 'visit', ?, ?, ?, ?)`);
   const setPoints = db.prepare('UPDATE visits SET points = ? WHERE id = ?');
-  for (const c of computed) {
-    del.run(c.id);
-    for (const [p, reason] of c.parts) ins.run(userId, c.id, p, reason, now.toISOString());
-    setPoints.run(c.total, c.id);
-  }
+  for (const c of computed) setPoints.run(setSourcePoints(db, userId, 'visit', c.id, c.parts, { now }), c.id);
 }
-
-export const totalPoints = (db, userId) =>
-  db.prepare('SELECT COALESCE(SUM(points), 0) FROM point_events WHERE user_id = ?').pluck().get(userId);

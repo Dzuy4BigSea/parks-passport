@@ -2,6 +2,7 @@
 // Logs are private to the member. Only badges earned from them follow the passport's visibility.
 import { localDate } from './time.js';
 import { dayNumber, mondayOf } from './badges/rules.js';
+import { setSourcePoints, removeSourcePoints } from '../gamification/index.js';
 
 export const PILLARS = {
   move: { label: 'Move', icon: '🚶' },
@@ -94,8 +95,7 @@ export function logActivity(db, { user, park, slug, amount: raw }, { now = new D
   const log = db.transaction(() => {
     const id = db.prepare(`INSERT INTO activity_logs (user_id, visit_id, activity_id, amount, minutes, miles, logged_on, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(user.id, visit.id, activity.id, amount, minutes, miles, today, ts).lastInsertRowid;
-    db.prepare(`INSERT INTO point_events (user_id, source_type, source_id, points, reason, created_at)
-      VALUES (?, 'activity', ?, ?, ?, ?)`).run(user.id, id, activity.points, activity.name, ts);
+    setSourcePoints(db, user.id, 'activity', Number(id), [[activity.points, activity.name]], { now });
     return db.prepare('SELECT * FROM activity_logs WHERE id = ?').get(id);
   })();
   return { log, activity };
@@ -107,7 +107,7 @@ export function deleteActivityLog(db, { user, logId }) {
     WHERE l.id = ? AND l.user_id = ?`).get(logId, user.id);
   if (!log) return null;
   db.transaction(() => {
-    db.prepare("DELETE FROM point_events WHERE source_type = 'activity' AND source_id = ?").run(log.id);
+    removeSourcePoints(db, 'activity', log.id);
     db.prepare('DELETE FROM activity_logs WHERE id = ?').run(log.id);
   })();
   return log;

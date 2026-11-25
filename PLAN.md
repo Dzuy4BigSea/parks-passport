@@ -25,6 +25,7 @@ where noted, by hand.
 src/
   app.js  server.js  config.js
   db/        index.js  migrations/
+  gamification/  badge engine, points ledger, levels (domain-free; M14)
   domain/    points.js levels.js badges/ visibility.js geo.js csv-import.js
   routes/    parks.js auth.js visits.js photos.js ratings.js passport.js pals.js admin.js
   views/     html.js layout.js pages/…
