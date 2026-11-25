@@ -112,7 +112,19 @@ test('the badge form: limited editions use the given-only rule and can\'t shrink
   });
   const res = await edit('1');
   assert.equal(res.statusCode, 422);
-  assert.match(res.body, /2 numbered copies are already given, so keep at least 2\./);
+  assert.match(res.body, /Copy #2 is already given, so keep at least 2 copies\./);
+  // The highest number held counts, not how many: take back #1, and #2 still needs 2.
+  takeBackGrant(db, people.ana.id, badge('trio').id);
+  assert.match((await edit('1')).body, /Copy #2 is already given/);
+  // A given-only badge members already hold without a number can't become limited.
+  db.prepare("UPDATE badges SET limited_count = NULL WHERE slug = 'trio'").run();
+  db.prepare('UPDATE user_badges SET serial = NULL').run();
+  const plain = await edit('5');
+  assert.equal(plain.statusCode, 422);
+  assert.match(plain.body, /1 member already has this badge without a number/);
+  db.prepare("UPDATE badges SET limited_count = 3 WHERE slug = 'trio'").run();
+  db.prepare('UPDATE user_badges SET serial = 2').run();
+  grantBadge(db, { admin, userId: people.ana.id, badgeId: badge('trio').id });
   assert.equal((await edit('')).statusCode, 422);
   assert.equal((await edit('50')).statusCode, 303);
   assert.equal(badge('trio').limited_count, 50);

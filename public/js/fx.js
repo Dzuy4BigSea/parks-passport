@@ -124,9 +124,9 @@ export function holoTilt(card, scope = card) {
   });
   card.addEventListener('pointerleave', () => { card.style.removeProperty('--tilt-x'); card.style.removeProperty('--tilt-y'); });
   const orient = (e) => {
-    if (!card.isConnected) { window.removeEventListener('deviceorientation', orient); return; }
     if (e.gamma == null || e.beta == null) return;
     set(Math.min(1, Math.max(0, (e.gamma + 30) / 60)), Math.min(1, Math.max(0, (e.beta - 20) / 60)));
   };
   window.addEventListener('deviceorientation', orient);
+  document.addEventListener('fx:closed', () => window.removeEventListener('deviceorientation', orient), { once: true });
 }

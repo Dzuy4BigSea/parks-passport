@@ -23,7 +23,7 @@ import {
   adminCity, adminEmail, adminEmailMessage, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
   adminActivities, adminStats, adminGiveBadge,
 } from '../views/pages/admin.js';
-import { grantBadge, grantBadgeToMany, takeBackGrant, serialsGiven } from '../domain/badges/index.js';
+import { grantBadge, grantBadgeToMany, takeBackGrant } from '../domain/badges/index.js';
 import { adminStats as computeStats } from '../domain/stats.js';
 
 const MAX_CSV_BYTES = 1024 * 1024;
@@ -419,10 +419,15 @@ export default async function adminRoutes(app) {
       delete values.art_file;
       const { badge, errors = {} } = validateBadgeForm(values, { isNew, targets: badgeTargets(db).map((t) => t.value) });
       const artFile = Buffer.isBuffer(req.body.art_file) && req.body.art_file.length ? req.body.art_file : null;
-      // Copies already numbered can't be un-numbered.
-      const given = existing ? serialsGiven(db, existing.id) : 0;
-      if (badge && given && (badge.limited_count ?? 0) < given) {
-        errors.limited_count = `${given} numbered ${given === 1 ? 'copy is' : 'copies are'} already given, so keep at least ${given}.`;
+      // A limited edition must cover every copy already out: numbered ones (up to the highest number
+      // held) can't be un-numbered, and a badge members already hold without a number can't become one.
+      const out = existing ? db.prepare(`SELECT COUNT(*) AS total, COUNT(serial) AS numbered, COALESCE(MAX(serial), 0) AS top
+        FROM user_badges WHERE badge_id = ?`).get(existing.id) : { total: 0, numbered: 0, top: 0 };
+      if (badge?.limited_count && out.total > out.numbered) {
+        const n = out.total - out.numbered;
+        errors.limited_count = `${n} ${n === 1 ? 'member already has' : 'members already have'} this badge without a number, so it can't become a limited edition. Add a new badge instead.`;
+      } else if (badge && out.numbered && (badge.limited_count ?? 0) < out.top) {
+        errors.limited_count = `Copy #${out.top} is already given, so keep at least ${out.top} copies.`;
       }
       if (isNew && badge && db.prepare('SELECT 1 FROM badges WHERE slug = ?').get(badge.slug)) {
         errors.slug = 'Another badge already uses that slug.';
