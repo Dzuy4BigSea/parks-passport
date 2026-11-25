@@ -30,7 +30,8 @@ export default async function palRoutes(app) {
     const page = Math.max(1, Math.min(1000, Number.parseInt(req.query?.page, 10) || 1));
     return reply.page(palsPage({
       user, csrf: req.csrfToken(), page, notice: NOTICES[req.query?.done],
-      inviteUrl: `${app.config.baseUrl}/pals/invite/${inviteTokenFor(db, user.id, { now: now(), onCreate: () => app.track(user.id, 'pal_invite_created') })}`,
+      // The link opens in the inviter's current city (?city=), so a Westminster friend lands in Westminster.
+      inviteUrl: `${app.config.baseUrl}/pals/invite/${inviteTokenFor(db, user.id, { now: now(), onCreate: () => app.track(user.id, 'pal_invite_created') })}?city=${req.city.key}`,
       friendCode: formatCode(friendCodeFor(db, user.id, { now: now() })), requests: palRequests(db, user.id),
       pals: palsOf(db, user.id).map((p) => ({ ...p, visible: canViewOwner(db, user.id, p.id, p.default_visibility) })), board: leaderboard(db, user.id), feed: palsFeed(db, user.id, { page }),
       ...extra,

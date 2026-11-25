@@ -59,13 +59,18 @@ function consentBanner(csrf, back) {
 </section></div>`;
 }
 
+const OG_ALT = 'Parks Passport: stamp every St. Pete park you visit. Gary the park guide waves in front of the St. Pete Pier at sunrise.';
+
 export const DEFAULT_DESCRIPTION = 'Check in at every St. Petersburg park you visit, collect stamps and badges, rate your favorites and explore with your Park Pals.';
 
 // Link previews (Open Graph / Twitter). Image and URLs must be absolute; canonicalPath is the
 // pathname only (never the query string) and is null on pages whose URL carries a secret.
-function shareMeta({ title, description, baseUrl, canonicalPath }) {
+function shareMeta({ title, description, baseUrl, canonicalPath, theme, shareImages }) {
   const url = canonicalPath ? baseUrl + canonicalPath : null;
-  const image = baseUrl + '/og/parks-passport.jpg';
+  // A city's own share image (public/og/<key>.jpg, scripts/make-og-image.js) when it has one.
+  const own = theme?.key && shareImages?.has(`${theme.key}.jpg`);
+  const image = baseUrl + (own ? `/og/${theme.key}.jpg` : '/og/parks-passport.jpg');
+  const alt = (own || theme?.key === 'st-pete') && theme.copy?.og_alt ? theme.copy.og_alt : OG_ALT;
   return html`<meta property="og:type" content="website">
 <meta property="og:site_name" content="Parks Passport">
 <meta property="og:title" content="${title}">
@@ -75,7 +80,7 @@ ${url ? html`<meta property="og:url" content="${url}">
 <meta property="og:image" content="${image}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Parks Passport: stamp every St. Pete park you visit. Gary the park guide waves in front of the St. Pete Pier at sunrise.">
+<meta property="og:image:alt" content="${alt}">
 <meta name="twitter:card" content="summary_large_image">`;
 }
 
@@ -106,7 +111,7 @@ export function statusPills(status) {
 
 export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null, nudge = null,
   analytics = null, consent = { chosen: true, analytics: false, ads: false }, events = [], showConsentBanner = false, path = '/',
-  theme = null, cities = [], status = null, description = null, baseUrl = '', canonicalPath = null }) {
+  theme = null, cities = [], status = null, description = null, baseUrl = '', canonicalPath = null, shareImages = null }) {
   // Parks and Passport links stay in the city being viewed (SPEC Flow 14).
   const base = theme?.key && theme.key !== 'default' ? cityPath(theme) : '';
   const nav = user
@@ -129,7 +134,7 @@ export function layout({ title, body, head = null, scripts = [], current = '', u
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${fullTitle}</title>
 <meta name="description" content="${description}">
-${shareMeta({ title: fullTitle, description, baseUrl, canonicalPath })}
+${shareMeta({ title: fullTitle, description, baseUrl, canonicalPath, theme, shareImages })}
 <meta name="theme-color" content="#f6f1e7">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">

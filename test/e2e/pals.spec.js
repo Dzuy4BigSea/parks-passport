@@ -20,7 +20,7 @@ test('invite a pal, share, see each other in the feed and leaderboard, then go p
   await page.getByRole('link', { name: 'Pals', exact: true }).click();
   await expectNoAxeViolations(page);
   const link = await page.getByLabel('Your invite link').inputValue();
-  expect(link).toMatch(/\/pals\/invite\/[A-Za-z0-9_-]+$/);
+  expect(link).toMatch(/\/pals\/invite\/[A-Za-z0-9_-]+\?city=st-pete$/);
 
   // Ben opens the link signed out, signs up from it, and accepts.
   const ben = await freshPage(browser, info);

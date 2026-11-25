@@ -36,9 +36,9 @@ export const EMAIL_KINDS = {
     subjectKey: 'subject_invite',
     danger: false,
     defaults: {
-      preheader: 'Collect a stamp for every St. Pete park you visit.',
+      preheader: 'Collect a stamp for every {city} park you visit.',
       heading: "You're invited to Parks Passport",
-      body: "Hi {name},\n\n{inviter} invited you to Parks Passport: a free passport for St. Pete's parks. Stamp each park you visit, earn badges, and explore with friends.",
+      body: "Hi {name},\n\n{inviter} invited you to Parks Passport: a free passport for {city} parks. Stamp each park you visit, earn badges, and explore with friends.",
       button: 'Create my passport',
       note: "This invite link works for 30 days. If you weren't expecting it, you can ignore this email.",
     },
@@ -75,7 +75,7 @@ export const COPY_FIELDS = {
   subject: { label: 'Subject line', max: 120, required: true, oneLine: true },
   preheader: { label: 'Preview text', max: 140, required: false, oneLine: true, hint: 'The grey line most inboxes show after the subject.' },
   heading: { label: 'Heading', max: 80, required: true, oneLine: true },
-  body: { label: 'Message', max: 1200, required: true, oneLine: false, hint: 'Leave a blank line between paragraphs. {name} becomes the person\'s name; in the invitation, {inviter} becomes yours.' },
+  body: { label: 'Message', max: 1200, required: true, oneLine: false, hint: 'Leave a blank line between paragraphs. {name} becomes the person\'s name; in the invitation, {inviter} becomes yours and {city} the city you’re viewing.' },
   button: { label: 'Button label', max: 40, required: true, oneLine: true },
   note: { label: 'Small print', max: 400, required: false, oneLine: false, hint: 'Shown in the yellow box under the button. Keep the expiry and "ignore this" advice.' },
 };

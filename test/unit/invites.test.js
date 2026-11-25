@@ -23,7 +23,7 @@ test('admin invites by email: branded invitation, /join link fills in sign-up, i
   assert.match(msg.html, /Hi Ana,/);
   assert.match(msg.html, /Dee invited you to Parks Passport/);
   const link = mailer.linkIn(msg);
-  assert.match(link, /^http:\/\/test\.local\/join\/[A-Za-z0-9_-]{30,}$/);
+  assert.match(link, /^http:\/\/test\.local\/join\/[A-Za-z0-9_-]{30,}\?city=st-pete$/);
   assert.equal(db.prepare('SELECT token_hash FROM invites').pluck().get().length, 64); // only the hash is stored
 
   const members = (await dee.get('/admin/users')).body;

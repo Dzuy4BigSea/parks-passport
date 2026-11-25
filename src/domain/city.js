@@ -44,6 +44,7 @@ function cityCopy(row, copy) {
       || `Check in at every ${short} park you visit, collect stamps and badges, rate your favorites and explore with your Park Pals.`,
     search_examples: s(copy.search_examples, 80) || 'Park name…', // the park search placeholder
     made_for: s(copy.made_for, 80) || (row.tagline ? `the ${row.tagline}` : row.name), // footer: "Made for …"
+    og_alt: s(copy.og_alt, 200) || `Parks Passport: stamp every ${short} park you visit. Gary the park guide waves in front of ${short} landmark icons.`, // share image alt text
   };
 }
 
