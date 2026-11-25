@@ -27,11 +27,16 @@ export function testClock(start = '2026-06-01T12:00:00Z') {
   return now;
 }
 
-export function makeApp({ db = openDb(':memory:'), mailer = memoryMailer(), now = testClock(), random = () => 0.99, secureCookies = false, analytics = null, themeAi = null, ideaAi = null, geoip = null } = {}) {
+// Weather that never calls out: tests set `.value` to pretend.
+export function fakeWeather(value = null) {
+  return { value, current() { return this.value; }, async refresh() { return this.value; } };
+}
+
+export function makeApp({ db = openDb(':memory:'), mailer = memoryMailer(), now = testClock(), random = () => 0.99, weather = fakeWeather(), secureCookies = false, analytics = null, themeAi = null, ideaAi = null, geoip = null } = {}) {
   const uploadsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-uploads-'));
   const secretBox = createSecretBox({ envKey: 'test-settings-key' });
-  const app = buildApp({ db, mailer, secretBox, now, random, themeAi, ideaAi, geoip, config: { baseUrl: 'http://test.local', secureCookies, uploadsDir, mailTransport: 'outbox', mailFrom: 'hello@example.com', analytics } });
-  return { app, db, mailer, now, uploadsDir };
+  const app = buildApp({ db, mailer, secretBox, now, random, weather, themeAi, ideaAi, geoip, config: { baseUrl: 'http://test.local', secureCookies, uploadsDir, mailTransport: 'outbox', mailFrom: 'hello@example.com', analytics } });
+  return { app, db, mailer, now, uploadsDir, weather };
 }
 
 // Minimal cookie jar + form poster for app.inject.

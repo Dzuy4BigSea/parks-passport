@@ -77,7 +77,7 @@ ${errorSummary(errors, { title: 'Title', body: 'Message', city: 'City', badge: '
 <form method="post" action="/admin/messages${id ? `/${id}` : ''}" class="card-form admin-form message-form" novalidate data-message-form>
   ${csrfField(csrf)}
   <div class="field${errors.title ? ' field-error' : ''}"><label for="title">Title</label>${err('title')}
-    <input id="title" name="title" value="${v.title || ''}" maxlength="${TITLE_MAX}" required placeholder="Happy Thanksgiving!"${errors.title ? html` aria-invalid="true" aria-describedby="title-error"` : ''}></div>
+    <input type="text" id="title" name="title" value="${v.title || ''}" maxlength="${TITLE_MAX}" required placeholder="Happy Thanksgiving!"${errors.title ? html` aria-invalid="true" aria-describedby="title-error"` : ''}></div>
   <div class="field${errors.body ? ' field-error' : ''}"><label for="body">Message</label>
     <p class="hint" id="body-hint">Plain text, up to ${BODY_MAX} characters. Line breaks are kept.</p>${err('body')}
     <textarea id="body" name="body" rows="5" maxlength="${BODY_MAX}" aria-describedby="body-hint">${v.body || ''}</textarea></div>
@@ -129,12 +129,13 @@ ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
   <dt>Reaches</dt><dd><strong data-reach>${reach} ${reach === 1 ? 'member' : 'members'}</strong> right now${m.status !== 'draft' ? html` · seen by ${m.seen} so far` : ''}</dd>
 </dl>
 ${m.status === 'draft' ? html`<div class="actions">
-  <form method="post" action="/admin/messages/${m.id}/publish">${csrfField(csrf)}<input type="hidden" name="confirm" value="1">
-    <button type="submit" class="btn btn-pop">Publish to ${reach} ${reach === 1 ? 'member' : 'members'}</button></form>
+  <form method="post" action="/admin/messages/${m.id}/publish" class="publish-form">${csrfField(csrf)}
+    <label class="check"><input type="checkbox" name="confirm" value="1" required> Yes, send it to ${reach} ${reach === 1 ? 'member' : 'members'}</label>
+    <button type="submit" class="btn btn-pop">Publish</button></form>
   <a class="btn" href="/admin/messages/${m.id}/edit">Edit</a>
   <form method="post" action="/admin/messages/${m.id}/delete">${csrfField(csrf)}<button type="submit" class="btn btn-quiet">Delete draft</button></form>
 </div>
 <p class="hint">Once it’s published it can’t be edited, only ended.</p>` : ''}
-${m.status === 'live' ? html`<form method="post" action="/admin/messages/${m.id}/end">${csrfField(csrf)}
+${state === 'live' || state === 'scheduled' ? html`<form method="post" action="/admin/messages/${m.id}/end">${csrfField(csrf)}
   <button type="submit" class="btn">End this message</button> <span class="hint">Members who haven’t seen it yet won’t.</span></form>` : ''}`, { csrf });
 }

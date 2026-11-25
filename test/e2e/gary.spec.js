@@ -34,7 +34,7 @@ test('anyone: Gary gives a tip for this screen, and Escape or a tap outside clos
   await gary.click();
   const panel = page.getByRole('group', { name: 'Gary says' });
   await expect(panel).toBeVisible();
-  await expect(panel.locator('.gary-msg.is-gary')).toContainText(/park/i);
+  await expect(panel.locator('.gary-msg.is-gary strong')).toHaveText(/!$/); // a tip, then his sign-off
   await expect(panel.getByRole('button', { name: 'Talk to Gary' })).toHaveCount(0); // visitors only get the tip
   await expectNoAxeViolations(page);
   expect(await noSideScroll(page)).toBe(true);

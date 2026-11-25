@@ -15,6 +15,7 @@ export const SEED_BADGES_JSON = path.join(SEED_DIR, 'badges.json');
 export const SEED_ACTIVITIES_JSON = path.join(SEED_DIR, 'activities.json');
 export const SEED_ACTIVITY_BADGES_JSON = path.join(SEED_DIR, 'activity-badges.json');
 export const SEED_TRAVEL_BADGES_JSON = path.join(SEED_DIR, 'travel-badges.json');
+export const SEED_GARY_OUTFITS_JSON = path.join(SEED_DIR, 'gary-outfits.json');
 export const SEED_REWARD_BADGES_JSON = path.join(SEED_DIR, 'reward-badges.json');
 export const SEED_LIMITED_BADGES_JSON = path.join(SEED_DIR, 'limited-badges.json');
 

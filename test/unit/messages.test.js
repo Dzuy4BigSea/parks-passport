@@ -167,10 +167,24 @@ test('the review page shows the reach, and publishing needs the confirm field', 
   const res = await people.boss.c.post('/admin/messages', { title: 'Hello', audience: 'everyone', existing_only: '1' });
   const id = res.headers.location.split('/').pop();
   const review = await people.boss.c.get(`/admin/messages/${id}`);
-  assert.match(review.body, /Publish to 3 members/);
+  assert.match(review.body, /Yes, send it to 3 members/);
   await people.boss.c.post(`/admin/messages/${id}/publish`, {});
   assert.equal(db.prepare('SELECT status FROM team_messages WHERE id = ?').pluck().get(id), 'draft');
   await people.boss.c.post(`/admin/messages/${id}/publish`, { confirm: '1' });
   assert.equal(db.prepare('SELECT status FROM team_messages WHERE id = ?').pluck().get(id), 'live');
   assert.deepEqual(takeMessages(db, { id: 999999 }), []);
+});
+
+test('"joined before it goes live" counts from the start of a scheduled message, not from publishing', async () => {
+  const w = await world();
+  const { app, now } = w;
+  await send(w, { title: 'Starts tomorrow', starts_at: '2026-11-21T09:00' }); // existing members only
+  now.advanceMinutes(60); // publish -> 1 hour later: still before the start
+  const mid = client(app);
+  await mid.post('/signup', { display_name: 'Mid', email: 'mid@example.com', password: PW });
+  now.advanceMinutes(60 * 24); // past the start
+  const late = client(app);
+  await late.post('/signup', { display_name: 'Late', email: 'late@example.com', password: PW });
+  assert.match((await mid.get('/st-pete/parks')).body, /Starts tomorrow/);
+  assert.doesNotMatch((await late.get('/st-pete/parks')).body, /Starts tomorrow/);
 });

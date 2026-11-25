@@ -52,7 +52,8 @@ test('write, preview and send a message with a badge; the member sees it, then t
 
   await page.getByRole('button', { name: 'Save and review' }).click();
   await expect(page.getByText('Reaches')).toBeVisible();
-  await page.getByRole('button', { name: 'Publish to 1 member' }).click();
+  await page.getByLabel('Yes, send it to 1 member').check();
+  await page.getByRole('button', { name: 'Publish', exact: true }).click();
   await expect(page.getByRole('status')).toHaveText('Published. Members see it on their next page.');
 
   // The member's next page: the message first, then the badge it brought.

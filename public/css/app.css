@@ -1559,6 +1559,7 @@ html.fx-locked { overflow: hidden; }
 
 /* Full screen (public/js/message.js). */
 .fx-message { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; overflow-y: auto; }
+.fx-message .reveal-backdrop { position: fixed; } /* stays put when a long message scrolls */
 .message-stage { position: relative; display: grid; justify-items: center; gap: 1rem; width: min(26rem, 100%); animation: fx-pop 0.45s cubic-bezier(.2, 1.4, .4, 1); }
 .message-stage .team-message { width: 100%; box-shadow: 6px 6px 0 var(--sun); }
 .fx-message.is-notice .message-stage { animation: fx-fade 0.4s ease-out; }
@@ -1572,7 +1573,7 @@ html.fx-locked { overflow: hidden; }
 .is-gift-open .message-gift-lid { transform: translate(2.5rem, -3rem) rotate(35deg); opacity: 0; }
 /* Hearts, leaves and snow drifting across the screen. */
 .fx-drift { position: fixed; inset: 0; z-index: 1001; pointer-events: none; overflow: hidden; }
-.fx-drift span { position: absolute; left: var(--x); font-size: var(--size); line-height: 1; opacity: 0; animation: var(--anim) var(--dur) ease-in var(--delay) forwards; }
+.fx-drift span { position: absolute; color: #fffaf0; text-shadow: 0 0 6px rgba(14, 42, 51, 0.35); left: var(--x); font-size: var(--size); line-height: 1; opacity: 0; animation: var(--anim) var(--dur) ease-in var(--delay) forwards; }
 .fx-drift.is-down span { top: -2rem; --anim: fx-fall; }
 .fx-drift.is-up span { bottom: -2rem; --anim: fx-rise; }
 @keyframes fx-fall { 0% { opacity: 0; transform: translate(0, 0) rotate(0); } 10% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--sway), 105vh) rotate(var(--spin)); } }
@@ -1629,3 +1630,23 @@ body:has(.gary-help) .site-footer { padding-bottom: 5.5rem; }
 @keyframes gary-typing { 50% { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) { .gary-panel, .gary-msg.is-typing p, .gary-fab { animation: none; transition: none; } }
 @media print { .gary-help { display: none; } }
+
+/* ---------- Gary's outfits (SPEC Flow 22) ---------- */
+.gary-svg.is-still * { animation: none !important; }
+svg.gary-art { height: auto; }
+.wardrobe .outfit-grid { list-style: none; padding: 0; margin: 1rem 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 0.75rem; }
+.wardrobe fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.outfit-card { position: relative; display: grid; justify-items: center; gap: 0.25rem; padding: 0.75rem 0.6rem; border-radius: var(--radius); background: var(--surface);
+  border: 2px solid var(--line); text-align: center; cursor: pointer; }
+.outfit-card input { position: absolute; top: 0.6rem; left: 0.6rem; width: 1.2rem; height: 1.2rem; }
+.outfit-card:has(input:checked), .outfit-card.is-chosen { border-color: var(--aqua-ink); box-shadow: 0 0 0 3px var(--aqua-tint); }
+.outfit-card:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+.outfit-card .gary-svg { width: 120px; height: 120px; }
+.outfit-name { font-weight: 800; }
+.outfit-blurb { font-size: 0.85rem; color: var(--muted); }
+.outfit-card.is-locked { cursor: default; background: var(--sand-2); }
+.is-silhouette { filter: grayscale(1) brightness(0.55) opacity(0.45); }
+.outfit-admin { list-style: none; padding: 0; display: grid; gap: 1rem; }
+.outfit-admin-card { display: grid; grid-template-columns: 160px 1fr; gap: 1rem; align-items: start; }
+.outfit-admin-card select[multiple] { width: 100%; }
+@media (max-width: 34rem) { .outfit-admin-card { grid-template-columns: 1fr; justify-items: start; } }

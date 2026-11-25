@@ -425,7 +425,7 @@ talk-back only for founding explorers, reply per kind, feedback saved with the p
 scroll and axe clean at 375 px), and the existing suite.
 
 ### M32 — Gary's outfits and the weather (Flow 22)
-- Migration 026 (`gary_outfits`, `users.gary_outfit`), `seed/gary-outfits.json` (13 drafts),
+- Migration 026 (`gary_outfits`, `users.gary_outfit`), `seed/gary-outfits.json` (14 outfits; Classic approved, the rest drafts),
   `src/views/gary-art.js` (Gary with an outfit), `src/domain/outfits.js` (wardrobe, unlocks,
   weather choice), `src/lib/weather.js` (Open-Meteo, 1 h cache, 2 s timeout), Admin › Gary,
   Account › Gary's wardrobe.

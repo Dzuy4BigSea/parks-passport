@@ -41,6 +41,9 @@ import notificationRoutes from './routes/notifications.js';
 import { canSendFeedback } from './domain/founding.js';
 import communityRoutes from './routes/community.js';
 import messageRoutes from './routes/messages.js';
+import outfitRoutes from './routes/outfits.js';
+import { outfitFor } from './domain/outfits.js';
+import { createWeather } from './lib/weather.js';
 import { takeMessages } from './domain/messages.js';
 import { shareNudge } from './views/pages/pals.js';
 
@@ -54,7 +57,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
  * config: { baseUrl, secureCookies, uploadsDir }
  */
 export function buildApp({
-  db, mailer, secretBox = null, now = () => new Date(), random = Math.random, logger = false, themeAi = null, ideaAi = null, geoip = null,
+  db, mailer, secretBox = null, now = () => new Date(), random = Math.random, weather = null, logger = false, themeAi = null, ideaAi = null, geoip = null,
   config = { baseUrl: 'http://localhost:8080', secureCookies: false, uploadsDir: './data/uploads' },
 } = {}) {
   if (!db) throw new Error('buildApp needs a db');
@@ -69,6 +72,8 @@ export function buildApp({
   app.decorate('mailer', mailer);
   app.decorate('now', now);
   app.decorate('random', random); // injectable for lucky badges in tests
+  // Today's weather per city, for Gary's outfit (SPEC Flow 22). Injectable (tests use a fake).
+  app.decorate('weather', weather || createWeather({ now, log: { warn: (obj, msg) => app.log.warn(obj, msg) } }));
   app.decorate('config', config);
   app.decorate('secretBox', secretBox); // encrypts the admin-saved SendGrid key
   // app.track(userId, name, params): an analytics event for the user's next page (see lib/analytics.js).
@@ -159,7 +164,9 @@ export function buildApp({
     return this.type('text/html; charset=utf-8')
       .header('Cache-Control', 'no-store')
       .send(String(layout({
-        ...view, user: req.user, csrf: req.csrfToken(), announcements, messages, nudge, events, consent, path,
+        ...view, user: req.user, csrf: req.csrfToken(), announcements, messages, nudge, random: app.random,
+        // What Gary wears (SPEC Flow 22): the member's choice, or today's weather where they're looking.
+        gary: view.gary || outfitFor(db, req.user, app.weather.current(view.city || req.city)).outfit, events, consent, path,
         theme: view.city || req.city, cities: listCities(db).filter((c) => c.listed),
         baseUrl: config.baseUrl, shareImages,
         canonicalPath: private_ ? null : pathname,
@@ -191,8 +198,9 @@ export function buildApp({
       dash = homeData(db, user, city, { now: now(), near: parseLatLng(req.query.lat, req.query.lng) });
       dash.tip = garyTip(dash.tipInput);
     }
-    return reply.page({ city, ...homePage({
-      total: countActiveParks(db, city.id), theme: city, user, dash, today: localDate(now(), city.time_zone),
+    const gary = outfitFor(db, user, app.weather.current(city)).outfit;
+    return reply.page({ city, gary, ...homePage({
+      total: countActiveParks(db, city.id), theme: city, user, dash, gary, today: localDate(now(), city.time_zone),
       cities: listCities(db).filter((c) => c.listed), suggest,
     }) });
   }
@@ -227,6 +235,7 @@ export function buildApp({
   app.register(notificationRoutes);
   app.register(communityRoutes);
   app.register(messageRoutes);
+  app.register(outfitRoutes);
   app.register(consentRoutes);
 
   // Friendly HTML errors instead of Fastify's JSON (e.g. an upload over the size limit).

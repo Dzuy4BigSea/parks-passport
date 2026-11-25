@@ -144,3 +144,32 @@ test('the passport opening goes first; a waiting badge is revealed right after i
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator('html')).not.toHaveClass(/fx-locked/);
 });
+
+// Messages from the team (SPEC Flow 20): the message opens with its effect, then the badge it
+// brought is revealed. Inserted straight into the database for this member only (the e2e database
+// is shared, so never "everyone").
+test('a message from the team opens first, then its badge is revealed', async ({ page }) => {
+  const email = uniqueEmail('msg');
+  await signUpCelebrating(page, 'Mo Message', email);
+  await page.getByRole('button', { name: 'Start exploring' }).click();
+  const db = new Database(path.join(process.env.PP_E2E_DATA_DIR, 'app.db'));
+  const userId = db.prepare('SELECT id FROM users WHERE email = ?').pluck().get(email);
+  const badgeId = db.prepare("SELECT id FROM badges WHERE slug = 'two-cities'").pluck().get();
+  const at = new Date().toISOString();
+  const id = db.prepare(`INSERT INTO team_messages (title, body, effect, audience, existing_only, badge_ids, status, published_at, created_at, updated_at)
+    VALUES ('Happy Thanksgiving!', 'Thank you for exploring with us.', 'autumn', 'picked', 0, ?, 'live', ?, ?, ?)`).run(JSON.stringify([badgeId]), at, at, at).lastInsertRowid;
+  db.prepare('INSERT INTO team_message_recipients (message_id, user_id) VALUES (?, ?)').run(id, userId);
+  db.close();
+
+  await page.goto('/st-pete/parks');
+  const message = page.getByRole('dialog', { name: 'Happy Thanksgiving!' });
+  await expect(message).toBeVisible();
+  await expect(page.locator('.fx-drift')).toHaveCount(1); // falling leaves
+  await expect(page.locator('.fx-reveal')).toHaveCount(0); // not yet
+  await expectNoAxeViolations(page);
+  await message.getByRole('button', { name: 'Let’s go!' }).click();
+  const reveal = page.locator('.fx-reveal'); // "Badge unlocked!" (this test message has no author)
+  await expect(reveal).toBeVisible();
+  await reveal.getByRole('button', { name: /Tap to reveal/ }).click();
+  await expect(reveal.locator('.reveal-name')).toHaveText('Two-City Explorer');
+});

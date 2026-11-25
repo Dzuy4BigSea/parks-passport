@@ -137,7 +137,7 @@ export const badgeIdsOf = (m) => { try { const v = JSON.parse(m.badge_ids); retu
 
 /**
  * SQL (and its parameters) for the members a message reaches, as `users u` rows. `since` is the
- * moment it went live (or now, for a draft), for "only members who joined before".
+ * moment it starts showing (see liveSince), for "only members who joined before it goes live".
  */
 function audienceSql(m, since) {
   const where = [];
@@ -157,9 +157,15 @@ function audienceSql(m, since) {
   return { sql: where.length ? where.join(' AND ') : '1', params };
 }
 
+/** When a message starts showing: its start time, or when it was published (now, for a draft), whichever is later. */
+const liveSince = (m, now) => {
+  const published = m.published_at || now.toISOString();
+  return m.starts_at && m.starts_at > published ? m.starts_at : published;
+};
+
 /** How many members a message reaches right now. */
 export function reachCount(db, m, { now = new Date() } = {}) {
-  const { sql, params } = audienceSql(m, m.published_at || now.toISOString());
+  const { sql, params } = audienceSql(m, liveSince(m, now));
   return db.prepare(`SELECT COUNT(*) FROM users u WHERE ${sql}`).pluck().get(...params);
 }
 
@@ -210,7 +216,7 @@ export function takeMessages(db, user, { now = new Date() } = {}) {
   const out = [];
   for (const m of live) {
     if (out.length >= PER_PAGE) break;
-    const { sql, params } = audienceSql(m, m.published_at || at);
+    const { sql, params } = audienceSql(m, liveSince(m, now));
     if (!db.prepare(`SELECT 1 FROM users u WHERE u.id = ? AND ${sql}`).get(user.id, ...params)) continue;
     const taken = db.transaction(() => {
       if (!db.prepare('INSERT OR IGNORE INTO team_message_views (message_id, user_id, seen_at) VALUES (?, ?, ?)').run(m.id, user.id, at).changes) return null;

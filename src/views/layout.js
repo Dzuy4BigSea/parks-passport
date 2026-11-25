@@ -7,6 +7,7 @@ import { photosFor } from '../domain/city-photos.js';
 import { cityPath } from './urls.js';
 import { teamMessagesBlock } from './pages/messages.js';
 import { garyTipFor } from './gary-help.js';
+import { garySvg } from './gary-art.js';
 
 /**
  * Page shell. `head` adds per-page tags (e.g. Leaflet CSS); `scripts` are module URLs loaded with defer.
@@ -93,11 +94,11 @@ const aria = (on) => (on ? html` aria-current="page"` : '');
 // <details> works without JS; public/js/gary.js adds Escape, a tap outside and the talk-back chat.
 // Founding explorers (Flow 16) can talk back: their message is feedback for the team, and Gary
 // replies with a thank-you (from the server, so it works without JS too).
-function garyButton({ csrf, path, canTalk }) {
+function garyButton({ csrf, path, canTalk, random, gary }) {
   const page = String(path || '/').split(/[?#]/)[0];
-  const { tip, signOff } = garyTipFor(page);
+  const { tip, signOff } = garyTipFor(page, random);
   return html`<details class="gary-help" data-gary>
-  <summary class="gary-fab"><img src="/brand/gary.svg" alt="" width="56" height="56" class="gary-fab-art"><span class="visually-hidden">Ask Gary</span></summary>
+  <summary class="gary-fab">${garySvg(gary?.art || {}, { id: 'fab', width: 60, height: 60, className: 'gary-fab-art', still: true })}<span class="visually-hidden">Ask Gary</span></summary>
   <div class="gary-panel" role="group" aria-label="Gary says">
     <ol class="gary-chat" data-gary-chat>
       <li class="gary-msg is-gary"><span class="gary-name">Gary</span><p>${tip} <strong>${signOff}</strong></p></li>
@@ -154,7 +155,7 @@ export function statusPills(status) {
 
 export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null, messages = [], nudge = null,
   analytics = null, consent = { chosen: true, analytics: false, ads: false }, events = [], showConsentBanner = false, path = '/',
-  theme = null, cities = [], status = null, description = null, baseUrl = '', canonicalPath = null, shareImages = null, feedback = false }) {
+  theme = null, cities = [], status = null, description = null, baseUrl = '', canonicalPath = null, shareImages = null, feedback = false, random = Math.random, gary = null }) {
   // Parks and Passport links stay in the city being viewed (SPEC Flow 14).
   const base = theme?.key && theme.key !== 'default' ? cityPath(theme) : '';
   const nav = user
@@ -232,7 +233,7 @@ ${showConsentBanner ? consentBanner(csrf, path) : ''}
     </div>
   </div>
 </footer>
-${garyButton({ csrf, path, canTalk: feedback && current !== 'feedback' })}
+${garyButton({ csrf, path, random, gary, canTalk: feedback && current !== 'feedback' })}
 ${user ? tabBar(current, base) : ''}
 </body>
 </html>`;
