@@ -231,3 +231,60 @@ test('group invites and join requests can be answered right in the notification 
   // Someone else can't answer Cat's invite.
   assert.equal((await dee.c.post(`/groups/invites/${g}/accept`, { from: 'notifications' })).statusCode, 404);
 });
+
+test('QA: an old group notification never answers a later invite or a new group that reused its id; stale states say so', async () => {
+  const { app, db, people, gps, groupId, code, members } = await world();
+  const { ana, ben, cat } = people;
+  const now = app.now;
+  gps('ana', 10);
+  const [a, b] = ana.id < cat.id ? [ana.id, cat.id] : [cat.id, ana.id];
+  db.prepare('INSERT INTO pal_links (user_a, user_b, created_at) VALUES (?, ?, ?)').run(a, b, '2026-06-01T00:00:00Z');
+  await ana.c.post('/groups', { name: 'Walkers', emoji: '🚶' });
+  const g1 = groupId('Walkers');
+  await ana.c.post(`/groups/${g1}/invite`, { user_id: String(cat.id) });
+  // Cat declines from the notification.
+  assert.equal((await cat.c.post(`/groups/invites/${g1}/decline`, { from: 'notifications' })).headers.location, '/notifications?done=group_invite_declined');
+  assert.match((await cat.c.get('/notifications')).body, /Answered\./);
+  // A re-invite later: only the new notification has buttons.
+  now.advanceMinutes(5);
+  await ana.c.post(`/groups/${g1}/invite`, { user_id: String(cat.id) });
+  let page = (await cat.c.get('/notifications')).body;
+  assert.equal((page.match(new RegExp(`/groups/invites/${g1}/accept`, 'g')) || []).length, 1);
+  // Ana ends Walkers and starts a new group, which may reuse the id: the old invites say No longer open.
+  await ana.c.post(`/groups/${g1}/end`);
+  now.advanceMinutes(5);
+  await ana.c.post('/groups', { name: 'Secret Other', emoji: '🌳' });
+  const g2 = groupId('Secret Other');
+  page = (await cat.c.get('/notifications')).body;
+  assert.doesNotMatch(page, new RegExp(`/groups/invites/${g2}/accept`));
+  assert.match(page, /No longer open\./);
+  assert.deepEqual(members('Secret Other'), ['ana']);
+
+  // An older invite notification (no group in its link) is just a link.
+  db.prepare("INSERT INTO notifications (user_id, kind, text, link, actor_id, created_at) VALUES (?, 'group_invite', 'old invite', '/groups#invites', ?, ?)")
+    .run(cat.id, ana.id, now().toISOString());
+  assert.match((await cat.c.get('/notifications')).body, /<a href="\/groups#invites">old invite<\/a>\s*<br><span class="muted">[^<]*<\/span><\/p><\/li>/);
+
+  // A request whose group was handed on: the old owner's notification says No longer open.
+  await ben.c.post(`/groups/join/${code('Secret Other')}`);
+  db.prepare('INSERT INTO group_members (group_id, user_id, joined_at) SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?)')
+    .run(g2, cat.id, now().toISOString(), g2, cat.id);
+  db.prepare('UPDATE member_groups SET owner_id = ? WHERE id = ?').run(cat.id, g2);
+  page = (await ana.c.get('/notifications')).body;
+  assert.doesNotMatch(page, new RegExp(`/groups/${g2}/requests/${ben.id}/approve`));
+  assert.match(page, /No longer open\./);
+});
+
+test('QA: accepting from a notification while in too many groups goes back to the notifications with a note', async () => {
+  const { db, people, gps, groupId } = await world();
+  const { ana, cat } = people;
+  gps('ana', 10);
+  const [a, b] = ana.id < cat.id ? [ana.id, cat.id] : [cat.id, ana.id];
+  db.prepare('INSERT INTO pal_links (user_a, user_b, created_at) VALUES (?, ?, ?)').run(a, b, '2026-06-01T00:00:00Z');
+  await ana.c.post('/groups', { name: 'Walkers', emoji: '🚶' });
+  await ana.c.post(`/groups/${groupId('Walkers')}/invite`, { user_id: String(cat.id) });
+  db.prepare('UPDATE users SET group_join_limit = 0 WHERE id = ?').run(cat.id);
+  const res = await cat.c.post(`/groups/invites/${groupId('Walkers')}/accept`, { from: 'notifications' });
+  assert.equal(res.headers.location, '/notifications?done=group_full');
+  assert.match((await cat.c.get(res.headers.location)).body, /as many groups as you can be/);
+});

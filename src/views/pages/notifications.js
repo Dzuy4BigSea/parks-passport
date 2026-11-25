@@ -18,9 +18,10 @@ function palRequestActions(n, csrf) {
 function groupActions(n, csrf) {
   const g = n.group;
   if (!g) return '';
-  if (!g.open) {
-    const done = g.kind === 'invite' ? (g.member ? 'You joined.' : 'Answered.') : (g.member ? 'They\u2019re in.' : 'Answered.');
-    return html`<span class="muted request-answered">${done}</span>`;
+  if (g.state !== 'open') {
+    const text = g.state === 'gone' ? 'No longer open.' : g.state === 'answered' ? 'Answered.'
+      : g.kind === 'invite' ? 'You joined.' : 'They\u2019re in.';
+    return html`<span class="muted request-answered">${text}</span>`;
   }
   const button = (url, label, cls) => html`<form method="post" action="${url}">
       ${csrfField(csrf)}<input type="hidden" name="from" value="notifications">
