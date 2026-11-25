@@ -251,3 +251,25 @@ Checks: `test/unit/pals.test.js` (code format and normalizing, request then acce
 mutual request, cancel, self / already pals / repeat, wrong-code and daily limits, new code kills
 the old one, dead link page is a 404 with help, account deletion removes codes and requests),
 `test/e2e/pals.spec.js` (add by code at 375 px, accept, axe clean), and the existing suite.
+
+### M17 — More cities: city packs, Westminster and Asheville (Flow 14)
+Outcome: SPEC Flow 14. Westminster, CA and Asheville, NC as proofs of concept beside St. Pete.
+- Migration 016 (city time zone, bounds, copy, listed, sort, seeded_at; `parks` rebuilt with
+  `city_id` and per-city slugs; `badges.city_id`). The runner runs a migration marked
+  `-- migrate:foreign-keys-off` with foreign keys off and checks them before committing.
+- City packs in `seed/cities/<key>/` (St. Pete moved there), loaded on every start by
+  `seedCities` in `src/db/seed.js`; `seed/travel-badges.json`. `scripts/seed-westminster.js`
+  builds Westminster's `parks.csv` from the City's saved page (OSM, then Census/OSM address);
+  `scripts/seed-asheville.js` builds Asheville's from the City's locations directory.
+- `src/domain/city.js` (many cities, copy, nearest city, park time zone), `src/lib/city-context.js`
+  (`req.city`, `pp_city`), `src/lib/geoip.js` (`GEOIP_DB`, `maxmind`), `src/views/urls.js`,
+  `src/routes/city-params.js`; city URLs and redirects in the park, visit, photo, activity and
+  passport routes; city tabs; the admin city bar; the `cities_count` rule. The gamification core
+  gains two generic hooks (`scopeContext`, board options) so city badges stay in the adapter.
+
+Checks: `test/unit/cities.test.js` (packs valid, seeding idempotent, migration keeps every visit,
+photo and rating, city URLs and redirects, remembered city, park-local "today" and Early Bird,
+city and travel badges, the IP suggestion with a fake database, the admin city bar),
+`test/e2e/cities.spec.js` (Westminster pages axe clean at 375 px, GPS stamp at Sigler Park, city
+tabs), and the existing suite on `/st-pete/...` URLs. `npm run lighthouse` and
+`npm run check:memory` still pass.

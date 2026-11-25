@@ -17,7 +17,7 @@ test('every email has branded HTML plus plain text whose first URL is the link',
     assert.match(m.html, new RegExp(`src="${BASE}/icons/icon-192.png"`));
     assert.ok(m.html.includes(`href="${URL_.replace(/&/g, '&amp;')}"`), 'button links to the token URL');
     assert.match(m.html, /Made for the Sunshine City/);
-    assert.match(m.html, /Not affiliated with the City of St\. Petersburg/);
+    assert.match(m.html, /Not affiliated with any city government/);
     assert.match(m.html, /expires in 15 minutes/);
   }
   const t = testEmail({ baseUrl: BASE, fromName: 'Parks Passport', fromAddress: 'hi@parks.example', tagline: '' });

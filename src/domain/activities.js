@@ -1,5 +1,6 @@
 // Healthy activities (docs/healthy-activities.md): things to do at a park once it's stamped today.
 // Logs are private to the member. Only badges earned from them follow the passport's visibility.
+import { parkTimeZone } from './city.js';
 import { localDate } from './time.js';
 import { dayNumber, mondayOf } from './badges/rules.js';
 import { setSourcePoints, removeSourcePoints } from '../gamification/index.js';
@@ -75,7 +76,7 @@ const dayTotals = (db, userId, day) => db.prepare(`SELECT COALESCE(SUM(minutes),
  * Errors: not_stamped, unknown, bad_amount, miles_cap, duplicate.
  */
 export function logActivity(db, { user, park, slug, amount: raw }, { now = new Date() } = {}) {
-  const today = localDate(now);
+  const today = localDate(now, parkTimeZone(db, park.id));
   const visit = visitToday(db, user.id, park.id, today);
   if (!visit) return { error: 'not_stamped' };
   const activity = activitiesForPark(db, user, park).find((a) => a.slug === slug);
@@ -118,8 +119,8 @@ export const deleteVisitActivityPoints = (db, visitId) => db.prepare(`DELETE FRO
   WHERE source_type = 'activity' AND source_id IN (SELECT id FROM activity_logs WHERE visit_id = ?)`).run(visitId);
 
 /** This week's (Monday to Sunday, local) totals for the passport. */
-export function weekSummary(db, userId, { now = new Date() } = {}) {
-  const today = dayNumber(localDate(now));
+export function weekSummary(db, userId, { now = new Date(), timeZone } = {}) {
+  const today = dayNumber(localDate(now, timeZone)); // the week of the city being viewed
   const monday = mondayOf(today);
   const rows = db.prepare(`SELECT l.logged_on, l.minutes, l.miles, a.pillar FROM activity_logs l
     JOIN activities a ON a.id = l.activity_id WHERE l.user_id = ?`).all(userId)

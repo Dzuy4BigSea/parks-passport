@@ -13,16 +13,18 @@ const parseParams = (b) => {
 };
 
 /**
- * createBadgeEngine({ rules, loadContext, boardFilter? })
+ * createBadgeEngine({ rules, loadContext, boardFilter?, scopeContext? })
  *   rules: { [rule_type]: rule }
  *   loadContext(db, userId, { trigger, random }) -> ctx passed to every rule
- *   boardFilter(db, userId) -> (badge) => boolean: which unearned badges this user sees on the board
+ *   boardFilter(db, userId, options) -> (badge) => boolean: which unearned badges this user sees on
+ *     the board (options: whatever the app passed to badgeBoard)
+ *   scopeContext(badge, ctx) -> ctx: narrows the context for one badge (e.g. to one region)
  */
-export function createBadgeEngine({ rules, loadContext, boardFilter = null }) {
+export function createBadgeEngine({ rules, loadContext, boardFilter = null, scopeContext = null }) {
   function evaluateRule(badge, ctx) {
     const rule = rules[badge.rule_type];
     if (!rule) return { earned: false };
-    return rule.evaluate(parseParams(badge), ctx);
+    return rule.evaluate(parseParams(badge), scopeContext ? scopeContext(badge, ctx) : ctx);
   }
 
   /**
@@ -73,13 +75,13 @@ export function createBadgeEngine({ rules, loadContext, boardFilter = null }) {
    * The user's badge board: earned (with date), then known (with progress), hidden and lucky
    * (no criteria shown). Disabled badges are shown only if already earned.
    */
-  function badgeBoard(db, userId) {
+  function badgeBoard(db, userId, options = {}) {
     const rows = db.prepare(`SELECT b.*, ub.awarded_at FROM badges b
       LEFT JOIN user_badges ub ON ub.badge_id = b.id AND ub.user_id = ?
       WHERE b.enabled = 1 OR ub.awarded_at IS NOT NULL ORDER BY b.sort, b.id`).all(userId);
     // random: () => 1 so chance-based rules never "earn" while drawing progress.
     const ctx = loadContext(db, userId, { random: () => 1 });
-    const visible = boardFilter ? boardFilter(db, userId) : () => true;
+    const visible = boardFilter ? boardFilter(db, userId, options) : () => true;
     return rows.filter((b) => b.awarded_at || visible(b)).map((b) => {
       if (b.awarded_at) return { ...b, state: 'earned' };
       if (b.kind === 'known') {

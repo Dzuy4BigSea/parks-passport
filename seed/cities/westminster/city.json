@@ -1,0 +1,101 @@
+{
+  "key": "westminster",
+  "name": "Westminster",
+  "tagline": "Little Saigon",
+  "sort": 1,
+  "listed": true,
+  "time_zone": "America/Los_Angeles",
+  "bounds": {
+    "minLat": 33.7,
+    "maxLat": 33.81,
+    "minLng": -118.05,
+    "maxLng": -117.92
+  },
+  "copy": {
+    "short": "Westminster",
+    "place": "Westminster, California",
+    "official": "the City of Westminster",
+    "gary": "I've been wandering Westminster parks and I still find something new on most visits, like the splash pad at Sigler Park on a hot afternoon or a pickleball game at Tony Lam Park.",
+    "description": "Check in at every Westminster, California park you visit, collect stamps and badges, rate your favorites and explore with your Park Pals.",
+    "search_examples": "Sigler, Liberty, Bolsa Chica…",
+    "made_for": "Westminster and Little Saigon"
+  },
+  "accent": "#E4572E",
+  "accent_2": "#F2A541",
+  "areas": [
+    {
+      "slug": "west",
+      "name": "West Westminster",
+      "lat": 33.76,
+      "lng": -118.028
+    },
+    {
+      "slug": "civic-center",
+      "name": "Civic Center & Central",
+      "lat": 33.76,
+      "lng": -117.995
+    },
+    {
+      "slug": "east",
+      "name": "East Westminster",
+      "lat": 33.752,
+      "lng": -117.962
+    },
+    {
+      "slug": "south",
+      "name": "South Westminster",
+      "lat": 33.738,
+      "lng": -117.982
+    }
+  ],
+  "motifs": [
+    {
+      "slug": "little-saigon",
+      "name": "Little Saigon",
+      "blurb": "Westminster is home to Little Saigon, the largest Vietnamese community outside Vietnam.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M24 4v5\"/><path d=\"M18 9h12M18 39h12\"/><path d=\"M18 9c-7 4-9 9-9 15s2 11 9 15\"/><path d=\"M30 9c7 4 9 9 9 15s-2 11-9 15\"/><path d=\"M24 9c-3 5-4 10-4 15s1 10 4 15\"/><path d=\"M24 9c3 5 4 10 4 15s-1 10-4 15\"/><path d=\"M24 39v5M21 44h6\"/></svg>"
+    },
+    {
+      "slug": "tet-blossom",
+      "name": "Tết blossoms",
+      "blurb": "Every Lunar New Year the city's Tết Parade fills the streets with music, dragons and yellow apricot blossoms.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><circle cx=\"26\" cy=\"20\" r=\"2.5\"/><circle cx=\"26\" cy=\"13\" r=\"4\"/><circle cx=\"32.7\" cy=\"17.8\" r=\"4\"/><circle cx=\"30.1\" cy=\"25.7\" r=\"4\"/><circle cx=\"21.9\" cy=\"25.7\" r=\"4\"/><circle cx=\"19.3\" cy=\"17.8\" r=\"4\"/><path d=\"M6 44c6-6 10-10 14-16\"/><path d=\"M11 39c-3-1-5-3-6-6\"/></svg>"
+    },
+    {
+      "slug": "mendez",
+      "name": "Mendez v. Westminster",
+      "blurb": "In 1946 the Mendez family won a federal case against Westminster's segregated schools, years before Brown v. Board of Education. Mendez Tribute Monument Park honors them.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><circle cx=\"24\" cy=\"6\" r=\"2\"/><path d=\"M24 8v32\"/><path d=\"M14 44h20M18 40h12\"/><path d=\"M8 12h32\"/><path d=\"M8 12l-5 13M8 12l5 13\"/><path d=\"M40 12l-5 13M40 12l5 13\"/><path d=\"M3 25a5 4 0 0 0 10 0z\"/><path d=\"M35 25a5 4 0 0 0 10 0z\"/></svg>"
+    },
+    {
+      "slug": "freedom-park",
+      "name": "Vietnam War Memorial",
+      "blurb": "Sid Goldstein Freedom Park holds a memorial to the American and South Vietnamese soldiers of the Vietnam War, with their two flags side by side.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M6 44h36\"/><path d=\"M10 44v-6h28v6\"/><path d=\"M16 38V6M32 38V6\"/><path d=\"M16 7h11v8H16\"/><path d=\"M32 7h11v8H32\"/></svg>"
+    },
+    {
+      "slug": "splash-pad",
+      "name": "Sigler Park splash pad",
+      "blurb": "On summer afternoons the splash pad at Sigler Park is the coolest place in town.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M24 40V24\"/><path d=\"M24 24c-4-8-10-10-16-8\"/><path d=\"M24 24c4-8 10-10 16-8\"/><path d=\"M24 24V9\"/><circle cx=\"8\" cy=\"21\" r=\"1.5\"/><circle cx=\"40\" cy=\"21\" r=\"1.5\"/><circle cx=\"24\" cy=\"5\" r=\"1.5\"/><path d=\"M8 44h32M14 40h20\"/></svg>"
+    },
+    {
+      "slug": "skate-park",
+      "name": "Liberty Skate Park",
+      "blurb": "Liberty Park's skate park was built for beginner and intermediate skaters. Helmets and pads on, then drop in.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 26c2 3 4 4 7 4h26c3 0 5-1 7-4\"/><path d=\"M15 30v3M33 30v3\"/><circle cx=\"15\" cy=\"36\" r=\"3\"/><circle cx=\"33\" cy=\"36\" r=\"3\"/><path d=\"M6 44h36\"/><path d=\"M28 16c6 0 10-3 14-9\"/></svg>"
+    },
+    {
+      "slug": "pickleball",
+      "name": "Pickleball",
+      "blurb": "Sigler Park and Tony Lam Park both have pickleball courts, open from morning until 9 at night.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><rect x=\"8\" y=\"5\" width=\"18\" height=\"22\" rx=\"8\"/><path d=\"M17 27v9\"/><rect x=\"14.5\" y=\"36\" width=\"5\" height=\"8\" rx=\"2\"/><circle cx=\"35\" cy=\"34\" r=\"6\"/><circle cx=\"33\" cy=\"32\" r=\"0.8\"/><circle cx=\"37.5\" cy=\"33\" r=\"0.8\"/><circle cx=\"34.5\" cy=\"37\" r=\"0.8\"/></svg>"
+    },
+    {
+      "slug": "rose-center",
+      "name": "The Rose Center",
+      "blurb": "The Rose Center is the city's own theater, with plays, concerts and community nights.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M24 22c-6 0-9-4-9-9 3 0 5 1 6 3 0-4 2-7 3-8 1 1 3 4 3 8 1-2 3-3 6-3 0 5-3 9-9 9z\"/><path d=\"M24 22v22\"/><path d=\"M24 35c-3-3-7-4-10-3 2 3 6 4 10 3z\"/><path d=\"M24 31c3-3 7-4 10-3-2 3-6 4-10 3z\"/></svg>"
+    }
+  ]
+}

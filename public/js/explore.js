@@ -78,7 +78,7 @@ async function initMap() {
     box.className = 'map-pop';
     if (p.area) { const a = document.createElement('p'); a.className = 'map-pop-area'; a.textContent = p.area; box.append(a); }
     const link = document.createElement('a');
-    link.href = `/parks/${p.slug}`;
+    link.href = p.url;
     link.textContent = p.name;
     box.append(link);
     const meta = document.createElement('p');

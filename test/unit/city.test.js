@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { makeApp, client, testClock } from './helpers.js';
 import { importParksCsv, PARK_CSV_COLUMNS } from '../../src/domain/csv-import.js';
 import { sanitizeSvg } from '../../src/lib/svg-sanitize.js';
-import { seedThemeIfEmpty, getTheme, clearThemeCache, collections, areaForPark, motifForPark, cleanMotif } from '../../src/domain/city.js';
+import { seedCityPack, seedThemeIfEmpty, getTheme, clearThemeCache, collections, areaForPark, motifForPark, cleanMotif } from '../../src/domain/city.js';
 import { weeklyStreak, closestBadge } from '../../src/domain/engagement.js';
 import { cleanThemeResult, themeJob } from '../../src/domain/theme-job.js';
 import { createThemeGenerator } from '../../src/lib/theme-ai.js';
@@ -161,7 +161,7 @@ test('/stamp: inside a park stamps it by GPS; far away stamps nothing and lists 
 
   const ok = await sam.post('/stamp', { lat: '27.7880', lng: '-82.6401', accuracy: '15' });
   assert.equal(ok.statusCode, 303);
-  assert.match(ok.headers.location, /^\/parks\/crescent-lake-park\?stamped=\d+$/);
+  assert.match(ok.headers.location, /^\/st-pete\/parks\/crescent-lake-park\?stamped=\d+$/);
   const visit = db.prepare('SELECT * FROM visits').get();
   assert.equal(visit.method, 'gps');
 
@@ -182,7 +182,7 @@ test('/stamp: stamps the nearest park whose radius holds you, even if another pa
   // ~600 m from Lake Vista's moved center (outside its 50 m), ~1.1 km from Abercrombie (inside 1500 m).
   const res = await sam.post('/stamp', { lat: '27.8010', lng: '-82.7460', accuracy: '10' });
   assert.equal(res.statusCode, 303);
-  assert.match(res.headers.location, /^\/parks\/abercrombie-park\?stamped=/);
+  assert.match(res.headers.location, /^\/st-pete\/parks\/abercrombie-park\?stamped=/);
 });
 
 test('home: landing page signed out; dashboard with next park, next badge and streak signed in', async () => {
@@ -338,19 +338,21 @@ test('city photos: St. Pete pages get the background photos and a credits page; 
   for (const f of ['pier-sunrise', 'pier-point', 'mangroves']) {
     assert.equal((await client(app).get(`/city/st-pete/${f}.webp`)).statusCode, 200, f);
   }
-  const { app: bare } = makeApp(); // no city theme seeded
-  assert.equal((await client(bare).get('/credits')).statusCode, 404);
-  assert.doesNotMatch((await client(bare).get('/')).body, /--photo-hero/);
+  // A city without photos: no background photos and no credits page.
+  seedCityPack(app.db, { key: 'testville', name: 'Testville', accent: '#112233', accent_2: '#445566' });
+  const visitor = client(app);
+  assert.doesNotMatch((await visitor.get('/testville')).body, /--photo-hero/);
+  assert.equal((await visitor.get('/credits')).statusCode, 404);
 });
 
 test('Gary picks the most useful tip, in order, and is honest about distances', async () => {
   const { garyTip } = await import('../../src/views/gary.js');
-  const nearest = { slug: 'pioneer-park', name: 'Pioneer Park', where: 'right downtown' };
+  const nearest = { slug: 'pioneer-park', city_key: 'st-pete', name: 'Pioneer Park', where: 'right downtown' };
   const streak = { weeks: 0, activeThisWeek: false, atRisk: false };
   assert.match(garyTip({ stamped: 2, stampedToday: { slug: 'x', name: 'Vinoy Park' }, streak, nearest }).text, /Nice work at Vinoy Park today/);
   const first = garyTip({ stamped: 0, streak, nearest });
   assert.match(first.text, /first stamp\. Pioneer Park is right downtown/);
-  assert.equal(first.action.href, '/parks/pioneer-park');
+  assert.equal(first.action.href, '/st-pete/parks/pioneer-park');
   assert.match(garyTip({ stamped: 3, streak: { weeks: 3, activeThisWeek: false, atRisk: true }, nearest }).text, /3 weeks streak going/);
   assert.match(garyTip({ stamped: 5, streak, almost: { name: 'Downtown', stamped: 22, total: 24 }, nearest }).text, /Only 2 parks left to finish Downtown/);
   assert.match(garyTip({ stamped: 4, streak, nextBadge: { name: 'Five Parks', remaining: 1 }, nearest }).text, /One more and Five Parks is yours/);

@@ -20,7 +20,7 @@ async function check(page, url, { status = 200 } = {}) {
 test.use({ viewport: { width: 375, height: 800 } });
 
 test('signed-out pages', async ({ page }) => {
-  for (const url of ['/', '/parks', '/parks?q=lake&cat=playground', '/parks/abercrombie-park', '/parks/auburn-street-park',
+  for (const url of ['/', '/st-pete/parks', '/st-pete/parks?q=lake&cat=playground', '/st-pete/parks/abercrombie-park', '/st-pete/parks/auburn-street-park',
     '/signup', '/login', '/forgot', '/privacy', '/credits', '/consent']) {
     await check(page, url);
   }
@@ -36,7 +36,7 @@ test('signed-in pages, including admin', async ({ page }) => {
   db.prepare('UPDATE users SET is_admin = 1 WHERE email = ?').run(email);
   const handle = db.prepare('SELECT handle FROM users WHERE email = ?').pluck().get(email);
   db.close();
-  for (const url of ['/', '/stamp', '/passport', '/pals', '/account', `/u/${handle}?preview=1`, '/parks?unvisited=1',
+  for (const url of ['/', '/stamp', '/st-pete/passport', '/pals', '/account', `/u/${handle}?preview=1`, '/st-pete/parks?unvisited=1',
     '/admin', '/admin/parks', '/admin/parks/new', '/admin/import', '/admin/badges', '/admin/badges/new',
     '/admin/moderation', '/admin/users', '/admin/email', '/admin/email/messages/magic_link', '/admin/email/messages/invite', '/admin/city']) {
     await check(page, url);

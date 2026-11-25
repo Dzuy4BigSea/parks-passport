@@ -1,17 +1,36 @@
 // Parks Passport's adapter for the gamification engine (src/gamification/): the context the rules
 // need about one member, and which badges show on their board. Awarding, revoking and the board
 // itself are the engine's.
-import { createBadgeEngine } from '../../gamification/index.js';
+import { createBadgeEngine, addMissingBadges as addMissing } from '../../gamification/index.js';
 import { RULES, badgeEdition } from './rules.js';
+import { DEFAULT_TIME_ZONE } from '../time.js';
 
-export { takeUnseenBadges, addMissingBadges, seedBadgesIfEmpty } from '../../gamification/index.js';
+export { takeUnseenBadges, seedBadgesIfEmpty } from '../../gamification/index.js';
+
+/**
+ * Adds badges from a seed list whose slugs aren't in the table yet. A city pack's badges.json
+ * passes its cityId: those badges count that city only (SPEC Flow 14).
+ */
+export function addMissingBadges(db, list, { now = new Date(), cityId = null } = {}) {
+  const had = new Set(db.prepare('SELECT slug FROM badges').pluck().all());
+  const added = addMissing(db, list, { now });
+  if (cityId != null) {
+    const set = db.prepare('UPDATE badges SET city_id = ? WHERE slug = ?');
+    for (const b of list) if (!had.has(b.slug)) set.run(cityId, b.slug);
+  }
+  return added;
+}
 
 // Everything the rules need about one user, loaded once per evaluation.
 export function buildContext(db, userId, { trigger = null, random = Math.random, palSameDay = null } = {}) {
   // All of the user's visits, including to parks an admin later deactivated, so deactivating a
   // park never takes badges away. Only all_parks is limited to active parks (activeParkIds).
-  const visits = db.prepare(`SELECT id, park_id, visited_on, visited_at, created_at, method
-    FROM visits WHERE user_id = ? ORDER BY visited_on, id`).all(userId);
+  // Each visit carries its park's city and that city's time zone (time_of_day reads the local clock there).
+  const visits = db.prepare(`SELECT v.id, v.park_id, v.visited_on, v.visited_at, v.created_at, v.method,
+      p.city_id, COALESCE(c.time_zone, '${DEFAULT_TIME_ZONE}') AS time_zone
+    FROM visits v JOIN parks p ON p.id = v.park_id LEFT JOIN city_themes c ON c.id = p.city_id
+    WHERE v.user_id = ? ORDER BY v.visited_on, v.id`).all(userId);
+  const parkCity = new Map(db.prepare('SELECT id, city_id FROM parks').raw().all());
   const parkCategories = new Map();
   for (const r of db.prepare('SELECT park_id, category FROM park_categories').all()) {
     if (!parkCategories.has(r.park_id)) parkCategories.set(r.park_id, new Set());
@@ -22,7 +41,7 @@ export function buildContext(db, userId, { trigger = null, random = Math.random,
     FROM activity_logs l JOIN activities a ON a.id = l.activity_id JOIN visits v ON v.id = l.visit_id
     WHERE l.user_id = ? ORDER BY l.logged_on, l.id`).all(userId);
   return {
-    visits, parkCategories, activeParkIds, activityLogs, trigger, random,
+    visits, parkCategories, activeParkIds, parkCity, activityLogs, trigger, random,
     palSameDay: palSameDay ?? hasPalSameDay(db, userId),
   };
 }
@@ -37,15 +56,29 @@ const hasPalSameDay = (db, userId) => Boolean(db.prepare(`SELECT 1 FROM visits m
     (SELECT user_b FROM pal_links WHERE user_a = ? UNION SELECT user_a FROM pal_links WHERE user_b = ?)
   LIMIT 1`).get(userId, userId, userId));
 
+// A city badge (badge.city_id set) sees only that city's visits, parks and activity logs, so
+// "Stamp 50 parks" or "Every park" mean parks in that city. Other badges count every city.
+function scopeToCity(badge, ctx) {
+  if (!badge.city_id || !ctx.parkCity) return ctx;
+  const inCity = (parkId) => ctx.parkCity.get(parkId) === badge.city_id;
+  return {
+    ...ctx,
+    visits: ctx.visits.filter((v) => inCity(v.park_id)),
+    activeParkIds: new Set([...ctx.activeParkIds].filter(inCity)),
+    activityLogs: ctx.activityLogs.filter((l) => inCity(l.park_id)),
+  };
+}
+
 // Paws and Kids badges show only to members who turned that edition on (or already earned them).
-function editionFilter(db, userId) {
+// With { cityId }, another city's badges stay off the board (they show once earned).
+function editionFilter(db, userId, { cityId = null } = {}) {
   const user = db.prepare('SELECT paws, kids FROM users WHERE id = ?').get(userId) || {};
   const editionOn = { core: true, paws: Boolean(user.paws), kids: Boolean(user.kids) };
   const activityEditions = new Map(db.prepare('SELECT slug, edition FROM activities').raw().all());
-  return (b) => editionOn[badgeEdition(b, activityEditions)] !== false;
+  return (b) => editionOn[badgeEdition(b, activityEditions)] !== false && (cityId == null || b.city_id == null || b.city_id === cityId);
 }
 
-const engine = createBadgeEngine({ rules: RULES, loadContext: buildContext, boardFilter: editionFilter });
+const engine = createBadgeEngine({ rules: RULES, loadContext: buildContext, boardFilter: editionFilter, scopeContext: scopeToCity });
 
 /** Whether one badge's rule is met for this context: { earned, progress?, target?, unit? }. */
 export const { evaluateRule } = engine;

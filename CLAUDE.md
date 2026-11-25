@@ -11,7 +11,10 @@ HTML, SQLite at `/data/app.db`.
 - Test (e2e/browser): `npm run test:e2e -- --trace off` (Playwright + axe)
 - Lint: `npm run lint`
 - All checks (what CI runs): `npm test`
-- Seed parks: `npm run seed:scrape` (dev only; writes `seed/parks.csv`)
+- Seed parks: `npm run seed:scrape` (dev only; writes `seed/cities/st-pete/parks.csv`). Westminster:
+  `node scripts/seed-westminster.js <saved City page.html>`. Asheville: `node scripts/seed-asheville.js`
+  (behind a proxy, add `NODE_USE_ENV_PROXY=1`). Each city is a pack in `seed/cities/<key>/`
+  (SPEC Flow 14).
 - Budgets (CI `budgets` job): `npm run lighthouse` (mobile Performance ≥ 90), `npm run check:memory`
 - Backups on aster: `scripts/backup.sh` nightly from root's cron; see `docs/backup-restore.md`
 

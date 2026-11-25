@@ -23,11 +23,11 @@ async function init() {
     // Tooltip gets a text node: Leaflet would treat a string as HTML.
     return L.marker([p.lat, p.lng], { icon, title: label, alt: label, keyboard: false })
       .bindTooltip(document.createTextNode(label))
-      .on('click', () => { window.location.href = `/parks/${p.slug}`; })
+      .on('click', () => { window.location.href = p.url; })
       .addTo(map);
   });
   if (markers.length) map.fitBounds(L.featureGroup(markers).getBounds().pad(0.05));
-  else map.setView([27.7731, -82.64], 12);
+  else map.setView((el.dataset.center || '27.7731,-82.64').split(',').map(Number), 12);
 }
 
 if (el) init().catch(() => { el.textContent = 'Map unavailable.'; });

@@ -1,9 +1,16 @@
-export const TIME_ZONE = 'America/New_York';
+// St. Pete's zone: the default for anything not tied to a park. A park's own city sets the zone for
+// its stamps (city.time_zone), so "today" at a Westminster park is today in California.
+export const DEFAULT_TIME_ZONE = 'America/New_York';
+export const TIME_ZONE = DEFAULT_TIME_ZONE;
 
-const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' });
+const dateFmts = new Map();
+const dateFmt = (timeZone) => {
+  if (!dateFmts.has(timeZone)) dateFmts.set(timeZone, new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }));
+  return dateFmts.get(timeZone);
+};
 
-// Local calendar date in St. Pete, as YYYY-MM-DD.
-export const localDate = (d) => dateFmt.format(d);
+// Local calendar date in a time zone (default St. Pete's), as YYYY-MM-DD.
+export const localDate = (d, timeZone = DEFAULT_TIME_ZONE) => dateFmt(timeZone).format(d);
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 

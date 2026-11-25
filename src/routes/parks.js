@@ -1,19 +1,30 @@
-import { listParks, getParkBySlug, countActiveParks, categoriesInUse, cleanCategories, parkCardExtras } from '../domain/parks.js';
+import { listParks, countActiveParks, categoriesInUse, cleanCategories, parkCardExtras } from '../domain/parks.js';
 import { parseLatLng } from '../domain/geo.js';
 import { stampedParkIds } from '../domain/visits.js';
 import { parksPage } from '../views/pages/parks.js';
+import { cityPath } from '../views/urls.js';
 import { renderParkPage } from './park-view.js';
+import { urlCity, urlPark, movedParkPath, queryOf } from './city-params.js';
 
 export default async function parkRoutes(app) {
   const { db } = app;
 
-  app.get('/parks', async (req, reply) => {
+  // Before multi-city, parks lived at /parks and /parks/:slug. Those links keep working.
+  app.get('/parks', async (req, reply) => reply.redirect(cityPath(req.city, '/parks') + queryOf(req)));
+  app.get('/parks/:slug', async (req, reply) => {
+    const to = movedParkPath(db, req, req.params.slug);
+    return to ? reply.redirect(to + queryOf(req), 301) : reply.callNotFound();
+  });
+
+  app.get('/:city/parks', async (req, reply) => {
+    const city = urlCity(req);
+    if (!city) return reply.callNotFound();
     const q = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : '';
     const selected = cleanCategories(req.query.cat);
     const near = parseLatLng(req.query.lat, req.query.lng);
     const stamped = req.user ? stampedParkIds(db, req.user.id) : null;
     const unvisited = Boolean(req.user) && req.query.unvisited === '1';
-    let parks = listParks(db, { q, categories: selected, near });
+    let parks = listParks(db, { cityId: city.id, q, categories: selected, near });
     if (unvisited) parks = parks.filter((p) => !stamped.has(p.id));
     const filterCount = selected.length + (unvisited ? 1 : 0);
     const events = q || filterCount ? [['park_search', { has_query: Boolean(q), filter_count: filterCount }]] : [];
@@ -21,14 +32,14 @@ export default async function parkRoutes(app) {
     const stampDates = req.user ? new Map(db.prepare('SELECT park_id, MIN(visited_on) FROM visits WHERE user_id = ? GROUP BY park_id')
       .raw().all(req.user.id)) : null;
     return reply.page({ events, ...parksPage({
-      parks, total: countActiveParks(db), q, selected, near, unvisited, stamped, stampDates,
+      parks, total: countActiveParks(db, city.id), q, selected, near, unvisited, stamped, stampDates,
       extras: parkCardExtras(db, parks.map((p) => p.id)),
-      categories: categoriesInUse(db), signedIn: Boolean(req.user), theme: app.theme(),
+      categories: categoriesInUse(db, city.id), signedIn: Boolean(req.user), theme: city,
     }) });
   });
 
-  app.get('/parks/:slug', async (req, reply) => {
-    const park = getParkBySlug(db, req.params.slug);
+  app.get('/:city/parks/:slug', async (req, reply) => {
+    const park = urlPark(db, req);
     if (!park) return reply.callNotFound();
     const user = req.user;
     let stamped = null;

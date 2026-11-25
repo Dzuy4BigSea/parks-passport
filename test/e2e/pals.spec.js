@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
 test('invite a pal, share, see each other in the feed and leaderboard, then go public', async ({ page, browser }, info) => {
   // Ana signs up and stamps a park; her passport starts private and she gets the nudge.
   await signUp(page, { name: 'Ana' });
-  await page.goto('/parks/abercrombie-park');
+  await page.goto('/st-pete/parks/abercrombie-park');
   await page.locator('#honor summary').click();
   await page.getByRole('button', { name: 'Stamp it' }).click();
   await expect(page.getByText('Share your passport with Park Pals?')).toBeVisible();

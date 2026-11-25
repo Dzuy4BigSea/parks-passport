@@ -69,7 +69,7 @@ export function emailLayout({ baseUrl, preheader, heading, paragraphs = [], butt
       </td></tr>
       <tr><td style="padding:18px 8px 0;font:13px/1.6 ${FONT};color:${C.muted};">
         ${tagline ? html`<p style="margin:0 0 6px;font-weight:700;color:${C.ink};">Made for the ${tagline}.</p>` : ''}
-        <p style="margin:0 0 6px;">An independent project. Not affiliated with the City of St. Petersburg.</p>
+        <p style="margin:0 0 6px;">An independent project. Not affiliated with any city government.</p>
         <p style="margin:0 0 14px;"><a href="${baseUrl}/" style="color:${C.aquaInk};">${host}</a> &middot; <a href="${baseUrl}/privacy" style="color:${C.aquaInk};">Privacy</a></p>
         <p style="margin:0;padding-top:12px;border-top:1px solid ${C.line};font:12px/1.6 ${FONT};color:${C.muted};">&copy; ${new Date().getFullYear()} Parks Passport &middot; <a href="https://bigsea.co" style="color:${C.muted};text-decoration:none;">Purpose built by&nbsp;<img src="${baseUrl}/brand/bigsea-logo.png" width="54" height="15" alt="Big Sea" style="display:inline-block;vertical-align:middle;border:0;height:15px;width:54px;opacity:0.75;"></a></p>
       </td></tr>

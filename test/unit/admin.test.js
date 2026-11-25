@@ -51,8 +51,8 @@ test('admin pages are 404 for members and signed-out visitors, 200 for admins', 
   }
   assert.equal(db.prepare("SELECT name FROM parks WHERE slug = 'a-park'").pluck().get(), 'A Park');
   assert.equal(db.prepare('SELECT is_admin FROM users WHERE id = 1').pluck().get(), 1);
-  assert.match((await admin.get('/parks')).body, /href="\/admin"/);
-  assert.ok(!(await member.get('/parks')).body.includes('href="/admin"'));
+  assert.match((await admin.get('/st-pete/parks')).body, /href="\/admin"/);
+  assert.ok(!(await member.get('/st-pete/parks')).body.includes('href="/admin"'));
 });
 
 test('edit a park: pin, radius, categories; saving coordinates can clear "needs a pin check"', async () => {
@@ -91,13 +91,13 @@ test('create a park, and deactivating hides it from lists and N but keeps stamps
   const { db, admin, member } = await world();
   const res = await admin.post('/admin/parks/new', { name: 'New Park', slug: 'new-park', lat: '27.79', lng: '-82.66', active: '1' });
   assert.equal(res.statusCode, 303);
-  assert.match((await member.get('/parks')).body, /New Park/);
-  await member.post('/parks/new-park/stamp', {});
+  assert.match((await member.get('/st-pete/parks')).body, /New Park/);
+  await member.post('/st-pete/parks/new-park/stamp', {});
   const id = db.prepare("SELECT id FROM parks WHERE slug = 'new-park'").pluck().get();
   await admin.post(`/admin/parks/${id}`, { name: 'New Park', slug: 'new-park', lat: '27.79', lng: '-82.66' }); // active unticked
-  assert.ok(!(await member.get('/parks')).body.includes('New Park'));
-  assert.equal((await member.get('/parks/new-park')).statusCode, 404);
-  assert.match((await member.get('/passport')).body, /0 of 2 parks stamped/);
+  assert.ok(!(await member.get('/st-pete/parks')).body.includes('New Park'));
+  assert.equal((await member.get('/st-pete/parks/new-park')).statusCode, 404);
+  assert.match((await member.get('/st-pete/passport')).body, /0 of 2 parks stamped/);
   assert.equal(db.prepare('SELECT COUNT(*) FROM visits WHERE park_id = ?').pluck().get(id), 1);
 });
 
@@ -133,8 +133,8 @@ test('badge create, edit and disable: disabled badges stop new awards and stay e
   const first = db.prepare("SELECT * FROM badges WHERE slug = 'first'").get();
   await admin.postMultipart(`/admin/badges/${first.id}`, { name: first.name, description: '', hint: '', art: '🌱', rule_type: 'parks_count', param_n: '1', kind: 'known' });
   assert.equal(db.prepare('SELECT enabled FROM badges WHERE id = ?').pluck().get(first.id), 0);
-  await people.member.c.post('/parks/a-park/stamp', {});
-  await people.member.c.post('/parks/b-park/stamp', {});
+  await people.member.c.post('/st-pete/parks/a-park/stamp', {});
+  await people.member.c.post('/st-pete/parks/b-park/stamp', {});
   const earned = () => db.prepare('SELECT b.slug FROM user_badges ub JOIN badges b ON b.id = ub.badge_id WHERE ub.user_id = ? ORDER BY b.slug')
     .pluck().all(people.member.id);
   assert.deepEqual(earned(), ['two-parks']);
@@ -144,7 +144,7 @@ test('badge create, edit and disable: disabled badges stop new awards and stay e
   awardBadges(db, people.member.id, { type: 'recheck' }, { now: now() });
   db.prepare('UPDATE badges SET enabled = 0 WHERE id = ?').run(first.id);
   assert.deepEqual(earned(), ['first', 'two-parks']);
-  assert.match((await people.member.c.get('/passport')).body, /First Stamp/);
+  assert.match((await people.member.c.get('/st-pete/passport')).body, /First Stamp/);
 });
 
 test('badge validation: params per rule, lucky pairing, hints, duplicate slug', async () => {
@@ -190,7 +190,7 @@ test('uploaded badge art (SVG with script) is rasterized to PNG and served as an
   const id = db.prepare("SELECT id FROM badges WHERE slug = 'sun'").pluck().get();
   await admin.postMultipart(`/admin/badges/${id}`, { name: 'Sunny', art: '', rule_type: 'parks_count', param_n: '3', kind: 'known', enabled: '1' });
   assert.equal(db.prepare('SELECT art FROM badges WHERE id = ?').pluck().get(id), art);
-  assert.match((await member.get('/passport')).body, new RegExp(`/badge-art/${key}\\.png`));
+  assert.match((await member.get('/st-pete/passport')).body, new RegExp(`/badge-art/${key}\\.png`));
   // Non-image files are refused.
   const bad = await admin.postMultipart('/admin/badges/new', { name: 'B', slug: 'b-art', rule_type: 'parks_count', param_n: '3', kind: 'known' },
     { art_file: { buffer: Buffer.from('GIF89a nope'), filename: 'a.gif' } });
@@ -201,10 +201,10 @@ test('uploaded badge art (SVG with script) is rasterized to PNG and served as an
 test('moderation: hide and unhide a shared photo and review comment', async () => {
   const { db, admin, people, app } = await world();
   const jpeg = await sharp({ create: { width: 200, height: 200, channels: 3, background: '#2f6f4e' } }).jpeg().toBuffer();
-  await people.member.c.postMultipart('/parks/a-park/photos', { caption: 'Shared', visibility: 'public' },
+  await people.member.c.postMultipart('/st-pete/parks/a-park/photos', { caption: 'Shared', visibility: 'public' },
     { photo: { buffer: jpeg, filename: 'a.jpg', type: 'image/jpeg' } });
-  await people.member.c.post('/parks/a-park/rating', { stars: '1', comment: 'Mean comment', visibility: 'public' });
-  await people.member.c.post('/parks/b-park/rating', { stars: '5', comment: 'Private note', visibility: 'private' });
+  await people.member.c.post('/st-pete/parks/a-park/rating', { stars: '1', comment: 'Mean comment', visibility: 'public' });
+  await people.member.c.post('/st-pete/parks/b-park/rating', { stars: '5', comment: 'Private note', visibility: 'private' });
   const queue = (await admin.get('/admin/moderation')).body;
   assert.match(queue, /Shared/);
   assert.match(queue, /Mean comment/);
@@ -215,13 +215,13 @@ test('moderation: hide and unhide a shared photo and review comment', async () =
   await admin.post(`/admin/reviews/${ratingId}/hidden`, { hidden: '1', back: '/admin/moderation' });
   const anon = client(app);
   assert.equal((await anon.get(`/photos/${photoId}/full`)).statusCode, 404);
-  const page = (await anon.get('/parks/a-park')).body;
+  const page = (await anon.get('/st-pete/parks/a-park')).body;
   assert.ok(!page.includes('Mean comment'));
   assert.match(page, /<strong>1\.0<\/strong> out of 5/); // stars still count
   await admin.post(`/admin/photos/${photoId}/hidden`, { hidden: '0', back: '/admin/moderation' });
   await admin.post(`/admin/reviews/${ratingId}/hidden`, { hidden: '0', back: '/admin/moderation' });
   assert.equal((await anon.get(`/photos/${photoId}/full`)).statusCode, 200);
-  assert.match((await anon.get('/parks/a-park')).body, /Mean comment/);
+  assert.match((await anon.get('/st-pete/parks/a-park')).body, /Mean comment/);
 });
 
 test('promote and demote members; an admin cannot demote themselves', async () => {
@@ -239,8 +239,8 @@ test('promote and demote members; an admin cannot demote themselves', async () =
 
 test('editing a badge rule never takes it from people who already earned it', async () => {
   const { db, admin, people } = await world();
-  await people.member.c.post('/parks/a-park/stamp', {});
-  await people.member.c.post('/parks/b-park/stamp', {});
+  await people.member.c.post('/st-pete/parks/a-park/stamp', {});
+  await people.member.c.post('/st-pete/parks/b-park/stamp', {});
   const first = db.prepare("SELECT * FROM badges WHERE slug = 'first'").get();
   // Raise the bar to 3 parks; the member has 2 and earned it at n = 1.
   await admin.postMultipart(`/admin/badges/${first.id}`, { name: first.name, art: '🌱', rule_type: 'parks_count', param_n: '3', kind: 'known', enabled: '1' });
@@ -256,7 +256,7 @@ test('editing a badge rule never takes it from people who already earned it', as
 
 test('disabled badges are never revoked', async () => {
   const { db, people } = await world();
-  await people.member.c.post('/parks/a-park/stamp', {});
+  await people.member.c.post('/st-pete/parks/a-park/stamp', {});
   db.prepare("UPDATE badges SET enabled = 0 WHERE slug = 'first'").run();
   const visit = db.prepare('SELECT id FROM visits WHERE user_id = ?').pluck().get(people.member.id);
   await people.member.c.post(`/visits/${visit}/delete`, {});

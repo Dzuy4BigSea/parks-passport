@@ -85,10 +85,10 @@ try {
   const t0 = Date.now();
   for (let round = 0; round < 3; round++) {
     await Promise.all(users.flatMap((u, i) => [
-      ...['/', '/parks', '/parks?q=lake&cat=playground', `/parks/${parks[i % 5]}`, '/passport', '/pals'].map((p) => u.get(p)),
-      u.post(`/parks/${parks[(i + round) % 5]}/stamp`, {}),
-      u.upload(`/parks/${parks[i % 5]}/photos`, photo),
-      u.upload(`/parks/${parks[(i + 1) % 5]}/photos`, photo),
+      ...['/', '/st-pete/parks', '/st-pete/parks?q=lake&cat=playground', `/st-pete/parks/${parks[i % 5]}`, '/st-pete/passport', '/pals'].map((p) => u.get(p)),
+      u.post(`/st-pete/parks/${parks[(i + round) % 5]}/stamp`, {}),
+      u.upload(`/st-pete/parks/${parks[i % 5]}/photos`, photo),
+      u.upload(`/st-pete/parks/${parks[(i + 1) % 5]}/photos`, photo),
     ]));
   }
   const photos = fs.readdirSync(path.join(dataDir, 'uploads'), { recursive: true }).filter((f) => String(f).endsWith('.jpg') && !String(f).includes('thumb')).length;

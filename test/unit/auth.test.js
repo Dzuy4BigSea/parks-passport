@@ -27,7 +27,7 @@ test('sign up creates the user, signs in, and redirects to /passport', async () 
   assert.equal(res.statusCode, 303);
   assert.equal(res.headers.location, '/passport');
   assert.equal(db.prepare('SELECT email FROM users').pluck().get(), 'sam@example.com');
-  const passport = await c.get('/passport');
+  const passport = await c.get('/st-pete/passport');
   assert.equal(passport.statusCode, 200);
   assert.match(passport.body, /Sam's passport/);
 });
@@ -130,7 +130,7 @@ test('magic link: emailed, confirm page does not use it, sign-in works once', as
 
   const signIn = await c.post('/auth/magic', { token });
   assert.equal(signIn.statusCode, 303);
-  assert.equal((await c.get('/passport')).statusCode, 200);
+  assert.equal((await c.get('/st-pete/passport')).statusCode, 200);
 
   const again = await client(app).post('/auth/magic', { token });
   assert.equal(again.statusCode, 400);
@@ -148,7 +148,7 @@ test('magic link expires after 15 minutes', async () => {
   const c = client(app);
   const res = await c.post('/auth/magic', { token });
   assert.match(res.body, /This link has expired/);
-  assert.equal((await c.get('/passport')).statusCode, 302);
+  assert.equal((await c.get('/st-pete/passport')).statusCode, 302);
 });
 
 test('magic link for an unknown email shows the same message and sends nothing', async () => {
@@ -210,7 +210,7 @@ test('password reset: single use, 15 minutes, signs out every other session', as
   const { app, mailer, now } = makeApp();
   const other = client(app);
   await signUp(other); // this session should be signed out by the reset
-  assert.equal((await other.get('/passport')).statusCode, 200);
+  assert.equal((await other.get('/st-pete/passport')).statusCode, 200);
 
   const c = client(app);
   await c.post('/forgot', { email: 'sam@example.com' });
@@ -219,8 +219,8 @@ test('password reset: single use, 15 minutes, signs out every other session', as
   assert.equal((await c.post('/reset', { token, password: 'short' })).statusCode, 422); // doesn't use the token
   const res = await c.post('/reset', { token, password: 'a brand new password' });
   assert.equal(res.statusCode, 303);
-  assert.equal((await c.get('/passport')).statusCode, 200);
-  assert.equal((await other.get('/passport')).statusCode, 302);
+  assert.equal((await c.get('/st-pete/passport')).statusCode, 200);
+  assert.equal((await other.get('/st-pete/passport')).statusCode, 302);
   assert.match((await c.post('/reset', { token, password: 'another new password' })).body, /This link has expired/);
 
   const fresh = client(app);
@@ -239,9 +239,9 @@ test('log out ends the session and /passport redirects to /login', async () => {
   await signUp(c);
   const out = await c.post('/logout');
   assert.equal(out.statusCode, 303);
-  const res = await c.get('/passport');
+  const res = await c.get('/st-pete/passport');
   assert.equal(res.statusCode, 302);
-  assert.equal(res.headers.location, '/login?next=%2Fpassport');
+  assert.equal(res.headers.location, '/login?next=%2Fst-pete%2Fpassport');
 });
 
 test('delete account with password removes the user, sessions and tokens', async () => {
@@ -256,7 +256,7 @@ test('delete account with password removes the user, sessions and tokens', async
   for (const t of ['users', 'sessions', 'auth_tokens']) {
     assert.equal(db.prepare(`SELECT COUNT(*) FROM ${t}`).pluck().get(), 0, t);
   }
-  assert.equal((await c.get('/passport')).statusCode, 302);
+  assert.equal((await c.get('/st-pete/passport')).statusCode, 302);
 });
 
 test('delete account by emailed confirmation link', async () => {
@@ -279,12 +279,12 @@ test('every POST route rejects a missing or wrong CSRF token with 403', async ()
   assert.ok(posts.includes('logout'));
   const routes = ['/signup', '/login', '/login/magic', '/auth/magic', '/forgot', '/reset', '/logout',
     '/account/delete', '/account/delete/email', '/account/delete/confirm',
-    '/parks/abercrombie-park/checkin', '/parks/abercrombie-park/stamp', '/visits/1/delete'];
+    '/st-pete/parks/abercrombie-park/checkin', '/st-pete/parks/abercrombie-park/stamp', '/visits/1/delete'];
   for (const url of routes) {
     assert.equal((await c.post(url, {}, { csrf: false })).statusCode, 403, `${url} without token`);
     assert.equal((await c.post(url, { _csrf: 'forged' }, { csrf: false })).statusCode, 403, `${url} with wrong token`);
   }
-  assert.equal((await c.get('/passport')).statusCode, 200, 'still signed in');
+  assert.equal((await c.get('/st-pete/passport')).statusCode, 200, 'still signed in');
 });
 
 test('state-changing requests without a valid CSRF token get 403', async () => {
@@ -318,7 +318,7 @@ test('cookies are HttpOnly and SameSite=Lax, and Secure in production', async ()
 });
 
 test('post-login redirects only to local paths', () => {
-  assert.equal(safeNext('/parks/abercrombie-park'), '/parks/abercrombie-park');
+  assert.equal(safeNext('/st-pete/parks/abercrombie-park'), '/st-pete/parks/abercrombie-park');
   for (const bad of ['//evil.com', 'https://evil.com', '/\\evil.com', '/☃', '/a b', '', undefined]) assert.equal(safeNext(bad), '/passport');
 });
 

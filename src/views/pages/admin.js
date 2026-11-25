@@ -6,10 +6,27 @@ import { formatDate, localDate } from '../../domain/time.js';
 import { badgeArt } from '../badge-art.js';
 import { raw } from '../html.js';
 import { sanitizeSvg } from '../../lib/svg-sanitize.js';
+import { parkPath } from '../urls.js';
 
 const page = (title, body, extra = {}) => ({ title: `Admin · ${title}`, current: 'admin', ...extra, body });
 const crumb = html`<p class="breadcrumb"><a href="/admin">Admin</a></p>`;
 const dateOf = (iso) => formatDate(localDate(new Date(iso)));
+
+// Forms post back the city they were shown for (?city=), so a city switch in another tab can't
+// send a save to a different city.
+const cityQ = (bar) => (bar ? `?city=${bar.city.key}` : '');
+
+// Parks, import and the city theme work on one city at a time; this switches it.
+function cityBarBlock(bar) {
+  if (!bar) return '';
+  const { city, cities, csrf, back } = bar;
+  return html`<form method="post" action="/admin/city/use" class="city-bar inline-form">
+  ${csrfField(csrf)}<input type="hidden" name="back" value="${back}">
+  <label for="admin-city">City</label>
+  <select id="admin-city" name="city">${cities.map((c) => html`<option value="${c.key}"${c.key === city.key ? html` selected` : ''}>${c.name}</option>`)}</select>
+  <button type="submit" class="btn btn-small">Switch</button>
+</form>`;
+}
 const input = (name, label, value, { type = 'text', hint, error, required = false, attrs = '' } = {}) => html`<div class="field${error ? ' field-error' : ''}">
   <label for="${name}">${label}</label>
   ${hint ? html`<p class="hint" id="${name}-hint">${hint}</p>` : ''}
@@ -33,9 +50,10 @@ export function adminHome({ counts }) {
 </ul>`);
 }
 
-export function adminParks({ parks, filter }) {
+export function adminParks({ parks, filter, cityBar = null }) {
   const tabs = [['', 'All'], ['needs_pin', 'Pins to check'], ['inactive', 'Inactive']];
-  return page('Parks', html`${crumb}<h1>Parks</h1>
+  return page('Parks', html`${crumb}<h1>${cityBar ? `${cityBar.city.copy.short} parks` : 'Parks'}</h1>
+${cityBarBlock(cityBar)}
 <p><a class="btn btn-primary" href="/admin/parks/new">Add a park</a></p>
 <nav class="tabs" aria-label="Filter parks">${tabs.map(([f, label]) => html`<a href="/admin/parks${f ? `?filter=${f}` : ''}"${f === filter ? html` aria-current="page"` : ''}>${label}</a>`)}</nav>
 <div class="table-wrap"><table class="admin-table">
@@ -50,14 +68,16 @@ export function adminParks({ parks, filter }) {
 ${parks.length ? '' : html`<p>No parks here.</p>`}`);
 }
 
-export function adminParkForm({ park, csrf, isNew, error, notice }) {
+export function adminParkForm({ park, csrf, isNew, error, notice, cityBar = null, center = null }) {
   const p = park || { checkin_radius_m: 150, active: 1, categories: [] };
-  const action = isNew ? '/admin/parks/new' : `/admin/parks/${p.id}`;
+  const action = isNew ? `/admin/parks/new${cityQ(cityBar)}` : `/admin/parks/${p.id}`;
+  const mapCenter = center || cityBar?.city.center;
   return page(isNew ? 'Add a park' : p.name, html`<p class="breadcrumb"><a href="/admin">Admin</a> › <a href="/admin/parks">Parks</a></p>
-<h1>${isNew ? 'Add a park' : `Edit ${p.name}`}</h1>
+<h1>${isNew ? `Add a park${cityBar ? ` in ${cityBar.city.copy.short}` : ''}` : `Edit ${p.name}`}</h1>
+${isNew ? cityBarBlock(cityBar) : ''}
 ${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${notice}</p>` : ''}
 ${error ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${error}</p>` : ''}
-${!isNew && p.active ? html`<p><a href="/parks/${p.slug}">View the public page</a></p>` : ''}
+${!isNew && p.active ? html`<p><a href="${parkPath(p)}">View the public page</a></p>` : ''}
 <form method="post" action="${action}" class="card-form admin-form">
   ${csrfField(csrf)}
   ${input('name', 'Name', p.name, { required: true })}
@@ -67,7 +87,7 @@ ${!isNew && p.active ? html`<p><a href="/parks/${p.slug}">View the public page</
   <fieldset class="pin-fieldset">
     <legend>Location</legend>
     <p class="hint">Click the map or drag the pin to set it, or type the coordinates.</p>
-    <div id="pin-map" class="park-map" data-lat="${p.lat ?? ''}" data-lng="${p.lng ?? ''}"></div>
+    <div id="pin-map" class="park-map" data-lat="${p.lat ?? ''}" data-lng="${p.lng ?? ''}"${mapCenter ? html` data-center="${mapCenter.lat},${mapCenter.lng}"` : ''}></div>
     <div class="two-col">
       ${input('lat', 'Latitude', p.lat, { attrs: html`inputmode="decimal"` })}
       ${input('lng', 'Longitude', p.lng, { attrs: html`inputmode="decimal"` })}
@@ -86,8 +106,9 @@ ${!isNew && p.active ? html`<p><a href="/parks/${p.slug}">View the public page</
 </form>`, { head: html`<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">`, scripts: ['/js/pin-picker.js'] });
 }
 
-export function adminImport({ csrf, result, error }) {
-  return page('Import parks', html`${crumb}<h1>Import parks</h1>
+export function adminImport({ csrf, result, error, cityBar = null, seedFile = true }) {
+  return page('Import parks', html`${crumb}<h1>Import ${cityBar ? `${cityBar.city.copy.short} ` : ''}parks</h1>
+${cityBarBlock(cityBar)}
 <p>Rows match existing parks by slug: matching parks are updated, new slugs are added. Importing the same file twice changes nothing.
 <strong>Importing overwrites edits made here</strong> (for example pins you fixed) for every park in the file.</p>
 ${error ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${error}</p>` : ''}
@@ -95,7 +116,7 @@ ${result ? html`<div class="notice import-result" role="status" tabindex="-1" da
   <p><strong>${result.added} added, ${result.updated} updated, ${result.unchanged} unchanged, ${result.invalid.length} invalid.</strong></p>
   ${result.invalid.length ? html`<ul>${result.invalid.map((r) => html`<li>Line ${r.line}${r.slug ? html` (${r.slug})` : ''}: ${r.reason}</li>`)}</ul>` : ''}
 </div>` : ''}
-<form method="post" action="/admin/import" class="card-form" enctype="multipart/form-data">
+<form method="post" action="/admin/import${cityQ(cityBar)}" class="card-form" enctype="multipart/form-data">
   ${csrfField(csrf)}
   <div class="field">
     <label for="csv">CSV file</label>
@@ -104,11 +125,11 @@ ${result ? html`<div class="notice import-result" role="status" tabindex="-1" da
   </div>
   <button type="submit" class="btn btn-primary">Import CSV</button>
 </form>
-<form method="post" action="/admin/import/seed" class="card-form">
+${seedFile ? html`<form method="post" action="/admin/import/seed${cityQ(cityBar)}" class="card-form">
   ${csrfField(csrf)}
-  <p>Or re-import the seed file that ships with the app (<code>seed/parks.csv</code>).</p>
-  <button type="submit" class="btn">Import seed/parks.csv</button>
-</form>`);
+  <p>Or re-import the seed file that ships with the app (<code>seed/cities/${cityBar?.city.key || 'st-pete'}/parks.csv</code>).</p>
+  <button type="submit" class="btn">Import the seed parks.csv</button>
+</form>` : ''}`);
 }
 
 export function adminBadges({ badges }) {
@@ -229,13 +250,13 @@ export function adminModeration({ queue, csrf }) {
 ${queue.photos.length ? html`<ul class="mod-list">${queue.photos.map((p) => html`<li${p.hidden ? html` class="is-hidden"` : ''}>
   <a href="/photos/${p.id}/full"><img src="/photos/${p.id}/thumb" alt="${p.caption || 'Photo'}" width="96" height="96" loading="lazy"></a>
   <div><p>${p.caption || html`<span class="muted">No caption</span>`}</p>
-    <p class="muted">${p.display_name} (${p.email}) · <a href="/parks/${p.park_slug}">${p.park_name}</a> · ${p.visibility} · ${dateOf(p.created_at)}${p.hidden ? html` · <strong>Hidden</strong>` : ''}</p>
+    <p class="muted">${p.display_name} (${p.email}) · <a href="${parkPath({ city_key: p.city_key, slug: p.park_slug })}">${p.park_name}</a> · ${p.visibility} · ${dateOf(p.created_at)}${p.hidden ? html` · <strong>Hidden</strong>` : ''}</p>
     ${toggle(`/admin/photos/${p.id}/hidden`, p.hidden, 'photo')}</div>
 </li>`)}</ul>` : html`<p>No shared photos.</p>`}
 <h2>Reviews</h2>
 ${queue.reviews.length ? html`<ul class="mod-list">${queue.reviews.map((r) => html`<li${r.comment_hidden ? html` class="is-hidden"` : ''}>
   <div><p class="review-text">${r.comment}</p>
-    <p class="muted">${r.stars}★ · ${r.display_name} (${r.email}) · <a href="/parks/${r.park_slug}">${r.park_name}</a> · ${r.visibility} · ${dateOf(r.updated_at)}${r.comment_hidden ? html` · <strong>Hidden</strong>` : ''}</p>
+    <p class="muted">${r.stars}★ · ${r.display_name} (${r.email}) · <a href="${parkPath({ city_key: r.city_key, slug: r.park_slug })}">${r.park_name}</a> · ${r.visibility} · ${dateOf(r.updated_at)}${r.comment_hidden ? html` · <strong>Hidden</strong>` : ''}</p>
     ${toggle(`/admin/reviews/${r.id}/hidden`, r.comment_hidden, 'comment')}</div>
 </li>`)}</ul>` : html`<p>No shared reviews with comments.</p>`}`);
 }
@@ -348,7 +369,7 @@ const textarea = (name, label, value, { rows = 3, hint, error } = {}) => html`<d
   <textarea id="${name}" name="${name}" rows="${rows}"${hint || error ? html` aria-describedby="${[hint ? `${name}-hint` : '', error ? `${name}-error` : ''].filter(Boolean).join(' ')}"` : ''}${error ? html` aria-invalid="true"` : ''}>${value ?? ''}</textarea>
 </div>`;
 
-function jobPanel(job, aiAvailable, csrf) {
+function jobPanel(job, aiAvailable, csrf, q = '') {
   const running = job?.status === 'running';
   return html`<section class="card" aria-labelledby="ai-h">
   <h2 id="ai-h">Generate with AI</h2>
@@ -359,18 +380,18 @@ function jobPanel(job, aiAvailable, csrf) {
   ${job?.status === 'error' ? html`<p class="notice" role="alert">${job.error}</p>` : ''}
   ${job?.status === 'done' ? html`<p class="notice" role="status">Added ${job.added} draft${job.added === 1 ? '' : 's'}${job.rejected ? ` (${job.rejected} skipped: duplicate or an icon that didn't pass the safety check)` : ''}.
     ${job.suggestion?.accent ? html`Suggested colors: <span class="swatch" style="background:${job.suggestion.accent}"></span> ${job.suggestion.accent}${job.suggestion.accent_2 ? html` and <span class="swatch" style="background:${job.suggestion.accent_2}"></span> ${job.suggestion.accent_2}` : ''}${job.suggestion.tagline ? `, tagline "${job.suggestion.tagline}"` : ''}. Use them in the settings below if you like.` : ''}</p>` : ''}
-  <form method="post" action="/admin/city/generate">${csrfField(csrf)}
+  <form method="post" action="/admin/city/generate${q}">${csrfField(csrf)}
     <button type="submit" class="btn btn-pop"${!aiAvailable || running ? html` disabled` : ''}>${running ? 'Generating…' : 'Generate landmark drafts'}</button>
   </form>
 </section>`;
 }
 
-function motifCard(m, csrf, editing = null) {
+function motifCard(m, csrf, editing = null, q = '') {
   const draft = m.status === 'draft';
   const ed = editing?.id === m.id ? editing : null;
   const val = ed ? ed.values : m;
   const err = ed?.errors || {};
-  const action = (path, label, cls = 'btn btn-small') => html`<form method="post" action="/admin/city/motifs/${m.id}/${path}">${csrfField(csrf)}<button type="submit" class="${cls}">${label}</button></form>`;
+  const action = (path, label, cls = 'btn btn-small') => html`<form method="post" action="/admin/city/motifs/${m.id}/${path}${q}">${csrfField(csrf)}<button type="submit" class="${cls}">${label}</button></form>`;
   return html`<li class="${draft ? 'is-draft' : ''}">
   <div class="motif-row">
     <span class="tile"><span class="motif" aria-hidden="true">${raw(sanitizeSvg(m.svg) || '')}</span></span>
@@ -383,7 +404,7 @@ function motifCard(m, csrf, editing = null) {
     ${action('delete', `Delete ${m.name}`, 'btn btn-small btn-quiet')}
   </div>
   <details${ed ? html` open` : ''}><summary>Edit</summary>
-    <form method="post" action="/admin/city/motifs/${m.id}">${csrfField(csrf)}
+    <form method="post" action="/admin/city/motifs/${m.id}${q}">${csrfField(csrf)}
       ${ed ? html`<p class="error-text" role="alert" tabindex="-1" data-announce>Not saved. Fix the problems below.</p>` : ''}
       ${input(`name-${m.id}`, 'Name', val.name, { error: err.name })}
       ${textarea(`blurb-${m.id}`, 'Blurb', val.blurb, { error: err.blurb })}
@@ -394,22 +415,24 @@ function motifCard(m, csrf, editing = null) {
 </li>`;
 }
 
-export function adminCity({ csrf, theme, motifs, job, aiAvailable, errors = {}, values = null, notice = null, motifErrors = {}, motifValues = null, editing = null }) {
+export function adminCity({ csrf, theme, motifs, job, aiAvailable, errors = {}, values = null, notice = null, motifErrors = {}, motifValues = null, editing = null, cityBar = null }) {
   const v = values || theme;
+  const q = `?city=${theme.key}`; // forms post back the city they show
   const drafts = motifs.filter((m) => m.status === 'draft').length;
   return page('City theme', html`${crumb}<h1>City theme</h1>
+${cityBarBlock(cityBar)}
 <p class="lede">${theme.name}'s landmark icons, history and colors appear on stamps, the home page, passports and the footer.</p>
 ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
-${jobPanel(job, aiAvailable, csrf)}
+${jobPanel(job, aiAvailable, csrf, q)}
 
 <section aria-labelledby="motifs-h">
   <h2 id="motifs-h">Motifs <span class="count">(${motifs.length - drafts} live${drafts ? `, ${drafts} to review` : ''})</span></h2>
-  <ul class="motif-admin">${motifs.map((m) => motifCard(m, csrf, editing))}</ul>
+  <ul class="motif-admin">${motifs.map((m) => motifCard(m, csrf, editing, q))}</ul>
 </section>
 
 <section aria-labelledby="add-h">
   <h2 id="add-h">Add a motif by hand</h2>
-  <form method="post" action="/admin/city/motifs/new" class="card-form admin-form">${csrfField(csrf)}
+  <form method="post" action="/admin/city/motifs/new${q}" class="card-form admin-form">${csrfField(csrf)}
     ${errorSummary(motifErrors)}
     ${input('name', 'Name', motifValues?.name, { error: motifErrors.name, required: true })}
     ${textarea('blurb', 'Blurb (optional)', motifValues?.blurb, { error: motifErrors.blurb })}
@@ -420,7 +443,7 @@ ${jobPanel(job, aiAvailable, csrf)}
 
 <section aria-labelledby="settings-h">
   <h2 id="settings-h">Settings</h2>
-  <form method="post" action="/admin/city/settings" class="card-form admin-form">${csrfField(csrf)}
+  <form method="post" action="/admin/city/settings${q}" class="card-form admin-form">${csrfField(csrf)}
     ${errorSummary(Object.fromEntries(Object.entries(errors).map(([k, msg]) => [k === 'name' ? 'city_name' : k, msg])))}
     ${input('city_name', 'City name', v.name, { error: errors.name, required: true })}
     ${input('tagline', 'Nickname', v.tagline, { error: errors.tagline, hint: 'Shown on the home page and in the footer, e.g. "Sunshine City".' })}

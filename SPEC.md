@@ -2,7 +2,8 @@
 
 ## Summary
 Parks Passport is a mobile-first web app where anyone can keep a personal "passport" of the
-City of St. Petersburg, FL parks they've visited. Users find a park, stamp a visit (GPS
+City of St. Petersburg, FL parks they've visited (and, since Flow 14, the parks of other cities,
+starting with Westminster, CA). Users find a park, stamp a visit (GPS
 check-in preferred, honor system always allowed), add photos and a 1–5 star rating, and
 earn points, levels and badges: known ones with visible progress, hidden ones, and lucky
 random drops. Everything is private by default. Users can share with friends ("Park Pals")
@@ -361,6 +362,51 @@ Done when:
       needs. It contains no names, emails or other personal details.
 - [ ] Deleting an account deletes its ideas.
 
+### Flow 14: More cities (city packs)
+As anyone, I can explore the parks of every Parks Passport city with one account, so the app can
+grow beyond St. Pete (Westminster, CA and Asheville, NC as proofs of concept).
+Done when:
+- [ ] **City packs:** each city ships as `seed/cities/<key>/`: `city.json` (name, tagline, accent
+      colors, areas, motifs, time zone, map bounds, page copy, sort, listed), `parks.csv` and an
+      optional `badges.json`. On every start, a new pack adds its city, its parks (when the city has
+      none) and its badges (by slug). A city's theme is loaded once, then admins own it; its time
+      zone, bounds and copy always follow the pack. A key can't be a path the app already uses.
+- [ ] **URLs:** a city's pages live under its key: `/<city>` (landing or dashboard),
+      `/<city>/parks`, `/<city>/parks/:slug` (and its stamp, photo, rating and activity forms) and
+      `/<city>/passport`. Park slugs are unique per city. An unknown city, or a slug that isn't in
+      that city, is a 404. Old links keep working: `/parks` and `/passport` redirect (302) to the
+      current city's; `/parks/:slug` redirects (301) to the park with that slug in the current
+      city, else the first city that has it.
+- [ ] **Current city:** the first path segment when it names a city (remembered in an essential
+      `pp_city` cookie holding only the key), else the remembered city, else St. Pete. Nav, the tab
+      bar, maps and copy (headings, eyebrow, Gary's hello, meta description, search placeholder,
+      the footer's "Made for …" and "Not affiliated with …") follow it. The footer and the landing
+      page list every listed city.
+- [ ] **Nearest-city suggestion:** on `/`, before a visitor has picked a city, the home page
+      suggests the listed city nearest their IP address ("Looks like you're near Westminster")
+      when it's within 160 km and isn't the city shown. It never switches by itself. The IP is
+      looked up in a MaxMind GeoLite2-City file on our server (`GEOIP_DB`); the lookup never sends
+      it out, stores or logs it (the server's ordinary request log is unchanged). Private
+      addresses have no location. Without the file, there is no suggestion.
+- [ ] **One passport, many cities:** points, levels, the streak, Park Pals and most badges count
+      every city. `/<city>/passport` shows that city's stamps, collections and map, with a tab per
+      city ("Westminster 3/25"); history lists every city's visits and names the city once there
+      are two. Public passports (`/u/:handle?city=`) work the same way, read-only.
+- [ ] **Time zones:** "today" for a stamp, a same-day photo or an activity is today where the park
+      is, and `time_of_day` badges read the park's local clock (6 am at a Westminster park is
+      Early Bird; the same moment in St. Pete is 9 am).
+- [ ] **City badges:** a badge with a city counts only that city's visits and parks ("Every Park"
+      is every St. Pete park; "Every Westminster Park" is Westminster's). City badges show on their
+      city's board, and everywhere once earned. A new rule type, `cities_count(n)`, counts cities
+      with a stamp: Two-City Explorer (known, 2) and Globetrotter (hidden, 3) ship for everyone.
+- [ ] **One-tap stamp** (`/stamp`) finds the nearest park in any city.
+- [ ] **Admin:** a city bar on Parks, Import and City theme picks the city they work on. New parks
+      go in it and must be inside its bounds; edited parks stay in their own city. Import loads
+      that city's CSV or seed file. "Generate landmark drafts" works on that city.
+- [ ] **St. Pete is unchanged** apart from its URLs gaining `/st-pete`: same parks, badges,
+      points and copy, and every existing visit, photo and rating kept (migration 016 rebuilds
+      `parks` with foreign keys off and checks them before committing).
+
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.
 - **users**: id, email (unique, lower-cased), password_hash (scrypt, nullable for magic-link-only
@@ -369,7 +415,7 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 - **sessions**: id (random token hash), user_id, expires_at, created_at
 - **auth_tokens**: id, user_id or email, purpose (magic_link | password_reset), token_hash,
   expires_at, used_at
-- **parks**: id, slug (unique), name, address, lat, lng, checkin_radius_m, loop_mi, city_url, active,
+- **parks**: id, city_id, slug (unique per city), name, address, lat, lng, checkin_radius_m, loop_mi, city_url, active,
   created_at, updated_at
 - **park_categories**: park_id, category (e.g. `dog-park`, `playground`, `waterfront`)
 - **visits**: id, user_id, park_id, visited_on (local date), visited_at, method (gps|photo|honor),
@@ -379,7 +425,7 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 - **ratings**: id, user_id, park_id, stars, comment, visibility, comment_hidden, unique(user_id,
   park_id)
 - **badges**: id, slug, name, description, hint, art, rule_type, rule_params (JSON), kind
-  (known|hidden|lucky), enabled
+  (known|hidden|lucky), enabled, city_id (null = every city)
 - **user_badges**: user_id, badge_id, awarded_at, source_visit_id, unique(user_id, badge_id)
 - **point_events**: id, user_id, source_type, source_id, points, created_at (the ledger; total
   and level are derived from it)
@@ -392,8 +438,9 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 - **pal_links**: user_a, user_b (a < b), created_at. **pal_invites**: user_id, token_hash,
   created_at, revoked_at
 - **feed** is a query over visits, photos and user_badges filtered by visibility, not a table.
-- **city_themes**: id, key (unique), name, tagline, accent, accent_2, areas (JSON centroids),
-  active, updated_at. **city_motifs**: id, theme_id, slug, name, blurb, svg (sanitized), status
+- **city_themes** (one row per city): id, key (unique; the URL segment), name, tagline, accent,
+  accent_2, areas (JSON centroids), active, time_zone, bounds (JSON), copy (JSON), listed, sort,
+  seeded_at, updated_at. **city_motifs**: id, theme_id, slug, name, blurb, svg (sanitized), status
   (draft|approved), source (seed|ai|admin), sort, created_at. The AI job's state is the
   `theme_ai_job` row in **settings**.
 - **idea_contributors**: id, email (unique), added_by, created_at. **badge_ideas**: id, user_id,
@@ -448,8 +495,8 @@ aster behind the shared nginx at `https://parkspassport.dzuynguyen.com`, with da
 ## Out of scope (v1)
 - Native iOS/Android apps (the web/PWA only)
 - Real-world prizes, coupons or redemption
-- Park systems other than St. Pete (the schema shouldn't prevent adding them later; the city
-  theme is data-driven so another city is a new theme row, not a redesign)
+- Cities beyond the shipped packs without a code change by an admin (a new city is a new
+  `seed/cities/<key>/` pack and a deploy; Flow 14)
 - Offline stamping
 - User search and public user directory
 - Comments/likes on other people's photos or stamps
@@ -478,6 +525,19 @@ aster behind the shared nginx at `https://parkspassport.dzuynguyen.com`, with da
   where it runs. v1 only makes this a config switch (Flow 10).
 - **Check-in radius:** the 150 m default may be too small for large parks such as Boyd Hill
   or Weedon Island. Per-park overrides exist, but the right values need a walk-test.
+- **Westminster data (Flow 14):** parks come from the City's "Parks and Facilities" page (saved
+  from a browser: the site blocks automated fetches) via `scripts/seed-westminster.js`. Pins
+  are OpenStreetMap park centers (16 parks), or the street address where OSM has none (7) or a
+  different park (Tony Lam Park, Westminster Village Park). Amenities are only those the page
+  names (splash pad, ball fields, skate park, tennis, pickleball); the City's amenity table isn't
+  in the saved page. Dzuy reviews pins and amenities before the demo.
+- **Asheville data (Flow 14):** 68 parks from the City's Parks & Recreation locations directory
+  (`scripts/seed-asheville.js`), with the City's own pins, addresses and features. Community
+  centers, the golf course and venues are left out unless they're also a park. Greenways get a
+  300 m check-in radius. Several riverfront parks (Carrier Park and others) are partly closed
+  after Tropical Storm Helene: Dzuy decides whether to deactivate any before the demo.
+- **Nearest-city suggestion:** needs a free MaxMind account and the GeoLite2-City file on the
+  server (`docs/geoip.md`). Until then the landing page's city list is the way to switch.
 - **Assumption:** account deletion is in v1 because we store GPS and photos. Say if not.
 
 ## End-to-end verification

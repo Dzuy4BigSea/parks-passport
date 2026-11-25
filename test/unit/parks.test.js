@@ -4,6 +4,7 @@ import { openDb } from '../../src/db/index.js';
 import { importParksCsv, PARK_CSV_COLUMNS } from '../../src/domain/csv-import.js';
 import { listParks, getParkBySlug, categoriesInUse, cleanCategories, countActiveParks } from '../../src/domain/parks.js';
 import { distanceMeters, formatMiles, parseLatLng } from '../../src/domain/geo.js';
+import { defaultCity } from '../../src/domain/city.js';
 
 function fixtureDb() {
   const db = openDb(':memory:');
@@ -69,7 +70,7 @@ test('inactive parks are hidden from lists, counts and park pages', () => {
   db.prepare("UPDATE parks SET active = 0 WHERE slug = 'abercrombie-park'").run();
   assert.equal(countActiveParks(db), 4);
   assert.ok(!listParks(db).some((p) => p.slug === 'abercrombie-park'));
-  assert.equal(getParkBySlug(db, 'abercrombie-park'), null);
+  assert.equal(getParkBySlug(db, defaultCity(db).id, 'abercrombie-park'), null);
   assert.ok(!categoriesInUse(db).includes('scenic-view'));
 });
 

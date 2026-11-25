@@ -38,8 +38,8 @@ test('invalid email and short password show inline errors', async ({ page }) => 
 test('log in, log out, and a wrong password shows a generic error', async ({ page, context }) => {
   const { email } = await signUp(page);
   await page.getByRole('button', { name: 'Log out' }).click();
-  await page.goto('/passport');
-  await expect(page).toHaveURL(/\/login\?next=%2Fpassport/);
+  await page.goto('/st-pete/passport');
+  await expect(page).toHaveURL(/\/login\?next=%2Fst-pete%2Fpassport/);
   await expectNoAxeViolations(page);
 
   await page.locator('#email').fill(email);
@@ -102,7 +102,7 @@ test('delete my account removes it; the email can sign up again', async ({ page 
   await page.getByLabel('Confirm with your password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Delete my account' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your account is deleted');
-  await page.goto('/passport');
+  await page.goto('/st-pete/passport');
   await expect(page).toHaveURL(/\/login/);
   await page.goto('/login');
   await page.locator('#email').fill(email);

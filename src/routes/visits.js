@@ -1,5 +1,8 @@
 import { requireUser } from '../lib/auth.js';
-import { getParkBySlug } from '../domain/parks.js';
+import { getParkById } from '../domain/parks.js';
+import { parkTimeZone } from '../domain/city.js';
+import { parkPath } from '../views/urls.js';
+import { urlPark } from './city-params.js';
 import { parsePosition, evaluateCheckin } from '../domain/checkin.js';
 import { distanceMeters } from '../domain/geo.js';
 import { stampFinderPage } from '../views/pages/stamp.js';
@@ -39,9 +42,9 @@ export default async function visitRoutes(app) {
     }
   }
 
-  function problemFor(result) {
+  function problemFor(result, park) {
     if (result.error === 'duplicate_day') {
-      return result.date === localDate(app.now())
+      return result.date === localDate(app.now(), parkTimeZone(db, park.id))
         ? { text: 'Already stamped today. Come back tomorrow for another stamp.' }
         : { text: `You already stamped this park on ${formatDate(result.date)}.` };
     }
@@ -54,27 +57,28 @@ export default async function visitRoutes(app) {
     return { text: MESSAGES[result.error] || MESSAGES.bad_method, offerHonor: result.error !== 'future_date' && result.error !== 'bad_date' };
   }
 
-  app.post('/parks/:slug/checkin', { preHandler: requireUser }, async (req, reply) => {
-    const park = getParkBySlug(db, req.params.slug);
+  app.post('/:city/parks/:slug/checkin', { preHandler: requireUser }, async (req, reply) => {
+    const park = urlPark(db, req);
     if (!park) return reply.callNotFound();
     const result = stampVisit(db, { user: req.user, park, method: 'gps', position: parsePosition(req.body) }, { now: app.now() });
-    if (result.error) return parkWithProblem(req, reply, park, problemFor(result));
+    if (result.error) return parkWithProblem(req, reply, park, problemFor(result, park));
     afterStamp(req.user, result.visit, park);
-    return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
+    return reply.redirect(parkPath(park, `?stamped=${result.visit.id}`), 303);
   });
 
-  // One-tap stamp (the tab bar's Stamp button): GPS position -> the nearest park -> a GPS stamp.
+  // One-tap stamp (the tab bar's Stamp button): GPS position -> the nearest park in any city -> a GPS stamp.
   app.get('/stamp', { preHandler: requireUser }, async (req, reply) => reply.page(stampFinderPage({ csrf: req.csrfToken() })));
 
   app.post('/stamp', { preHandler: requireUser }, async (req, reply) => {
     const finder = (problem) => reply.code(422).page(stampFinderPage({ csrf: req.csrfToken(), problem }));
     const position = parsePosition(req.body);
     if (!position) return finder({ text: "We couldn't read your location. Allow location and try again, or pick your park from the list." });
-    const nearby = db.prepare('SELECT * FROM parks WHERE active = 1 AND lat IS NOT NULL AND lng IS NOT NULL').all()
+    const nearby = db.prepare(`SELECT p.*, (SELECT key FROM city_themes WHERE id = p.city_id) AS city_key FROM parks p
+      WHERE p.active = 1 AND p.lat IS NOT NULL AND p.lng IS NOT NULL`).all()
       .map((p) => ({ park: p, distance_m: distanceMeters(position, p) }))
       .sort((a, b) => a.distance_m - b.distance_m);
     const closest = nearby[0];
-    const list = nearby.slice(0, 3).map(({ park: p, distance_m }) => ({ slug: p.slug, name: p.name, distance_m }));
+    const list = nearby.slice(0, 3).map(({ park: p, distance_m }) => ({ slug: p.slug, city_key: p.city_key, name: p.name, distance_m }));
     if (!closest) return finder({ text: 'No parks have a location yet.', nearby: [] });
     // Radii differ per park, so the park to stamp is the nearest one whose check-in area holds the
     // member, not just the nearest center.
@@ -82,16 +86,16 @@ export default async function visitRoutes(app) {
     if (!inside) {
       return finder({ text: `You're ${formatMiles(closest.distance_m)} from the closest park, ${closest.park.name}. Get a little closer, or stamp it on the honor system.`, nearby: list });
     }
-    const park = getParkBySlug(db, inside.park.slug);
+    const park = getParkById(db, inside.park.id);
     const result = stampVisit(db, { user: req.user, park, method: 'gps', position }, { now: app.now() });
-    if (result.error) return finder({ ...problemFor(result), text: `${park.name}: ${problemFor(result).text}`, nearby: list });
+    if (result.error) return finder({ ...problemFor(result, park), text: `${park.name}: ${problemFor(result, park).text}`, nearby: list });
     afterStamp(req.user, result.visit, park);
-    return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
+    return reply.redirect(parkPath(park, `?stamped=${result.visit.id}`), 303);
   });
 
   // Honor stamp, optionally with a photo (a photo stamp). The only visit route that takes uploads.
-  withUploads(app, (scope) => scope.post('/parks/:slug/stamp', { preHandler: requireUser }, async (req, reply) => {
-    const park = getParkBySlug(db, req.params.slug);
+  withUploads(app, (scope) => scope.post('/:city/parks/:slug/stamp', { preHandler: requireUser }, async (req, reply) => {
+    const park = urlPark(db, req);
     if (!park) return reply.callNotFound();
     const visitedOn = typeof req.body.visited_on === 'string' && req.body.visited_on ? req.body.visited_on : null;
     // An optional photo makes this a photo stamp; a bad photo stops the stamp.
@@ -117,11 +121,11 @@ export default async function visitRoutes(app) {
     }
     if (result.error) {
       if (stored) await removePhotoFiles(app.config.uploadsDir, stored.fileKey);
-      return parkWithProblem(req, reply, park, problemFor(result));
+      return parkWithProblem(req, reply, park, problemFor(result, park));
     }
     afterStamp(req.user, result.visit, park);
     if (stored) app.track(req.user.id, 'photo_upload', { park_slug: park.slug });
-    return reply.redirect(`/parks/${park.slug}?stamped=${result.visit.id}`, 303);
+    return reply.redirect(parkPath(park, `?stamped=${result.visit.id}`), 303);
   }));
 
   app.post('/visits/:id/delete', { preHandler: requireUser }, async (req, reply) => {

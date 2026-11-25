@@ -1,4 +1,4 @@
-// Lighthouse budget (SPEC: mobile Performance >= 90 on /, /parks, /parks/:slug, /passport).
+// Lighthouse budget (SPEC: mobile Performance >= 90 on /, /parks, /parks/:slug, /passport; St. Pete's city URLs).
 // Each page is audited RUNS times (default 3) and judged on the median, as Lighthouse recommends.
 //   npm run lighthouse
 // Starts the app on a temp database with GTM enabled (served by a local stand-in, consent
@@ -59,15 +59,15 @@ async function signedInCookie() {
     body: new URLSearchParams({ _csrf: jar.get('pp_csrf'), ...fields }),
   }));
   await post('/signup', { display_name: 'Lighthouse', email: 'lh@example.com', password: 'correct horse battery' });
-  await post('/parks/abercrombie-park/stamp', {});
+  await post('/st-pete/parks/abercrombie-park/stamp', {});
   return jar;
 }
 
 const pages = [
   ['home', '/'],
-  ['parks', '/parks'],
-  ['park', '/parks/abercrombie-park'],
-  ['passport', '/passport', true],
+  ['parks', '/st-pete/parks'],
+  ['park', '/st-pete/parks/abercrombie-park'],
+  ['passport', '/st-pete/passport', true],
 ];
 
 let failed = false;

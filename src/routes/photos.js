@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { requireUser, safeNext } from '../lib/auth.js';
-import { getParkBySlug } from '../domain/parks.js';
+import { parkPath } from '../views/urls.js';
+import { urlPark } from './city-params.js';
 import { storePhoto, photoPath, removePhotoFiles } from '../lib/images.js';
 import { addPhoto, getPhoto, canSeePhoto, updatePhoto, deletePhoto, todaysVisitAt } from '../domain/photos.js';
 import { saveRating, deleteRating } from '../domain/ratings.js';
@@ -17,8 +18,8 @@ export default async function photoRoutes(app) {
   const badgeOpts = () => ({ now: app.now(), random: app.random });
 
   // Upload a photo to a park (not tied to a stamp). The only photo route that takes uploads.
-  withUploads(app, (scope) => scope.post('/parks/:slug/photos', { preHandler: requireUser }, async (req, reply) => {
-    const park = getParkBySlug(db, req.params.slug);
+  withUploads(app, (scope) => scope.post('/:city/parks/:slug/photos', { preHandler: requireUser }, async (req, reply) => {
+    const park = urlPark(db, req);
     if (!park) return reply.callNotFound();
     const caption = str(req.body.caption, 400);
     const stored = await storePhoto(fileOf(req.body, 'photo'), uploadsDir);
@@ -36,7 +37,7 @@ export default async function photoRoutes(app) {
     }
     awardBadges(db, req.user.id, { type: 'photo', id: photo.id }, badgeOpts());
     app.track(req.user.id, 'photo_upload', { park_slug: park.slug });
-    return reply.redirect(`/parks/${park.slug}?photo=added#photos`, 303);
+    return reply.redirect(parkPath(park, '?photo=added#photos'), 303);
   }));
 
   // Serve a photo only to viewers allowed to see it; everyone else gets 404.
@@ -70,8 +71,8 @@ export default async function photoRoutes(app) {
   });
 
   // Ratings: one per user per park; posting again updates it.
-  app.post('/parks/:slug/rating', { preHandler: requireUser }, async (req, reply) => {
-    const park = getParkBySlug(db, req.params.slug);
+  app.post('/:city/parks/:slug/rating', { preHandler: requireUser }, async (req, reply) => {
+    const park = urlPark(db, req);
     if (!park) return reply.callNotFound();
     const result = saveRating(db, { user: req.user, park, stars: req.body.stars, comment: str(req.body.comment, 2000),
       visibility: str(req.body.visibility) }, { now: app.now() });
@@ -80,12 +81,12 @@ export default async function photoRoutes(app) {
     }
     awardBadges(db, req.user.id, { type: 'rating', id: result.rating.id }, badgeOpts());
     app.track(req.user.id, 'rating_submit', { park_slug: park.slug, stars: result.rating.stars });
-    return reply.redirect(`/parks/${park.slug}?rated=1#ratings`, 303);
+    return reply.redirect(parkPath(park, '?rated=1#ratings'), 303);
   });
 
-  app.post('/parks/:slug/rating/delete', { preHandler: requireUser }, async (req, reply) => {
-    const park = getParkBySlug(db, req.params.slug);
+  app.post('/:city/parks/:slug/rating/delete', { preHandler: requireUser }, async (req, reply) => {
+    const park = urlPark(db, req);
     if (!park || !deleteRating(db, { user: req.user, park })) return reply.callNotFound();
-    return reply.redirect(`/parks/${park.slug}#ratings`, 303);
+    return reply.redirect(parkPath(park, '#ratings'), 303);
   });
 }

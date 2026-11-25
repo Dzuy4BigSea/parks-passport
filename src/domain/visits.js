@@ -2,6 +2,7 @@ import { evaluateCheckin } from './checkin.js';
 import { rebuildParkVisitPoints } from './points.js';
 import { localDate, isValidDate } from './time.js';
 import { deleteVisitActivityPoints } from './activities.js';
+import { parkTimeZone } from './city.js';
 import { removeSourcePoints } from '../gamification/index.js';
 
 export const EARLIEST_STAMP_DATE = '2000-01-01';
@@ -10,10 +11,10 @@ export const EARLIEST_STAMP_DATE = '2000-01-01';
  * Records a stamp. Returns { visit } or { error, ... }.
  *  - method 'gps': position required; must be at the park; always today, now.
  *  - method 'honor' | 'photo': any date from 2000-01-01 to today (local).
- * One stamp per user, park and local day.
+ * One stamp per user, park and local day ("local" is the park's city's time zone).
  */
 export function stampVisit(db, { user, park, method, position = null, visitedOn = null }, { now = new Date() } = {}) {
-  const today = localDate(now);
+  const today = localDate(now, parkTimeZone(db, park.id));
   let date = today;
   let geo = { lat: null, lng: null, accuracy_m: null, distance_m: null };
 

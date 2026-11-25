@@ -5,6 +5,7 @@ import { streakText } from '../nextup.js';
 import { badgeArt } from '../badge-art.js';
 import { postcard } from './parks.js';
 import { motifForPark } from '../../domain/city.js';
+import { cityPath, parkPath } from '../urls.js';
 
 const tiles = (motifs) => motifs.map((m, i) => html`<span class="tile" style="--i:${i}">${motifIcon(m)}</span>`);
 
@@ -17,15 +18,32 @@ function lore(theme, { limit = 6, heading = `${theme.tagline || theme.name} lore
 </section>`;
 }
 
-function landing({ total, theme }) {
-  return html`<section class="hero">
+// "You're near Westminster": the nearest city to the visitor's IP, when it isn't the one shown.
+function citySuggestion(suggest) {
+  if (!suggest) return '';
+  return html`<p class="city-suggest notice">${ICONS.pin}<span>Looks like you're near ${suggest.copy.short}.
+  <a href="${cityPath(suggest)}">See ${suggest.copy.short} parks</a></span></p>`;
+}
+
+// Every listed city: Parks Passport goes where its packs go.
+function citySwitcher(cities, theme) {
+  if (!cities || cities.length < 2) return '';
+  return html`<section class="city-switch" aria-labelledby="cities-h">
+  <h2 id="cities-h">Parks Passport cities</h2>
+  <p class="muted">One passport, every city. Your points, level and most badges travel with you.</p>
+  <ul class="city-list">${cities.map((c) => html`<li><a class="btn${c.key === theme.key ? ' btn-primary' : ''}" href="${cityPath(c)}"${c.key === theme.key ? html` aria-current="page"` : ''}>${c.copy.place}</a></li>`)}</ul>
+</section>`;
+}
+
+function landing({ total, theme, cities, suggest }) {
+  return html`${citySuggestion(suggest)}<section class="hero">
   <div>
-    <p class="eyebrow">St. Petersburg, Florida</p>
-    <h1>Your passport to St. Pete parks</h1>
+    <p class="eyebrow">${theme.copy.place}</p>
+    <h1>Your passport to ${theme.copy.short} parks</h1>
     <p class="lede">${total} parks to explore. Stamp each one you visit, collect badges, and explore with your Park Pals.</p>
     <div class="hero-actions">
       <a class="btn btn-pop btn-big" href="/signup">Start your passport ${ICONS.arrow}</a>
-      <a class="btn btn-big" href="/parks">Find a park</a>
+      <a class="btn btn-big" href="${cityPath(theme, '/parks')}">Find a park</a>
     </div>
   </div>
   ${theme.motifs.length ? html`<div class="hero-motifs" aria-hidden="true">${tiles(theme.motifs.slice(0, 6))}</div>` : ''}
@@ -36,7 +54,7 @@ function landing({ total, theme }) {
   <div class="gary-bubble">
     <p class="eyebrow">Meet your guide</p>
     <h2 id="gary-h">Hey, I'm Gary. Glad you're here.</h2>
-    <p>I've been wandering St. Pete parks for years and I still find something new on most visits, like a heron fishing off a seawall or a shady bench I'd walked past a hundred times.</p>
+    <p>${theme.copy.gary}</p>
     <p>Start with the park closest to you. Your first stamp counts as much as your fiftieth, and I'll be cheering for every one.</p>
   </div>
 </section>
@@ -49,7 +67,8 @@ function landing({ total, theme }) {
     <li class="reveal" style="--i:2"><strong>Level up</strong><p>Earn points, unlock badges (some are secret) and race your Park Pals.</p></li>
   </ol>
 </section>
-${lore(theme)}`;
+${lore(theme)}
+${citySwitcher(cities, theme)}`;
 }
 
 // ---- Signed-in home: Gary's briefing, the passport spread, what's close, and progress ----
@@ -61,11 +80,11 @@ const monthDay = (ymd) => {
 
 // A postmark for the passport spread: ring with the park's motif, its name and the date.
 const spreadStamp = (s, theme, i) => html`<li class="spread-stamp" style="--i:${i}">
-  <a href="/parks/${s.slug}"><span class="spread-seal" aria-hidden="true">${motifIcon(motifForPark(theme, s.slug))}<span class="spread-date">${monthDay(s.visited_on)}</span></span>
+  <a href="${parkPath(s)}"><span class="spread-seal" aria-hidden="true">${motifIcon(motifForPark(theme, s.slug))}<span class="spread-date">${monthDay(s.visited_on)}</span></span>
   <span class="spread-name">${s.name}</span></a></li>`;
 
-// "Your St. Pete": every park as a dot on a hand-drawn plane (no map tiles), stamped ones as seals.
-function constellation(dots, areas) {
+// "Your St. Pete": every park in the city as a dot on a hand-drawn plane (no map tiles), stamped ones as seals.
+function constellation(dots, areas, theme) {
   const pins = dots.filter((p) => p.lat != null);
   if (!pins.length) return '';
   const lats = pins.map((p) => p.lat);
@@ -78,8 +97,8 @@ function constellation(dots, areas) {
   const x = (lng) => (P + ((lng - minLng) / (maxLng - minLng)) * (W - 2 * P)).toFixed(1);
   const y = (lat) => (P + ((maxLat - lat) / (maxLat - minLat)) * (H - 2 * P)).toFixed(1);
   const stampedCount = pins.filter((p) => p.stamped).length;
-  return html`<a class="constellation" href="/parks">
-  <span class="visually-hidden">Map of St. Pete parks: ${stampedCount} of ${pins.length} stamped. Open the parks map.</span>
+  return html`<a class="constellation" href="${cityPath(theme, '/parks')}">
+  <span class="visually-hidden">Map of ${theme.copy.short} parks: ${stampedCount} of ${pins.length} stamped. Open the parks map.</span>
   <svg viewBox="0 0 ${W} ${H}" aria-hidden="true">
     ${areas.map((a) => html`<text class="c-area" x="${x(a.lng)}" y="${y(a.lat)}" text-anchor="middle">${a.name.split(' & ')[0]}</text>`)}
     ${pins.filter((p) => !p.stamped).map((p) => html`<circle class="c-dot${p.next ? ' is-next' : ''}" cx="${x(p.lng)}" cy="${y(p.lat)}" r="${p.next ? 4.5 : 2.6}"/>`)}
@@ -112,34 +131,35 @@ function weekCard(week) {
 </section>`;
 }
 
-function progressCard(almost, nextBadge) {
+function progressCard(almost, nextBadge, theme) {
   return html`<section class="home-card almost" aria-labelledby="almost-h">
   <h2 id="almost-h">Almost there</h2>
   ${almost.length ? html`<ul class="almost-list">${almost.map((g) => html`<li>
     <span class="ring ring-sm" style="--p:${Math.round((g.stamped / g.total) * 100)}" aria-hidden="true"><strong>${g.stamped}</strong></span>
     <span><strong>${g.name}</strong><br><span class="muted">${g.total - g.stamped} to go of ${g.total}</span></span></li>`)}</ul>` : ''}
-  ${nextBadge ? html`<a class="almost-badge" href="/passport#badges">${badgeArt(nextBadge.art, 'almost-art')}<span><strong>${nextBadge.name}</strong><br>
+  ${nextBadge ? html`<a class="almost-badge" href="${cityPath(theme, '/passport#badges')}">${badgeArt(nextBadge.art, 'almost-art')}<span><strong>${nextBadge.name}</strong><br>
     <span class="muted">${nextBadge.progress} / ${nextBadge.target} ${nextBadge.unit}</span></span></a>` : ''}
 </section>`;
 }
 
-function palsCard(items) {
+function palsCard(items, total) {
   return html`<section class="home-card pals-mini" aria-labelledby="palsmini-h">
   <h2 id="palsmini-h">Park Pals</h2>
   ${items.length ? html`<ul class="feed">${items.map((i) => html`<li class="feed-item"><span class="feed-icon" aria-hidden="true">${i.type === 'badge' ? (i.badge_art || '🏅') : i.type === 'photo' ? '📷' : '📍'}</span>
-    <p><strong>${i.user.display_name}</strong> ${i.type === 'stamp' ? html`stamped <a href="/parks/${i.park_slug}">${i.park_name}</a>` : i.type === 'photo' ? html`added a photo at <a href="/parks/${i.park_slug}">${i.park_name}</a>` : html`earned ${i.badge_name}`}</p></li>`)}</ul>
+    <p><strong>${i.user.display_name}</strong> ${i.type === 'stamp' ? html`stamped <a href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : i.type === 'photo' ? html`added a photo at <a href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : html`earned ${i.badge_name}`}</p></li>`)}</ul>
     <p><a href="/pals">See all</a></p>`
-    : html`<p>Exploring is better with friends. Share your invite link and race each other to 102.</p><p><a class="btn btn-small" href="/pals">Invite a Park Pal</a></p>`}
+    : html`<p>Exploring is better with friends. Share your invite link and race each other to ${total}.</p><p><a class="btn btn-small" href="/pals">Invite a Park Pal</a></p>`}
 </section>`;
 }
 
-function dashboard({ user, total, theme, dash }) {
+function dashboard({ user, total, theme, dash, suggest }) {
   const first = String(user.display_name).split(/\s+/)[0];
   const pct = total ? Math.round((dash.stamped / total) * 100) : 0;
   const levelPct = Math.round(dash.level.progress * 100);
   const tip = dash.tip;
   const slots = Math.max(0, 4 - dash.recent.length);
   return html`<div class="home">
+${citySuggestion(suggest)}
 <section class="gary-brief" aria-labelledby="hello-h">
   <img class="gary-art" src="/brand/gary.svg" alt="" width="240" height="280">
   <div class="gary-bubble">
@@ -169,7 +189,7 @@ function dashboard({ user, total, theme, dash }) {
       ${dash.recent.map((s, i) => spreadStamp(s, theme, i))}
       ${Array.from({ length: slots }, (_, i) => html`<li class="spread-stamp is-empty" aria-hidden="true"><span class="spread-seal"></span><span class="spread-name">${i === 0 && !dash.recent.length ? 'Your first stamp goes here' : ''}</span></li>`)}
     </ul>
-    <p><a href="/passport">Open your passport ${ICONS.arrow}</a></p>
+    <p><a href="${cityPath(theme, '/passport')}">Open your passport ${ICONS.arrow}</a></p>
   </div>
 </section>
 
@@ -177,7 +197,7 @@ ${dash.nearby.length ? html`<section class="home-near" aria-labelledby="near-h">
   <div class="section-head"><div><h2 id="near-h">Closest new parks</h2>
     <p class="muted">${dash.nearFromYou ? 'From where you are now' : dash.stamped ? 'Near your last stamp' : 'Around downtown'}</p></div>
     <div class="actions"><button type="button" class="btn btn-small js-only" id="home-locate">${ICONS.pin}Use my location</button>
-    <a class="btn btn-small btn-quiet" href="/parks?unvisited=1">See all</a></div></div>
+    <a class="btn btn-small btn-quiet" href="${cityPath(theme, '/parks')}?unvisited=1">See all</a></div></div>
   <p id="home-locate-status" class="notice" role="status" aria-live="polite"></p>
   <ul class="park-list strip">${dash.nearby.map((p, i) => postcard(p, i, { theme, stamped: dash.stampedSet, stampDates: null, near: dash.nearFromYou ? dash.anchor : null, selected: [], extras: dash.extras }))}</ul>
 </section>` : ''}
@@ -185,25 +205,26 @@ ${dash.nearby.length ? html`<section class="home-near" aria-labelledby="near-h">
 <div class="home-cards">
   ${punchCard(dash.punches, dash.streak)}
   ${weekCard(dash.week)}
-  ${progressCard(dash.almost, dash.nextBadge)}
+  ${progressCard(dash.almost, dash.nextBadge, theme)}
 </div>
 
 <div class="home-pair">
   <section class="home-card your-city" aria-labelledby="city-h">
-    <h2 id="city-h">Your ${theme.key !== 'default' ? theme.name.replace('St. Petersburg', 'St. Pete') : 'city'}</h2>
-    ${constellation(dash.dots, theme.areas)}
+    <h2 id="city-h">Your ${theme.key !== 'default' ? theme.copy.short : 'city'}</h2>
+    ${constellation(dash.dots, theme.areas, theme)}
     <p class="muted"><span class="legend-dot stamped" aria-hidden="true"></span> stamped <span class="legend-dot next" aria-hidden="true"></span> closest new <span class="legend-dot" aria-hidden="true"></span> to find</p>
   </section>
-  ${palsCard(dash.pals)}
+  ${palsCard(dash.pals, total)}
 </div>
 </div>`;
 }
 
-export function homePage({ total, theme, user = null, dash = null, today = '' }) {
+export function homePage({ total, theme, user = null, dash = null, today = '', cities = [], suggest = null }) {
   return {
     title: null,
+    description: theme.copy?.description,
     scripts: user && dash ? ['/js/home.js'] : [],
-    body: user && dash ? dashboard({ user, total, theme, dash, today }) : landing({ total, theme }),
+    body: user && dash ? dashboard({ user, total, theme, dash, today, suggest }) : landing({ total, theme, cities, suggest }),
   };
 }
 
@@ -213,7 +234,7 @@ export function privacyPage() {
     title: 'Privacy',
     body: html`<div class="narrow prose">
 <h1>Privacy</h1>
-<p>Parks Passport is an independent, personal project. It is not run by the City of St. Petersburg.</p>
+<p>Parks Passport is an independent, personal project. It is not run by any city government.</p>
 
 <h2>What we store when you create an account</h2>
 <ul>
@@ -235,6 +256,7 @@ export function privacyPage() {
   <li><strong>pp_session</strong> (essential): keeps you signed in (30 days).</li>
   <li><strong>pp_csrf</strong> (essential): protects forms from being submitted by other sites.</li>
   <li><strong>pp_consent</strong> (essential): remembers your cookie choice (6 months).</li>
+  <li><strong>pp_city</strong> (essential): remembers which city's parks you're looking at (1 year).</li>
   <li><strong>_ga, _ga_*</strong> (optional, only if you accept analytics): Google Analytics.</li>
 </ul>
 <p>Change your choice any time in <a href="/consent">Cookie settings</a>.</p>
@@ -247,6 +269,11 @@ export function privacyPage() {
 <p>Actions we count: sign up, log in, viewing or searching parks, stamping a park (and how), uploading a photo, rating a park (stars only),
 earning a badge or level, creating or accepting a Park Pals invite, answering the share prompt, and changing cookie choices.
 These never include your email, name, handle, comments, captions or location.</p>
+
+<h2 id="location">Finding your city</h2>
+<p>When you first open the home page, we may suggest the Parks Passport city closest to you. To do that, your IP address is
+looked up in a location database on our own server. The lookup doesn't store it or send it to anyone, and we only use the nearest city.
+(Like most web servers, our server's request log records the IP address of each request.)</p>
 
 <h2>Email</h2>
 <p>Emails are sent through SendGrid, which processes your address only to deliver them.</p>

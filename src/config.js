@@ -22,6 +22,8 @@ export function loadConfig(env = process.env) {
     },
     // Admin › City theme: AI research and icon drafts (Claude). Empty = the Generate button is off.
     anthropicApiKey: env.ANTHROPIC_API_KEY || '',
+    // Home page "nearest city" suggestion: a MaxMind GeoLite2-City .mmdb file. Empty = off.
+    geoipDb: env.GEOIP_DB || '',
     mail: {
       transport: env.MAIL_TRANSPORT || (production ? 'sendgrid' : 'outbox'),
       outboxDir: path.join(dataDir, 'outbox'),

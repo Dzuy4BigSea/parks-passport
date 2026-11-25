@@ -4,7 +4,8 @@
  * progress/target drive the "7 / 10 parks" display for known badges.
  *
  * ctx = {
- *   visits: [{ id, park_id, visited_on, visited_at, created_at, method }],   // the user's visits
+ *   visits: [{ id, park_id, visited_on, visited_at, created_at, method, city_id, time_zone }],
+ *   parkCity: Map<park_id, city_id>,
  *   parkCategories: Map<park_id, Set<category>>,
  *   activeParkIds: Set<park_id>,
  *   palSameDay: boolean,            // a pal stamped the same park on the same day (M6)
@@ -13,12 +14,17 @@
  *   random: () => number,           // injectable for tests
  * }
  */
-import { TIME_ZONE } from '../time.js';
+import { DEFAULT_TIME_ZONE } from '../time.js';
 import { countProgress as count } from '../../gamification/index.js';
 
 const distinctParks = (visits) => new Set(visits.map((v) => v.park_id));
 
-const timeFmt = new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+// "HH:MM" on the clock where the park is (each city has its own time zone).
+const timeFmts = new Map();
+const localTime = (iso, timeZone = DEFAULT_TIME_ZONE) => {
+  if (!timeFmts.has(timeZone)) timeFmts.set(timeZone, new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }));
+  return timeFmts.get(timeZone).format(new Date(iso));
+};
 
 // Days since epoch for a YYYY-MM-DD date (UTC math, no DST surprises).
 export const dayNumber = (ymd) => Math.floor(Date.UTC(+ymd.slice(0, 4), +ymd.slice(5, 7) - 1, +ymd.slice(8, 10)) / 86400000);
@@ -59,7 +65,7 @@ export const RULES = {
     evaluate: ({ start, end }, ctx) => ({
       earned: ctx.visits.some((v) => {
         if (v.visited_at !== v.created_at) return false; // backdated: no real time of day
-        const t = timeFmt.format(new Date(v.visited_at));
+        const t = localTime(v.visited_at, v.time_zone);
         return start <= end ? t >= start && t < end : t >= start || t < end;
       }),
     }),
@@ -111,6 +117,12 @@ export const RULES = {
       const done = [...ctx.activeParkIds].filter((id) => stamped.has(id)).length;
       return { earned: ctx.activeParkIds.size > 0 && done === ctx.activeParkIds.size, progress: done, target: ctx.activeParkIds.size, unit: 'parks' };
     },
+  },
+
+  cities_count: {
+    label: 'Stamp parks in N different cities',
+    params: { n: 'number' },
+    evaluate: ({ n }, ctx) => count(new Set(ctx.visits.map((v) => v.city_id).filter((c) => c != null)).size, n, 'cities'),
   },
 
   lucky: {

@@ -1,0 +1,69 @@
+slug,name,address,phone,lat,lng,checkin_radius_m,categories,city_url,needs_pin
+amboy-riverfront-park,Amboy Riverfront Park,"180 Amboy Road, Asheville, NC 28806",,35.567229,-82.569222,,trails|water-access,https://www.ashevillenc.gov/locations/amboy-riverfront-park/,0
+ann-patton-joyce-park,Ann Patton Joyce Park,"30 Hawthorne Drive, Asheville, NC 28805",,35.584628,-82.497273,,,https://www.ashevillenc.gov/locations/ann-patton-joyce-park/,0
+asheville-skatepark,Asheville Skatepark,"50 North Cherry Street, Asheville, NC 28801",,35.598659,-82.556431,,skatepark,https://www.ashevillenc.gov/locations/asheville-skatepark/,0
+asheville-urban-trail,Asheville Urban Trail,"2 South Pack Square, Asheville, NC 28801",,35.594530,-82.550869,300,trails,https://www.ashevillenc.gov/locations/asheville-urban-trail/,0
+aston-park,Aston Park,"300 Hilliard Avenue, Asheville, NC 28801",,35.590555,-82.559646,,dog-park|pickleball|picnic-shelter|playground|restrooms|tennis|trails,https://www.ashevillenc.gov/locations/aston-park/,0
+aston-park-tennis-center,Aston Park Tennis Center,"336 Hilliard Avenue, Asheville, NC 28801",,35.590127,-82.560360,,tennis,https://www.ashevillenc.gov/locations/aston-park-tennis-center/,0
+augusta-barnett-park,Augusta Barnett Park,"18 Clinton Avenue, Asheville, NC 28806",,35.580254,-82.602127,,basketball|playground,https://www.ashevillenc.gov/locations/augusta-barnett-park/,0
+azalea-park,Azalea Park,"498 Azalea Road, Asheville, NC 28805",,35.575404,-82.485863,,,https://www.ashevillenc.gov/locations/azalea-park/,0
+beaucatcher-overlook-park,Beaucatcher Overlook Park,"130 Reservoir Road, Asheville, NC",,35.583255,-82.546647,,trails,https://www.ashevillenc.gov/locations/beaucatcher-overlook-park/,0
+burton-street-park,Burton Street Park,"134 Burton Street, Asheville, NC 28806",,35.583046,-82.584557,,ball-fields|basketball|playground|restrooms,https://www.ashevillenc.gov/locations/burton-street-park/,0
+carrier-park,Carrier Park,"220 Amboy Road, Asheville, NC 28806",,35.565944,-82.579229,,picnic-shelter|trails|water-access,https://www.ashevillenc.gov/locations/carrier-park/,0
+choctaw-park,Choctaw Park,"105 Choctaw Street, Asheville, NC 28801",,35.581139,-82.556270,,,https://www.ashevillenc.gov/locations/choctaw-park/,0
+craven-street-park,Craven Street Bridge Boating Access Area,"192 Riverside Drive, Asheville, NC 28806",,35.589488,-82.570939,,trails|water-access,https://www.ashevillenc.gov/locations/craven-street-park/,0
+craven-street-trailhead-park,Craven Street Trailhead Park,"7 Emma Road, Asheville, NC 28806",,35.589840,-82.572888,,,https://www.ashevillenc.gov/locations/craven-street-trailhead-park/,0
+carver-edible-park,Dr. George Washington Carver Edible Park,"30 George Washington Carver Avenue, Asheville, NC 28801",,35.593634,-82.547403,,basketball|trails,https://www.ashevillenc.gov/locations/carver-edible-park/,0
+livingston-street-southside-park,Dr. Wesley Grant Sr. Southside Park,"285 Livingston Street, Asheville, NC 28801",,35.578057,-82.561924,,ball-fields|basketball,https://www.ashevillenc.gov/locations/livingston-street-southside-park/,0
+e-w-grove-park,E.W. Grove Park,"338 Charlotte Street, Asheville, NC 28804",,35.611002,-82.546400,,trails,https://www.ashevillenc.gov/locations/e-w-grove-park/,0
+forest-park,Forest Park,"Forest Hill Drive, Asheville, NC 28803",,35.575571,-82.540276,,,https://www.ashevillenc.gov/locations/forest-park/,0
+french-broad-river-greenway,French Broad River Greenway,"167 Craven Street, Asheville, NC 28806",,35.589180,-82.572270,300,trails,https://www.ashevillenc.gov/locations/french-broad-river-greenway/,0
+french-broad-river-park,French Broad River Park,"508 Riverview Drive, Asheville, NC 28806",,35.570912,-82.565116,,,https://www.ashevillenc.gov/locations/french-broad-river-park/,0
+glenns-creek-greenway,Glenn's Creek Greenway,"200 Murdock Avenue, Asheville, NC 28801",,35.613949,-82.553965,300,trails,https://www.ashevillenc.gov/locations/glenns-creek-greenway/,0
+graces-garden,Grace's Garden,"41 Patton Avenue, Asheville, NC 28806",,35.594656,-82.552682,,,https://www.ashevillenc.gov/locations/graces-garden/,0
+griffing-boulevard-rose-garden,Griffing Boulevard Rose Garden,"1719 Griffing Boulevard, Asheville, NC 28804",,35.627173,-82.544549,,trails,https://www.ashevillenc.gov/locations/griffing-boulevard-rose-garden/,0
+haw-creek-greenway,Haw Creek Greenway,"40 Avon Road, Asheville, NC 28805",,35.590498,-82.504892,300,trails,https://www.ashevillenc.gov/locations/haw-creek-greenway/,0
+haw-creek-park,Haw Creek Park,"40 Avon Road, Asheville, NC 28805",,35.590498,-82.504892,,picnic-shelter|restrooms|trails,https://www.ashevillenc.gov/locations/haw-creek-park/,0
+hazel-robinson-amphitheater,Hazel Robinson Amphitheater,"92 Gay Street, Asheville, NC 28801",,35.599350,-82.567280,,restrooms,https://www.ashevillenc.gov/locations/hazel-robinson-amphitheater/,0
+herb-watts-park,Herb Watts Park,"64 Erskine Street, Asheville, NC 28801",,35.577738,-82.554916,,playground,https://www.ashevillenc.gov/locations/herb-watts-park/,0
+hominy-creek-greenway,Hominy Creek Greenway,"80 Shelburne Road, Asheville, NC 28806",,35.564150,-82.597500,300,trails,https://www.ashevillenc.gov/locations/hominy-creek-greenway/,0
+hummingbird-park,Hummingbird Park,"97 Starnes Avenue, Asheville, NC 28801",,35.599319,-82.558999,,,https://www.ashevillenc.gov/locations/hummingbird-park/,0
+jake-rusher-park,Jake Rusher Park,"160 Sycamore Drive, Arden, NC 28704",,35.473137,-82.516611,,basketball|picnic-shelter|playground|restrooms,https://www.ashevillenc.gov/locations/jake-rusher-park/,0
+jean-webb-park,Jean Webb Park,"86 Riverside Drive, Asheville, NC 28806",,35.588038,-82.569788,,trails|water-access,https://www.ashevillenc.gov/locations/jean-webb-park/,0
+john-b-lewis-soccer-complex,John B. Lewis Soccer Complex,"439 Azalea Road East, Asheville, NC 28805",,35.574240,-82.488030,,trails,https://www.ashevillenc.gov/locations/john-b-lewis-soccer-complex/,0
+kenilworth-park,Kenilworth Park,"79 Wyoming Road, Asheville, NC 28803",,35.577381,-82.542558,,basketball|pickleball|playground|restrooms|tennis,https://www.ashevillenc.gov/locations/kenilworth-park/,0
+leah-chiles-park,Leah Chiles Park,"123 Lakewood Drive, Asheville, NC 28803",,35.576655,-82.533942,,ball-fields|basketball|playground,https://www.ashevillenc.gov/locations/leah-chiles-park/,0
+shiloh-park,Linwood Crump Shiloh Park,"121 Shiloh Road, Asheville, NC 28803",,35.548162,-82.528381,,ball-fields|basketball|playground|restrooms|trails,https://www.ashevillenc.gov/locations/shiloh-park/,0
+magnolia-park,Magnolia Park,"51 Magnolia Avenue, Asheville, NC 28801",,35.603423,-82.560575,,basketball|playground|trails,https://www.ashevillenc.gov/locations/magnolia-park/,0
+malvern-hills-park,Malvern Hills Park,"75 Rumbough Place, Asheville, NC 28806",,35.574725,-82.609532,,basketball|pickleball|picnic-shelter|playground|tennis|trails,https://www.ashevillenc.gov/locations/malvern-hills-park/,0
+mlk-park,Martin Luther King Jr. Park,"50 Martin Luther King Jr. Drive, Asheville, NC 28801",,35.596128,-82.544868,,ball-fields|playground|restrooms,https://www.ashevillenc.gov/locations/mlk-park/,0
+masters-park,Masters Park,"101 Maple Drive, Asheville, NC 28805",,35.611177,-82.495865,,trails,https://www.ashevillenc.gov/locations/masters-park/,0
+meadow-park,Meadow Park,"4 Caledonia Road, Asheville, NC 28803",,35.575554,-82.543271,,,https://www.ashevillenc.gov/locations/meadow-park/,0
+memorial-stadium,Memorial Stadium,"32 Buchanan Place, Asheville, NC 28801",,35.586567,-82.547968,,ball-fields|playground|restrooms|trails,https://www.ashevillenc.gov/locations/memorial-stadium/,0
+montford-park,Montford Park,"345 Montford Avenue, Asheville, NC 28801",,35.606765,-82.566660,,basketball|pickleball|tennis,https://www.ashevillenc.gov/locations/montford-park/,0
+mountainside-park,Mountainside Park,"55 Hunt Hill Place, Asheville, NC 28801",,35.588038,-82.547399,,playground|trails,https://www.ashevillenc.gov/locations/mountainside-park/,0
+murphy-oakley-park,Murphy-Oakley Park,"715 Fairview Road, Asheville, NC 28803",,35.563396,-82.514490,,ball-fields|basketball|pickleball|picnic-shelter|playground|restrooms|tennis|trails,https://www.ashevillenc.gov/locations/murphy-oakley-park/,0
+murray-hill-park,Murray Hill Park,"123 Bartlett Street, Asheville, NC 28801",,35.582488,-82.563339,,trails,https://www.ashevillenc.gov/locations/murray-hill-park/,0
+oakhurst-park,Oakhurst Park,"32 Buchanan Place, Asheville, NC 28801",,35.586588,-82.546911,,,https://www.ashevillenc.gov/locations/oakhurst-park/,0
+owens-bell-park,Owens-Bell Park,"7 Owens Bell Lane, Asheville, NC 28801",,35.589774,-82.563776,,trails,https://www.ashevillenc.gov/locations/owens-bell-park/,0
+pack-square-park,Pack Square Park,"80 Court Plaza, Asheville, NC 28801",,35.595477,-82.549939,,pool|restrooms|trails,https://www.ashevillenc.gov/locations/pack-square-park/,0
+pearson-bridge-river-access-area,Pearson Bridge River Access Area,"704 Riverside Drive, Asheville, NC 28801",,35.608560,-82.577900,,water-access,https://www.ashevillenc.gov/locations/pearson-bridge-river-access-area/,0
+pritchard-park,Pritchard Park,"67 Patton Avenue, Asheville, NC 28801",,35.594690,-82.554400,,trails,https://www.ashevillenc.gov/locations/pritchard-park/,0
+ray-l-kisiah-park,Ray L. Kisiah Park,"70 West Chapel Road, Asheville, NC 28803",,35.545985,-82.513415,,ball-fields|restrooms,https://www.ashevillenc.gov/locations/ray-l-kisiah-park/,0
+recreation-park,Recreation Park,"65 Gashes Creek Road, Asheville, NC 28805",,35.580822,-82.493542,,basketball|water-access,https://www.ashevillenc.gov/locations/recreation-park/,0
+reed-creek-greenway,Reed Creek Greenway,"595 Broadway Street, Asheville, NC 28804",,35.613425,-82.568226,300,trails,https://www.ashevillenc.gov/locations/reed-creek-greenway/,0
+richmond-hill-park,Richmond Hill Park,"300 Richmond Hill Drive, Asheville, NC 28806",,35.618902,-82.592291,,picnic-shelter|restrooms|trails,https://www.ashevillenc.gov/locations/richmond-hill-park/,0
+riverbend-park,Riverbend Park,"100 Bleachery Boulevard, Asheville, NC 28805",,35.578520,-82.514570,,dog-park|trails,https://www.ashevillenc.gov/locations/riverbend-park/,0
+riverside-cemetery,Riverside Cemetery,"53 Birch Street, Asheville, NC 28801",,35.600596,-82.570983,,trails,https://www.ashevillenc.gov/locations/riverside-cemetery/,0
+roger-farmer-park,Roger Farmer Park,"71 Deaverview Road, Asheville, NC 28806",,35.582384,-82.611970,,ball-fields|basketball|picnic-shelter|restrooms,https://www.ashevillenc.gov/locations/roger-farmer-park/,0
+seven-springs-park,Seven Springs Park,"4 Caledonia Road, Asheville, NC 28803",,35.573959,-82.542708,,,https://www.ashevillenc.gov/locations/seven-springs-park/,0
+stephens-lee-park,Stephens-Lee Park,"30 George Washington Carver Avenue, Asheville, NC 28801",,35.593634,-82.547403,,basketball|playground|restrooms,https://www.ashevillenc.gov/locations/stephens-lee-park/,0
+sunset-park,Sunset Park,"41 Sunset Parkway, Asheville, NC 28804",,35.610427,-82.543981,,,https://www.ashevillenc.gov/locations/sunset-park/,0
+swannanoa-greenway,Swannanoa River Greenway,"100 Bleachery Boulevard, Asheville, NC 28805",,35.578520,-82.514570,300,trails,https://www.ashevillenc.gov/locations/swannanoa-greenway/,0
+tempie-avery-montford-park,Tempie Avery Montford Park,"34 Pearson Drive, Asheville, NC 28801",,35.600088,-82.566758,,ball-fields|basketball|playground|restrooms,https://www.ashevillenc.gov/locations/tempie-avery-montford-park/,0
+circle-park,The Circle at Albemarle Park,"The Circle Road, Asheville, NC 28801",,35.608464,-82.543507,,,https://www.ashevillenc.gov/locations/circle-park/,0
+triangle-park,Triangle Park,"58 South Market Street, Asheville, NC 28801",,35.592964,-82.550360,,,https://www.ashevillenc.gov/locations/triangle-park/,0
+walton-street-park,Walton Street Park,"570 Walton Street, Asheville, NC 28801",,35.574098,-82.561262,,ball-fields|basketball|picnic-shelter|playground|restrooms|trails,https://www.ashevillenc.gov/locations/walton-street-park/,0
+weaver-park,Weaver Park,"200 Murdock Avenue, Asheville, NC 28804",,35.613949,-82.553965,,ball-fields|basketball|pickleball|picnic-shelter|playground|restrooms|tennis|trails,https://www.ashevillenc.gov/locations/weaver-park/,0
+west-asheville-park,West Asheville Park,"198 Vermont Avenue, Asheville, NC 28806",,35.570445,-82.599222,,ball-fields|picnic-shelter|playground|restrooms,https://www.ashevillenc.gov/locations/west-asheville-park/,0
+wilma-dykeman-greenway,Wilma Dykeman Greenway,"192 Riverside Drive, Asheville, NC 28806",,35.589488,-82.570939,300,trails,https://www.ashevillenc.gov/locations/wilma-dykeman-greenway/,0

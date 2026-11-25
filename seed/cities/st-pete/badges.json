@@ -1,0 +1,9 @@
+[
+  { "slug": "half-the-city", "name": "Half the City", "art": "🏅", "kind": "known",
+    "description": "Stamped 50 different St. Pete parks.", "rule_type": "parks_count", "rule_params": { "n": 50 } },
+  { "slug": "every-park", "name": "Every Park", "art": "🏆", "kind": "known",
+    "description": "Stamped every park in St. Pete.", "rule_type": "all_parks", "rule_params": {} },
+  { "slug": "lake-hopper", "name": "Lake Hopper", "art": "🦆", "kind": "hidden",
+    "hint": "St. Pete has more lakes than you'd think.",
+    "description": "Stamped 3 parks with a lake.", "rule_type": "category_count", "rule_params": { "category": "lake", "n": 3 } }
+]

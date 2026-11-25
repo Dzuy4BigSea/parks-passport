@@ -17,7 +17,7 @@ const events = async (page) => {
 const umamiCalls = (page) => page.evaluate(() => window.__umamiCalls || []);
 
 async function honorStamp(page, slug, date) {
-  await page.goto(`/parks/${slug}`);
+  await page.goto(`/st-pete/parks/${slug}`);
   await page.locator('#honor').evaluate((d) => { d.open = true; }); // already open on parks without a pin
   await page.getByLabel('Date of your visit').fill(date);
   await page.getByRole('button', { name: 'Stamp it' }).click();
@@ -35,7 +35,7 @@ test('login, photo_upload and level_up reach dataLayer and Umami with the spec k
   expect(await events(page)).toEqual([{ event: 'login', method: 'password' }]);
   await expect.poll(() => umamiCalls(page)).toEqual([['login', { method: 'password' }]]);
 
-  await page.goto('/parks/woodlawn-park');
+  await page.goto('/st-pete/parks/woodlawn-park');
   const jpeg = await sharp({ create: { width: 800, height: 600, channels: 3, background: '#2f6f4e' } }).jpeg().toBuffer();
   await page.getByLabel('Add a photo', { exact: true }).setInputFiles({ name: 'p.jpg', mimeType: 'image/jpeg', buffer: jpeg });
   await page.getByRole('button', { name: 'Upload photo' }).click();
@@ -55,7 +55,7 @@ test('login, photo_upload and level_up reach dataLayer and Umami with the spec k
 
 test('keyboard only: stamp a park on the honor system and rate it', async ({ page }) => {
   await signUp(page);
-  await page.goto('/parks/bartlett-park');
+  await page.goto('/st-pete/parks/bartlett-park');
   // Tab to the honor-system summary and open it with Enter.
   const summary = page.locator('#honor summary');
   for (let i = 0; i < 60 && !(await summary.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press('Tab');
@@ -85,7 +85,7 @@ for (const width of [375, 768, 1440]) {
   test(`passport and Pals pages fit at ${width}px, with screenshots`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 900 });
     await signUp(page);
-    for (const [name, url] of [['passport', '/passport'], ['pals', '/pals']]) {
+    for (const [name, url] of [['passport', '/st-pete/passport'], ['pals', '/pals']]) {
       await page.goto(url);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
       expect(overflow, `${url} at ${width}px`).toBe(false);

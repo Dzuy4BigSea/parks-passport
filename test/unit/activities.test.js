@@ -16,6 +16,7 @@ import {
 } from '../../src/domain/activities.js';
 import { seedActivityData, SEED_ACTIVITIES_JSON, SEED_ACTIVITY_BADGES_JSON, SEED_BADGES_JSON } from '../../src/db/seed.js';
 import { getParkBySlug } from '../../src/domain/parks.js';
+import { defaultCity } from '../../src/domain/city.js';
 
 const ACTIVITIES = JSON.parse(fs.readFileSync(SEED_ACTIVITIES_JSON, 'utf8'));
 const ACTIVITY_BADGES = JSON.parse(fs.readFileSync(SEED_ACTIVITY_BADGES_JSON, 'utf8'));
@@ -164,7 +165,7 @@ function setup(start = '2026-06-01T16:00:00Z') {
     'plain-park,Plain Park,,,27.80,-82.70,,,,0',
   ].join('\n'));
   seedActivityData(db);
-  return { app, db, now, trail: getParkBySlug(db, 'trail-park'), plain: getParkBySlug(db, 'plain-park') };
+  return { app, db, now, trail: getParkBySlug(db, defaultCity(db).id, 'trail-park'), plain: getParkBySlug(db, defaultCity(db).id, 'plain-park') };
 }
 const newUser = async (db, email = 'sam@example.com') =>
   (await createUser(db, { display_name: 'Sam', email, password: 'correct horse battery' })).user;
@@ -285,40 +286,40 @@ test('park page: locked until stamped, then log, undo and errors; logs stay priv
   const { app, db } = setup();
   const c = client(app);
   await c.post('/signup', { display_name: 'Sam', email: 'sam@example.com', password: 'correct horse battery' });
-  let res = await c.get('/parks/trail-park');
+  let res = await c.get('/st-pete/parks/trail-park');
   assert.match(res.body, /Stamp this park today to unlock/);
   assert.doesNotMatch(res.body, /name="activity"/);
 
-  res = await c.postMultipart('/parks/trail-park/stamp', {});
+  res = await c.postMultipart('/st-pete/parks/trail-park/stamp', {});
   assert.equal(res.statusCode, 303);
-  res = await c.get('/parks/trail-park');
+  res = await c.get('/st-pete/parks/trail-park');
   assert.match(res.body, /Things to do here/);
   assert.match(res.body, /value="trail-time"/);
   assert.doesNotMatch(res.body, /value="pet-walk"/);
 
-  res = await c.post('/parks/trail-park/activities', { activity: 'park-walk', amount: '0' });
+  res = await c.post('/st-pete/parks/trail-park/activities', { activity: 'park-walk', amount: '0' });
   assert.equal(res.statusCode, 422);
   assert.match(res.body, /Enter the minutes, from 1 to 180/);
 
-  res = await c.post('/parks/trail-park/activities', { activity: 'park-walk', amount: '25' });
+  res = await c.post('/st-pete/parks/trail-park/activities', { activity: 'park-walk', amount: '25' });
   assert.equal(res.statusCode, 303);
-  assert.match(res.headers.location, /^\/parks\/trail-park\?logged=\d+#activities$/);
+  assert.match(res.headers.location, /^\/st-pete\/parks\/trail-park\?logged=\d+#activities$/);
   res = await c.get(res.headers.location.replace('#activities', ''));
   assert.match(res.body, /Logged Park walk: \+3 points\./);
   assert.match(res.body, /✓ 25 min/);
   assert.match(res.body, /Off the Bench/); // badge announcement
 
-  res = await c.post('/parks/trail-park/activities', { activity: 'park-walk', amount: '10' });
+  res = await c.post('/st-pete/parks/trail-park/activities', { activity: 'park-walk', amount: '10' });
   assert.equal(res.statusCode, 422);
   assert.match(res.body, /already logged Park walk/);
 
   // Errors for activities not on the page still show: one switched off by an admin.
   db.prepare("UPDATE activities SET active = 0 WHERE slug IN ('breathe', 'park-walk')").run();
-  res = await c.post('/parks/trail-park/activities', { activity: 'breathe' });
+  res = await c.post('/st-pete/parks/trail-park/activities', { activity: 'breathe' });
   assert.equal(res.statusCode, 422);
   assert.match(res.body, /That activity isn&#39;t available here.|That activity isn't available here./);
   // Today's log of a switched-off activity keeps its Undo.
-  assert.match((await c.get('/parks/trail-park')).body, /Undo<span class="visually-hidden"> Park walk/);
+  assert.match((await c.get('/st-pete/parks/trail-park')).body, /Undo<span class="visually-hidden"> Park walk/);
   db.prepare("UPDATE activities SET active = 1").run();
 
   // Another member can't undo it.
@@ -326,12 +327,12 @@ test('park page: locked until stamped, then log, undo and errors; logs stay priv
   const other = client(app);
   await other.post('/signup', { display_name: 'Alex', email: 'alex@example.com', password: 'correct horse battery' });
   assert.equal((await other.post(`/activities/${logId}/delete`)).statusCode, 404);
-  assert.doesNotMatch((await other.get('/parks/trail-park')).body, /25 min/);
+  assert.doesNotMatch((await other.get('/st-pete/parks/trail-park')).body, /25 min/);
 
   res = await c.post(`/activities/${logId}/delete`);
   assert.equal(res.statusCode, 303);
-  assert.equal(res.headers.location, '/parks/trail-park?undone=park-walk#activities');
-  assert.match((await c.get('/parks/trail-park?undone=park-walk')).body, /<details class="act-group" open id="act-move">/);
+  assert.equal(res.headers.location, '/st-pete/parks/trail-park?undone=park-walk#activities');
+  assert.match((await c.get('/st-pete/parks/trail-park?undone=park-walk')).body, /<details class="act-group" open id="act-move">/);
   assert.equal(db.prepare('SELECT COUNT(*) FROM activity_logs').pluck().get(), 0);
   // Off the Bench is taken back with its only activity.
   assert.equal(db.prepare("SELECT COUNT(*) FROM user_badges ub JOIN badges b ON b.id = ub.badge_id WHERE b.slug = 'first-activity'").pluck().get(), 0);
@@ -340,9 +341,9 @@ test('park page: locked until stamped, then log, undo and errors; logs stay priv
 test('signed-out visitors see no activities, and logging needs an account', async () => {
   const { app } = setup();
   const c = client(app);
-  const res = await c.get('/parks/trail-park');
+  const res = await c.get('/st-pete/parks/trail-park');
   assert.doesNotMatch(res.body, /Things to do here/);
-  const post = await c.post('/parks/trail-park/activities', { activity: 'brisk-ten' });
+  const post = await c.post('/st-pete/parks/trail-park/activities', { activity: 'brisk-ten' });
   assert.equal(post.statusCode, 302);
   assert.match(post.headers.location, /^\/login/);
 });
@@ -356,16 +357,16 @@ test('editions: account switches, Kids makes new photos default to private, pass
   assert.equal(res.headers.location, '/account?done=editions#editions');
   const user = db.prepare('SELECT paws, kids FROM users').get();
   assert.deepEqual({ ...user }, { paws: 1, kids: 1 });
-  res = await c.get('/parks/trail-park');
+  res = await c.get('/st-pete/parks/trail-park');
   assert.match(res.body, /Kids edition is on, so new photos start as "Only me"/);
   assert.match(res.body, /<option value="private" selected>/);
-  await c.postMultipart('/parks/trail-park/stamp', {});
-  res = await c.get('/parks/trail-park');
+  await c.postMultipart('/st-pete/parks/trail-park/stamp', {});
+  res = await c.get('/st-pete/parks/trail-park');
   assert.match(res.body, /value="pet-walk"/);
   assert.match(res.body, /value="nature-bingo"/);
   await c.post('/account/editions', {});
   assert.deepEqual({ ...db.prepare('SELECT paws, kids FROM users').get() }, { paws: 0, kids: 0 });
-  assert.match((await c.get('/passport')).body, /This week's healthy habits/);
+  assert.match((await c.get('/st-pete/passport')).body, /This week's healthy habits/);
 });
 
 test('admin: switch activities off, edit loop length, and build activity badges', async () => {
