@@ -14,7 +14,7 @@ export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // A city's key is the first segment of its URLs (/westminster/parks), so it can't be a top-level
 // path the app already uses (routes, public/ folders, nginx's /stats).
 export const RESERVED_CITY_KEYS = new Set(['account', 'activities', 'admin', 'auth', 'avatars', 'ideas', 'notifications', 'badge-art', 'brand', 'city', 'consent',
-  'credits', 'css', 'default', 'fonts', 'forgot', 'healthz', 'icons', 'join', 'js', 'login', 'logout', 'og', 'pals', 'parks',
+  'credits', 'css', 'default', 'fonts', 'forgot', 'groups', 'healthz', 'icons', 'join', 'js', 'login', 'logout', 'og', 'pals', 'parks',
   'passport', 'photos', 'privacy', 'reset', 'signup', 'stamp', 'stats', 'u', 'vendor', 'visits']);
 const TIME_ZONES = new Set(Intl.supportedValuesOf('timeZone'));
 

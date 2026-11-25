@@ -67,13 +67,14 @@ function codeSection({ csrf, friendCode, codeError, codeValue }) {
 </section>`;
 }
 
-export function palsPage({ user, csrf, inviteUrl, pals, board, feed, page, notice, friendCode, requests = { incoming: [], outgoing: [] }, codeError = null, codeValue = '' }) {
+export function palsPage({ user, csrf, inviteUrl, pals, board, feed, page, notice, friendCode, requests = { incoming: [], outgoing: [] }, codeError = null, codeValue = '', groups = [] }) {
   return {
     title: 'Park Pals',
     current: 'pals',
     scripts: ['/js/copy.js'],
     body: html`
 <h1>Park Pals</h1>
+<p><a href="/groups">Groups</a>: explore as a team with your gym, club or class.</p>
 ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
 ${user.default_visibility === 'private' ? html`<p class="notice">Your passport is private, so your pals can't see your stamps yet.
   <a href="/account#visibility">Change who can see it</a>.</p>` : ''}
@@ -122,6 +123,12 @@ ${codeSection({ csrf, friendCode, codeError, codeValue })}
   ${pals.length ? html`<ul class="pal-list">
     ${pals.map((p) => html`<li>
       <span class="pal-who">${avatar(p, { size: 36, visible: p.visible })} ${p.visible ? html`<a href="/u/${p.handle}">${p.display_name}</a>` : p.display_name} <span class="muted">@${p.handle}</span></span>
+      ${groups.length ? html`<form method="post" action="/groups/invite" class="inline-form pal-group-invite">
+        ${csrfField(csrf)}<input type="hidden" name="user_id" value="${p.id}">
+        <label class="visually-hidden" for="group-for-${p.id}">Group to invite ${p.display_name} to</label>
+        <select id="group-for-${p.id}" name="group_id">${groups.map((g) => html`<option value="${g.id}">${g.emoji} ${g.name}</option>`)}</select>
+        <button type="submit" class="btn btn-small">Invite to group<span class="visually-hidden">: ${p.display_name}</span></button>
+      </form>` : ''}
       <form method="post" action="/pals/${p.handle}/remove">
         ${csrfField(csrf)}
         <button type="submit" class="btn btn-quiet btn-small" aria-label="Remove ${p.display_name} as a pal">Remove</button>

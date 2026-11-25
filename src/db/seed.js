@@ -18,6 +18,7 @@ export const SEED_TRAVEL_BADGES_JSON = path.join(SEED_DIR, 'travel-badges.json')
 export const SEED_GARY_OUTFITS_JSON = path.join(SEED_DIR, 'gary-outfits.json');
 export const SEED_REWARD_BADGES_JSON = path.join(SEED_DIR, 'reward-badges.json');
 export const SEED_LIMITED_BADGES_JSON = path.join(SEED_DIR, 'limited-badges.json');
+export const SEED_GROUP_BADGES_JSON = path.join(SEED_DIR, 'group-badges.json');
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 
@@ -35,7 +36,8 @@ export function seedCities(db, { dir = CITIES_DIR, now = new Date(), travelBadge
   // the long climb), for every member.
   addMissingBadges(db, readJson(travelBadgesFile), { now });
   addMissingBadges(db, readJson(SEED_REWARD_BADGES_JSON), { now });
-  addMissingBadges(db, readJson(SEED_LIMITED_BADGES_JSON), { now }); // Early Bird Edition (1–100) and Founding Member
+  addMissingBadges(db, readJson(SEED_LIMITED_BADGES_JSON), { now });
+  addMissingBadges(db, readJson(SEED_GROUP_BADGES_JSON), { now }); // Troop Leader: start groups (Flow 23) // Early Bird Edition (1–100) and Founding Member
   return cityPackKeys(dir).map((key) => {
     const file = (f) => path.join(dir, key, f);
     const pack = readJson(file('city.json'));

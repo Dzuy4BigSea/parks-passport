@@ -4,6 +4,7 @@ import { avatar, sharesWithPals } from '../avatar.js';
 import { ICONS } from '../icons.js';
 import { motifIcon } from '../motif.js';
 import { streakText } from '../nextup.js';
+import { groupsCard } from './groups.js';
 import { badgeArt } from '../badge-art.js';
 import { postcard } from './parks.js';
 import { motifForPark } from '../../domain/city.js';
@@ -223,6 +224,7 @@ ${dash.nearby.length ? html`<section class="home-near" aria-labelledby="near-h">
     <p class="muted"><span class="legend-dot stamped" aria-hidden="true"></span> stamped <span class="legend-dot next" aria-hidden="true"></span> closest new <span class="legend-dot" aria-hidden="true"></span> to find</p>
   </section>
   ${palsCard(dash.pals, total)}
+  ${dash.groups ? groupsCard(dash.groups) : ''}
 </div>
 </div>`;
 }
