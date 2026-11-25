@@ -23,7 +23,7 @@ export async function signUp(page, { email = uniqueEmail(), name = 'Sam Explorer
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page).toHaveURL(/\/passport$/);
+  await expect(page).toHaveURL(/\/passport(\?welcome=1)?$/); // with JS, welcome.js drops the query
   return { email, name, password };
 }
 
