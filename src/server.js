@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { loadConfig } from './config.js';
 import { openDb } from './db/index.js';
-import { seedBadges, seedCities, seedActivityData } from './db/seed.js';
+import { seedBadges, seedCities, seedActivityData, SEED_GARY_OUTFITS_JSON } from './db/seed.js';
+import { seedOutfits } from './domain/outfits.js';
 import { createMailer } from './lib/mail.js';
 import { createSecretBox } from './lib/secret-box.js';
 import { emailSettings, sendgridKey } from './domain/settings.js';
@@ -31,7 +32,7 @@ const geoip = await createGeoIp({ file: config.geoipDb, log: { warn: (obj, msg) 
   return null;
 });
 const app = buildApp({
-  db, mailer, secretBox, geoip, logger: config.nodeEnv !== 'test', themeAi: createThemeGenerator({ apiKey: config.anthropicApiKey }),
+  db, mailer, secretBox, geoip, weather: config.weatherOn ? null : { current: () => null, refresh: async () => null }, logger: config.nodeEnv !== 'test', themeAi: createThemeGenerator({ apiKey: config.anthropicApiKey }),
   ideaAi: createIdeaTriager({ apiKey: config.anthropicApiKey }),
   config: {
     baseUrl: config.baseUrl, secureCookies: config.secureCookies, uploadsDir: path.join(config.dataDir, 'uploads'),
@@ -51,6 +52,8 @@ for (const c of seedCities(db)) {
       `seeded city pack seed/cities/${c.key}`);
   }
 }
+const outfits = seedOutfits(db, SEED_GARY_OUTFITS_JSON); // Gary's outfits: new ones arrive as drafts for Admin › Gary
+if (outfits) app.log.info({ outfits }, 'added Gary outfits from seed/gary-outfits.json');
 const founders = backfillFounding(db); // Founding Member numbers for members who joined before it existed
 if (founders) app.log.info({ founders }, 'gave Founding Member badges');
 

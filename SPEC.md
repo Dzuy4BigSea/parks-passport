@@ -534,7 +534,7 @@ Done when:
       done"; done ones are hidden behind a filter. Deleting an account deletes its feedback.
 
 ### Flow 17: Drops of Sunshine
-As a member, I can send a quick thank-you to the people who look after my parks, so that park
+As a member, I can send a quick thank-you to the people who look after our parks, so that park
 staff hear how much their work matters.
 Done when:
 - [ ] A **Drops of Sunshine** button sits on every park page ("Say thanks"), with links on my
@@ -576,6 +576,75 @@ Done when:
       healthy public governance and meaningful giving, as a cycle of shared stewardship, with
       doughnut economics as the frame. It is static copy, ready to become a public page later.
 
+### Flow 20: Messages from the team
+As an admin, I can send members a short note (a thank-you, "Happy Thanksgiving", a maintenance
+heads-up, a giveaway), optionally with badges, that greets them with an animation the next time
+they open the app.
+Done when:
+- [ ] **Admin › Messages** lists messages (Draft, Live, Scheduled, Ended) and has a compose form:
+      title (80 characters), message (500, plain text, line breaks kept), an effect, an audience,
+      optional badges to give with it, and an optional window (show from / until, in the city's
+      time zone of the admin's current city, stored in UTC). Messages without a window stay live
+      until archived.
+- [ ] **Effects:** Celebration 🎉 (confetti), Thank you 💛 (rising hearts), Autumn 🍂 (falling
+      leaves), Winter ❄️ (snow), Giveaway 🎁 (a gift box that pops open), Heads-up 🛠️ (calm: no
+      particles, for maintenance and notices). The form previews any effect with the message as
+      written, on the admin page, without sending. Each effect also has a "Play" sample.
+- [ ] **Audience:** everyone; members of one city (anyone with a stamp there); holders of a badge; or picked members (Admin › Members: tick, then
+      "Message ticked members"). "Only members who joined before it went live" is on by default,
+      so a thank-you to early adopters doesn't reach people who join later.
+- [ ] **Delivery:** on a member's next page while the message is live (and inside its window),
+      it opens full screen with its effect, Gary, the title and text, and the badges it brings,
+      then the badge reveals follow. Each member sees a message once; it also goes in their
+      notifications. Without JavaScript it shows as a card at the top of the page. The device's
+      celebrations switch and reduced motion turn the particles off but never hide the message.
+- [ ] Badges given with a message are given when the member first sees it (the "Given by an
+      admin" path: never taken back by the rules, limited editions numbered in the order seen);
+      a member who already has one isn't given it twice. The list shows how many have seen each
+      message.
+- [ ] Publishing asks for confirmation and shows how many members it reaches right now. A live
+      message can be ended (archived); editing is allowed only while it's a draft.
+- [ ] Members never see another member's message, and `/admin/messages*` is 404 for members.
+
+### Flow 21: Gary on every screen
+As anyone, I can tap Gary in the lower right of every screen for a quick, friendly "what you can
+do here", and founding explorers can talk back to him to leave feedback.
+Done when:
+- [ ] Gary's head sits in the lower right of every page (above the phone tab bar), with the label
+      "Ask Gary". Tapping it opens a speech bubble from him with a tip for the screen I'm on
+      (home, parks, a park, stamp, passport, pals, account, notifications, admin, sign-in pages
+      and the rest). Every screen has at least 4 variations in the same friendly voice, and each
+      ends with a short sign-off ("Let's go!", "Happy exploring!"), so it doesn't get stale.
+      Escape, the close button or a tap outside closes it. It works without JavaScript (a
+      disclosure) and doesn't cover the page's own buttons.
+- [ ] **Talk back (Founding Members and Early Bird Edition holders):** Gary's button replaces the
+      Feedback button. The bubble adds "Talk to Gary": I pick Idea / Something's broken / Love it,
+      type up to 1,000 characters and send. The panel says plainly that it goes to the Parks
+      Passport team as feedback (with the page I'm on). It shows as a three-message chat: Gary's
+      tip, my message, then Gary's reply, a thank-you that fits the kind ("Thanks for the
+      heads-up, I'll get this to the crew. Let's go!"), picked from several. Then it ends; Gary
+      is not a chatbot. Sending uses the existing feedback rules (Flow 16) and Admin › Feedback.
+- [ ] Everyone else sees only the tip; `/feedback` stays 404 for them.
+
+### Flow 22: Gary's outfits
+As a member, I can dress Gary from a wardrobe that grows as I play, and he dresses for the
+weather where I'm exploring.
+Done when:
+- [ ] **Outfits** ship as drafts in `seed/gary-outfits.json` (a hat, accessories and shirt
+      colors drawn over Gary). **Admin › Gary** shows each one on Gary, with Approve / Hide,
+      its name and blurb, the weather it suits, and how it's unlocked (a starter, or by holding
+      one of the listed badges). Members only ever see approved outfits.
+- [ ] Everyone starts with 3 starter outfits (Classic rope hat, Sun hat, Rain slicker). Founding
+      Members and Early Bird Edition holders also get the Early Bird outfit. Others unlock with
+      badges (e.g. Winter parka with a streak badge); locked ones show what unlocks them.
+- [ ] **Account › Gary's wardrobe**: I pick an outfit, or "Dress for the weather" (the default).
+      My choice shows on Gary in the lower right and on my home page.
+- [ ] **Weather:** "Dress for the weather" uses today's weather in the city I'm viewing (its
+      center, never my location): rain, snow, cold (≤ 45 °F), hot (≥ 85 °F) or mild, from
+      Open-Meteo (no key), cached for an hour per city. Gary wears the first approved outfit I
+      have that suits it, else Classic. If the weather service fails or is slow (2 s), Gary
+      wears Classic and nothing breaks.
+
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.
 - **users**: id, email (unique, lower-cased), password_hash (scrypt, nullable for magic-link-only
@@ -607,6 +676,14 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 - **founding**: the `founding_awarded` counter in **settings**; the badge is a `manual` badge
   (`founding-member`) given with `source_type = 'founding'` and a serial.
 - **feedback**: id, user_id, kind (idea|bug|love), text, page, created_at, done_at.
+- **team_messages**: id, title, body, effect, audience (everyone|city|badge|picked), audience_ref
+  (city key or badge slug), existing_only, badge_ids (JSON), starts_at, ends_at, status
+  (draft|live|ended), created_by, published_at, created_at. **team_message_recipients**
+  (message_id, user_id) for picked members; **team_message_views** (message_id, user_id,
+  seen_at), unique per member (Flow 20).
+- **gary_outfits**: id, slug, name, blurb, art (JSON: hat, over, shirt colors), weather (JSON
+  list), starter, unlock_badges (JSON slugs), status (draft|approved|hidden), sort. The member's
+  choice is `users.gary_outfit` (null = dress for the weather) (Flow 22).
 - **sunshine_notes**: id, user_id, city_id, park_id (null = the whole department), text, status
   (new|approved|hidden), created_at, reviewed_at.
 - **nonprofits**: id, name, url, mission, logo, reason (steward|one_percent|local), status
@@ -636,6 +713,7 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 | Browser Geolocation API | read (client) | user permission | Falls back to the honor system with an explanation. |
 | Map tiles (OpenStreetMap tiles via Leaflet) | read (client) | none (attribution shown) | The map area shows "Map unavailable" and the list still works. |
 | Anthropic Claude API (Admin › City theme, Admin › Badge ideas) | read (admin-triggered) | `ANTHROPIC_API_KEY` in `.env` | Optional. Without a key the Generate button is off. A failed run shows a fixed message (key rejected, rate limited, try again) and adds nothing. Output is validated and sanitized, and only becomes drafts. |
+| Open-Meteo forecast API (Gary's weather outfit, Flow 22) | read (server) | none | Asked for a city's current weather at most once an hour (a city's center only, no member data). On an error or after 2 s, Gary wears Classic. |
 | Geocoder (US Census Geocoder, falling back to OSM Nominatim at 1 request/s) | one-time read | none | Used only by the seed script. Parks it can't place are flagged `needs_pin` for an admin to place on a map. |
 | St. Pete Parks & Rec website | one-time import | none | Used only by `npm run seed:scrape` to build `seed/parks.csv`, never called at runtime. |
 
