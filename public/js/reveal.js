@@ -18,7 +18,14 @@ if (box && celebrationsOn()) {
       desc: full.slice((strong?.textContent || '').length).trim(),
     };
   }).filter((i) => i.title);
-  if (items.length) show(items);
+  if (!items.length) {
+    // nothing to show
+  } else if (document.querySelector('.fx-welcome')) {
+    // The passport opening goes first; the badges come right after it.
+    document.addEventListener('fx:closed', () => show(items), { once: true });
+  } else {
+    show(items);
+  }
 }
 
 function show(items) {

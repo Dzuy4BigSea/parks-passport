@@ -2,6 +2,8 @@
 // badge. Every other spec runs with celebrations off (playwright.config.js); these turn them on.
 import { test, expect } from '@playwright/test';
 import { expectNoAxeViolations } from './axe.js';
+import path from 'node:path';
+import Database from 'better-sqlite3';
 import { PASSWORD, uniqueEmail } from './helpers.js';
 
 test.use({
@@ -12,10 +14,10 @@ test.beforeEach(async ({ page }) => {
   await page.route('https://tile.openstreetmap.org/**', (route) => route.fulfill({ status: 204, body: '' }));
 });
 
-async function signUpCelebrating(page, name = 'Cel Ebrate') {
+async function signUpCelebrating(page, name = 'Cel Ebrate', email = uniqueEmail('cel')) {
   await page.goto('/signup');
   await page.getByLabel('Display name').fill(name);
-  await page.getByLabel('Email').fill(uniqueEmail('cel'));
+  await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
 }
@@ -29,18 +31,22 @@ test('the passport opens, a surprise badge is revealed, a badge can be inspected
   await expectNoAxeViolations(page);
   await welcome.getByRole('button', { name: 'Start exploring' }).click();
   await expect(welcome).toBeHidden();
+  await expect(page.locator('html')).not.toHaveClass(/fx-locked/);
+  await expect(page.locator('#main')).toBeFocused();
 
   // The first park page: a surprise badge, face down until tapped.
   await page.goto('/st-pete/parks/abercrombie-park');
   const reveal = page.getByRole('dialog', { name: 'Surprise badge!' });
   await expect(reveal).toBeVisible();
   await expect(reveal.getByRole('button', { name: /Tap to reveal/ })).toBeFocused();
+  await expect(reveal.locator('.reveal-name')).toBeHidden(); // no peeking before the tap
   await reveal.getByRole('button', { name: /Tap to reveal/ }).click();
   await expect(reveal.locator('.reveal-name')).toHaveText('Trail Planner');
   await expectNoAxeViolations(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await reveal.getByRole('button', { name: 'Awesome!' }).click();
   await expect(reveal).toBeHidden();
+  await expect(page.locator('html')).not.toHaveClass(/fx-locked/);
   // Without JS the same news is in the page (role=status), and it stays.
   await expect(page.locator('.announcements')).toContainText('New badge: Trail Planner');
 
@@ -73,4 +79,68 @@ test('celebrations can be turned off on this device; with reduced motion they st
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.goto('/account');
   await expect(page.getByLabel(/Show celebrations/)).not.toBeChecked();
+});
+
+test('several badges queue up; long names and descriptions fit; Escape works after a click inside', async ({ page }) => {
+  const email = uniqueEmail('queue');
+  await signUpCelebrating(page, 'Q Ueue', email);
+  await page.getByRole('button', { name: 'Start exploring' }).click();
+  // Two unseen badges (disabled, so nobody else's board changes), one with the longest text the admin allows.
+  const db = new Database(path.join(process.env.PP_E2E_DATA_DIR, 'app.db'));
+  const userId = db.prepare('SELECT id FROM users WHERE email = ?').pluck().get(email);
+  const stamp = Date.now();
+  const long = { name: 'Supercalifragilisticexpialidocious Trailblazing Explorer Pro', desc: 'D'.repeat(60) + ' ' + 'a long description '.repeat(7) };
+  for (const [slug, name, desc] of [[`qa-a-${stamp}`, 'Quick One', 'Short.'], [`qa-b-${stamp}`, long.name.slice(0, 60), long.desc.slice(0, 200)]]) {
+    const { lastInsertRowid } = db.prepare(`INSERT INTO badges (slug, name, description, art, rule_type, rule_params, kind, enabled, created_at)
+      VALUES (?, ?, ?, '🏅', 'parks_count', '{"n":999}', 'known', 0, 'x')`).run(slug, name, desc);
+    db.prepare("INSERT INTO user_badges (user_id, badge_id, awarded_at, source_type) VALUES (?, ?, '2026-01-01T00:00:00Z', 'test')").run(userId, lastInsertRowid);
+  }
+  db.close();
+  await page.goto('/pals');
+  const reveal = page.getByRole('dialog', { name: 'Badge unlocked!' });
+  await expect(reveal.locator('.reveal-count')).toHaveText('1 of 2');
+  await reveal.getByRole('button', { name: /Tap to reveal/ }).click();
+  await reveal.getByRole('button', { name: 'Next' }).click();
+  await expect(reveal.locator('.reveal-count')).toHaveText('2 of 2');
+  await reveal.getByRole('button', { name: /Tap to reveal/ }).click();
+  await expect(reveal.locator('.reveal-name')).toContainText('Supercalifragilistic');
+  const fits = await page.locator('.reveal-front').evaluate((el) => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1);
+  expect(fits).toBe(true);
+  await expectNoAxeViolations(page);
+  // A click on plain text inside moves focus off the buttons; Escape still closes.
+  await reveal.locator('.reveal-kicker').click();
+  await page.keyboard.press('Escape');
+  await expect(reveal).toBeHidden();
+  await expect(page.locator('html')).not.toHaveClass(/fx-locked/);
+});
+
+test.describe('with celebrations off', () => {
+  test.use({ storageState: { cookies: [{ name: 'pp_consent', value: 'v1.a0.d0', domain: '127.0.0.1', path: '/', expires: -1, httpOnly: true, secure: false, sameSite: 'Lax' }],
+    origins: [{ origin: 'http://127.0.0.1:8181', localStorage: [{ name: 'pp-celebrations', value: 'off' }] }] } });
+  test('sign-up lands on the passport with no welcome card', async ({ page }) => {
+    await signUpCelebrating(page, 'No Fuss');
+    await expect(page).toHaveURL(/\/st-pete\/passport$/);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+});
+
+test('the passport opening goes first; a waiting badge is revealed right after it closes', async ({ page }) => {
+  const email = uniqueEmail('stack');
+  await signUpCelebrating(page, 'Stack Ed', email);
+  await page.getByRole('button', { name: 'Start exploring' }).click();
+  const db = new Database(path.join(process.env.PP_E2E_DATA_DIR, 'app.db'));
+  const userId = db.prepare('SELECT id FROM users WHERE email = ?').pluck().get(email);
+  const { lastInsertRowid } = db.prepare(`INSERT INTO badges (slug, name, description, art, rule_type, rule_params, kind, enabled, created_at)
+    VALUES (?, 'Stacked', 'One at a time.', '🎉', 'parks_count', '{"n":999}', 'known', 0, 'x')`).run(`qa-stack-${Date.now()}`);
+  db.prepare("INSERT INTO user_badges (user_id, badge_id, awarded_at, source_type) VALUES (?, ?, '2026-01-01T00:00:00Z', 'test')").run(userId, lastInsertRowid);
+  db.close();
+  await page.goto('/passport?welcome=1');
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Start exploring' }).click();
+  const reveal = page.getByRole('dialog', { name: 'Badge unlocked!' });
+  await expect(reveal).toBeVisible();
+  await expect(page.locator('html')).toHaveClass(/fx-locked/);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('html')).not.toHaveClass(/fx-locked/);
 });

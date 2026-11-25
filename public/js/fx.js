@@ -45,30 +45,50 @@ export function burst(x, y, { count = 36, spread = 220 } = {}) {
   setTimeout(() => layer.remove(), 1400);
 }
 
-/** Opens a full-screen dialog element: locks scroll, traps Tab, Escape calls onClose. */
+let openCount = 0; // the scroll lock lifts only when the last dialog closes
+
+/**
+ * Opens a full-screen dialog element: locks scroll, keeps focus inside (Tab wraps, focus that
+ * lands outside comes back), Escape closes. Keys are handled at the document, so they still work
+ * after a click on something inside that can't take focus. Focus goes back where it was, or to
+ * the main content. Fires "fx:closed" on the document when it closes.
+ */
 export function openDialog(dialog, { onClose, initial } = {}) {
-  const before = document.activeElement;
+  const active = document.activeElement;
+  const before = active && active !== document.body ? active : null;
+  dialog.setAttribute('tabindex', '-1'); // a click on plain content focuses the dialog, not <body>
   document.body.append(dialog);
+  openCount += 1;
   document.documentElement.classList.add('fx-locked');
   const focusables = () => [...dialog.querySelectorAll('button, a[href], [tabindex="0"]')].filter((el) => !el.hidden && el.offsetParent !== null);
   const onKey = (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); close(); }
+    if (!dialog.isConnected || document.querySelectorAll('[aria-modal="true"]').length > 1 && dialog !== [...document.querySelectorAll('[aria-modal="true"]')].at(-1)) return;
+    if (e.key === 'Escape') { e.preventDefault(); close(); return; }
     if (e.key !== 'Tab') return;
     const list = focusables();
-    if (!list.length) return;
+    if (!list.length) { e.preventDefault(); dialog.focus(); return; }
     const [first, last] = [list[0], list[list.length - 1]];
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    const inside = dialog.contains(document.activeElement);
+    if (e.shiftKey && (document.activeElement === first || !inside)) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (document.activeElement === last || !inside)) { e.preventDefault(); first.focus(); }
   };
-  dialog.addEventListener('keydown', onKey);
+  const onFocus = (e) => { if (!dialog.contains(e.target)) (focusables()[0] || dialog).focus(); };
+  document.addEventListener('keydown', onKey);
+  document.addEventListener('focusin', onFocus);
+  let closed = false;
   function close() {
-    dialog.removeEventListener('keydown', onKey);
+    if (closed) return;
+    closed = true;
+    document.removeEventListener('keydown', onKey);
+    document.removeEventListener('focusin', onFocus);
     dialog.remove();
-    document.documentElement.classList.remove('fx-locked');
+    openCount = Math.max(0, openCount - 1);
+    if (!openCount) document.documentElement.classList.remove('fx-locked');
     onClose?.();
     (before && document.contains(before) ? before : document.querySelector('#main'))?.focus?.({ preventScroll: true });
+    document.dispatchEvent(new CustomEvent('fx:closed'));
   }
-  requestAnimationFrame(() => (initial || focusables()[0])?.focus());
+  requestAnimationFrame(() => (initial || focusables()[0] || dialog).focus());
   return close;
 }
 

@@ -862,7 +862,8 @@ img.announce-art { padding: 0.4rem; }
 .table-wrap { overflow-x: auto; max-width: 100%; }
 .admin-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius-sm); }
 .admin-table th, .admin-table td { text-align: left; padding: 0.55rem; border-bottom: 1px solid var(--line); vertical-align: top; }
-.admin-table tr.disabled td { opacity: 0.7; }
+/* Disabled badges: a muted background, not faded text (faded text failed contrast). */
+.admin-table tr.disabled td { background: var(--sand, #f6f1e7); }
 .admin-table form { margin: 0; }
 .flag { display: inline-block; font-size: 0.8rem; font-weight: 700; color: var(--pink-ink); }
 .table-art { font-size: 1.25rem; }
@@ -1345,3 +1346,17 @@ html.fx-locked { overflow: hidden; }
 .inspect-art img.badge-art { width: 7rem; height: 7rem; }
 .reveal-art .announce-art { width: 8rem; height: 8rem; font-size: 4.5rem; display: grid; place-items: center; }
 .reveal-art img.announce-art { padding: 0.8rem; }
+
+/* Long badge names and descriptions (up to 60 and 200 characters): the card grows instead of
+   overflowing. Faces sit in one grid cell so the taller face sets the height. */
+.fx-reveal, .fx-inspect, .fx-welcome { overflow-y: auto; }
+.fx-reveal:focus, .fx-inspect:focus, .fx-welcome:focus { outline: none; }
+.reveal-card { height: auto; min-height: 19rem; }
+.reveal-flip { position: relative; inset: auto; display: grid; min-height: 19rem; }
+.reveal-face { position: relative; inset: auto; grid-area: 1 / 1; min-height: 19rem; }
+.reveal-art .announce-art { width: 5.5rem; height: 5.5rem; font-size: 3.2rem; }
+.reveal-name, .reveal-desc, .inspect-name, .inspect-desc, .welcome-name { overflow-wrap: anywhere; }
+.inspect-card { height: auto; min-height: 22rem; }
+.inspect-flip { position: relative; inset: auto; display: grid; min-height: 22rem; }
+.inspect-face { position: relative; inset: auto; grid-area: 1 / 1; }
+.welcome-gary { right: 0; }
