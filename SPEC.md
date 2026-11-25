@@ -707,7 +707,7 @@ Done when:
 - [ ] **Team badges** are their own kind (`badges.is_group`): in a "Team badges" section of my
       own passport (with the group's name and date), not among the regular badges, and in a "Group
       badges" section of Admin › Badges, where admins add more ("Add a team badge"; the "Given by an
-      admin only" rule; not a limited edition). Members keep them if they leave or the group ends,
+      admin only" rule; not a limited edition; never given by hand from Admin › Members). Members keep them if they leave or the group ends,
       and the rules never take them back.
 - [ ] **Suggestions:** the owner can suggest a group goal or a team badge from the group page. It
       goes to the badge ideas queue (Flow 13), marked "Group goal" or "Team badge".

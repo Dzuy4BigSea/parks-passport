@@ -124,7 +124,7 @@ export const NOTE_MAX = 140;
 export function grantBadge(db, { admin, userId, badgeId, note = '' }, { now = new Date() } = {}) {
   const member = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
   const badge = db.prepare('SELECT * FROM badges WHERE id = ?').get(badgeId);
-  if (!member || !badge) return { error: 'not_found' };
+  if (!member || !badge || badge.is_group) return { error: 'not_found' }; // team badges are earned together
   const text = String(note || '').replace(/\s+/g, ' ').trim();
   if (text.length > NOTE_MAX) return { error: 'note' };
   return db.transaction(() => {

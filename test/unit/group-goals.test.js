@@ -73,8 +73,8 @@ test('a goal under way counts what members do; reaching it gives everyone the te
   assert.match(next, /Earned together with Run Club/);
   const passport = (await ana.c.get('/st-pete/passport')).body;
   assert.match(passport, /Team badges <span class="count">\(1\)<\/span>/);
-  assert.match(passport, /with Run Club/);
-  assert.match(passport, /Team Effort <span class="tier">I<\/span>/);
+  assert.match(passport, /Team Effort <span class="tier"><span class="visually-hidden">level <\/span>I<\/span>/);
+  assert.match(passport, /With Run Club/);
   assert.ok(!badgeBoard(db, ana.id).some((b) => b.slug === 'team-effort'));
   assert.match((await ben.c.get(`/groups/${gid}`)).body, /Reached/);
 
@@ -170,7 +170,33 @@ test('earning a team badge again levels it up: I, II, III, IV, V, then it stays 
     now.advanceMinutes(60 * 24); // a new day, so the same parks can be stamped again
   }
   const passport = (await ana.c.get('/st-pete/passport')).body;
-  assert.match(passport, /Team Effort <span class="tier">V<\/span>/);
+  assert.match(passport, /Team Effort <span class="tier"><span class="visually-hidden">level <\/span>V<\/span>/);
   assert.match(passport, /Earned 6 times · last with Run Club/);
   assert.match((await ana.c.get('/notifications')).body, /You earned Team Effort V\./);
+});
+
+test('levels: another group counts too, a level-up is announced again and dated, and team badges can\'t be given by hand', async () => {
+  const { db, now, people, gid, stamp } = await world();
+  const { ana, boss } = people;
+  await ana.c.post(`/groups/${gid}/goal`, { template: 'custom', metric: 'checkins', target: '1', days: '1' });
+  now.advanceMinutes(1);
+  await stamp('ana', 'a-park');
+  await ana.c.get('/pals'); // announced and seen
+  now.advanceMinutes(60 * 24 * 3);
+  await ana.c.post('/groups', { name: 'Second Club', emoji: '🌲' });
+  const second = db.prepare("SELECT id FROM member_groups WHERE name = 'Second Club'").pluck().get();
+  await ana.c.post(`/groups/${second}/goal`, { template: 'custom', metric: 'checkins', target: '1', days: '1' });
+  now.advanceMinutes(1);
+  await stamp('ana', 'b-park');
+  const page = (await ana.c.get('/pals')).body;
+  assert.match(page, /New badge: Team Effort <span class="visually-hidden">level <\/span>II/);
+  assert.match(page, /Earned together with Second Club/);
+  const row = db.prepare("SELECT ub.times, ub.awarded_at FROM user_badges ub JOIN badges b ON b.id = ub.badge_id WHERE b.slug = 'team-effort' AND ub.user_id = ?").get(ana.id);
+  assert.equal(row.times, 2);
+  assert.equal(row.awarded_at.slice(0, 10), now().toISOString().slice(0, 10)); // dated by the level-up
+  // Admins can't hand out team badges.
+  db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(boss.id);
+  const team = db.prepare("SELECT id FROM badges WHERE slug = 'fifty-strong'").pluck().get();
+  assert.doesNotMatch((await boss.c.get(`/admin/users/${people.ben.id}/badges`)).body, /Fifty Strong/);
+  assert.equal((await boss.c.post(`/admin/users/${people.ben.id}/badges`, { badge_id: String(team) })).statusCode, 422);
 });

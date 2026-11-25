@@ -116,14 +116,15 @@ export function checkGroupGoals(db, userId, { now = new Date() } = {}) {
       const give = db.prepare(`INSERT OR IGNORE INTO user_badges (user_id, badge_id, awarded_at, source_type, source_id, note)
         VALUES (?, ?, ?, 'group', ?, ?)`);
       // Earned again: the badge levels up (announced again), naming the group it was last earned with.
-      const levelUp = db.prepare(`UPDATE user_badges SET times = times + 1, seen_at = NULL, source_type = 'group', source_id = ?, note = ?
+      const levelUp = db.prepare(`UPDATE user_badges SET times = times + 1, awarded_at = ?, seen_at = NULL, source_type = 'group', source_id = ?, note = ?
         WHERE user_id = ? AND badge_id = ?`);
+      const timesOf = db.prepare('SELECT times FROM user_badges WHERE user_id = ? AND badge_id = ?').pluck();
       const badgeName = goal.badge_id ? db.prepare('SELECT name FROM badges WHERE id = ?').pluck().get(goal.badge_id) : null;
       for (const id of members) {
         let what = '';
         if (goal.badge_id) {
-          if (!give.run(id, goal.badge_id, iso(now), goal.id, goal.group_name).changes) levelUp.run(goal.id, goal.group_name, id, goal.badge_id);
-          const times = db.prepare('SELECT times FROM user_badges WHERE user_id = ? AND badge_id = ?').pluck().get(id, goal.badge_id);
+          if (!give.run(id, goal.badge_id, iso(now), goal.id, goal.group_name).changes) levelUp.run(iso(now), goal.id, goal.group_name, id, goal.badge_id);
+          const times = timesOf.get(id, goal.badge_id);
           what = ` You earned ${badgeName} ${tierOf(times)}.`;
         }
         notify(db, id, { kind: 'goal_reached', text: `${goal.group_name} reached its goal: ${goal.title}!${what}`, link: `/groups/${goal.group_id}` }, { now });

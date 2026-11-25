@@ -322,7 +322,7 @@ export default async function adminRoutes(app) {
     // Members
     const givable = () => db.prepare(`SELECT b.id, b.name, b.rule_type, b.enabled, b.limited_count,
       (SELECT COUNT(*) FROM user_badges ub WHERE ub.badge_id = b.id AND ub.serial IS NOT NULL) AS serials_given
-      FROM badges b ORDER BY b.limited_count IS NULL, b.name COLLATE NOCASE`).all();
+      FROM badges b WHERE b.is_group = 0 ORDER BY b.limited_count IS NULL, b.name COLLATE NOCASE`).all();
     const usersPage = (req, extra = {}) => adminUsers({
       users: allUsersForAdmin(db), csrf: req.csrfToken(), me: req.user, invites: recentInvites(db), badges: givable(), ...extra,
     });
@@ -355,7 +355,7 @@ export default async function adminRoutes(app) {
         WHERE ub.user_id = ? ORDER BY ub.awarded_at DESC`).all(member.id),
       available: db.prepare(`SELECT id, name, rule_type, enabled, limited_count,
         (SELECT COUNT(*) FROM user_badges s WHERE s.badge_id = b.id AND s.serial IS NOT NULL) AS serials_given FROM badges b WHERE NOT EXISTS
-        (SELECT 1 FROM user_badges ub WHERE ub.badge_id = b.id AND ub.user_id = ?) ORDER BY b.name COLLATE NOCASE`).all(member.id),
+        (SELECT 1 FROM user_badges ub WHERE ub.badge_id = b.id AND ub.user_id = ?) AND b.is_group = 0 ORDER BY b.name COLLATE NOCASE`).all(member.id),
     });
     const memberOf = (req) => (/^\d+$/.test(req.params.id) ? db.prepare('SELECT id, display_name FROM users WHERE id = ?').get(Number(req.params.id)) : null);
     r.get('/users/:id/badges', async (req, reply) => {
