@@ -20,12 +20,15 @@ export const PAGE_SIZE = 30;
 /** A page of notifications, newest first: { items, hasMore }. */
 export function listNotifications(db, userId, { page = 1 } = {}) {
   // A pal request carries its open request (if it's still open), so it can be answered right here.
-  const rows = db.prepare(`SELECT n.id, n.kind, n.text, n.link, n.created_at, n.read_at,
+  const rows = db.prepare(`SELECT n.id, n.kind, n.text, n.link, n.created_at, n.read_at, a.display_name AS actor,
       CASE WHEN n.kind = 'pal_request' THEN (SELECT r.id FROM pal_requests r WHERE r.from_user = n.actor_id AND r.to_user = n.user_id) END AS request_id,
       CASE WHEN n.kind = 'pal_request' THEN EXISTS (SELECT 1 FROM pal_links l WHERE (l.user_a = n.actor_id AND l.user_b = n.user_id)
         OR (l.user_b = n.actor_id AND l.user_a = n.user_id)) END AS now_pals
-    FROM notifications n WHERE n.user_id = ? ORDER BY n.id DESC LIMIT ? OFFSET ?`).all(userId, PAGE_SIZE + 1, (Math.max(1, page) - 1) * PAGE_SIZE);
-  return { items: rows.slice(0, PAGE_SIZE), hasMore: rows.length > PAGE_SIZE };
+    FROM notifications n LEFT JOIN users a ON a.id = n.actor_id WHERE n.user_id = ?
+    ORDER BY n.id DESC LIMIT ? OFFSET ?`).all(userId, PAGE_SIZE + 1, (Math.max(1, page) - 1) * PAGE_SIZE);
+  // The other member's name as it is now (they may have changed it since).
+  const items = rows.slice(0, PAGE_SIZE).map(({ actor, ...n }) => ({ ...n, text: n.text.replace('{actor}', actor || 'Someone') }));
+  return { items, hasMore: rows.length > PAGE_SIZE };
 }
 
 export const markAllRead = (db, userId, { now = new Date() } = {}) =>

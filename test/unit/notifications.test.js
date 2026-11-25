@@ -82,6 +82,9 @@ test('badges earned and pal news reach the notification center; a manual badge i
   await ana.c.post(`/pals/requests/${rid}/accept`);
   assert.ok(kinds(ana.id).includes('pal_new') && kinds(ben.id).includes('pal_new'));
   assert.match((await ana.c.get('/notifications')).body, /You and ben are now Park Pals\./);
+  await ben.c.post('/account/name', { display_name: 'Trail Fox' });
+  assert.match((await ana.c.get('/notifications')).body, /You and Trail Fox are now Park Pals\./);
+  assert.doesNotMatch((await ana.c.get('/notifications')).body, /ben wants to be/);
 
   // Only your own; signed out goes to log in; notifications naming a deleted member go with them.
   assert.doesNotMatch((await ben.c.get('/notifications')).body, /You earned First Stamp/);

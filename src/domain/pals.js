@@ -29,6 +29,18 @@ export const inviterForToken = (db, token) => (typeof token === 'string' && toke
   ? db.prepare(`SELECT u.* FROM pal_invites i JOIN users u ON u.id = i.user_id WHERE i.token = ?`).get(token) || null
   : null);
 
+/** The inviter behind a "next" path that is a pal invite link (/pals/invite/<token>), if any. */
+export function inviterForNext(db, next) {
+  const m = /^\/pals\/invite\/([A-Za-z0-9_-]{1,64})$/.exec(String(next || ''));
+  return m ? inviterForToken(db, m[1]) : null;
+}
+
+/** Makes a new member and the member who invited them Park Pals (both directions). */
+export function palUpOnSignup(db, inviterId, newUserId, { now = new Date(), random = Math.random } = {}) {
+  if (!inviterId || inviterId === newUserId) return false;
+  return makePals(db, inviterId, newUserId, { now, random });
+}
+
 /**
  * Accepts an invite: makes the two users pals (both directions) and checks badges for both.
  * Returns { ok } or { error: 'self' | 'already' }.
@@ -49,9 +61,8 @@ function makePals(db, userId, otherId, { now = new Date(), random = Math.random 
     return changes > 0;
   })();
   if (!linked) return false;
-  const names = new Map(db.prepare('SELECT id, display_name FROM users WHERE id IN (?, ?)').raw().all(a, b));
   for (const [me, other] of [[a, b], [b, a]]) {
-    notify(db, me, { kind: 'pal_new', text: `You and ${names.get(other)} are now Park Pals.`, link: '/pals', actorId: other }, { now });
+    notify(db, me, { kind: 'pal_new', text: 'You and {actor} are now Park Pals.', link: '/pals', actorId: other }, { now });
   }
   for (const id of [a, b]) markMilestone(db, id, 'pal', { now });
   for (const id of [a, b]) awardBadges(db, id, { type: 'pal', id: id === a ? b : a }, { now, random });
@@ -131,7 +142,7 @@ export function requestByCode(db, user, input, { now = new Date(), random = Math
   db.transaction(() => {
     db.prepare('INSERT INTO pal_requests (from_user, to_user, created_at) VALUES (?, ?, ?)').run(user.id, to.id, now.toISOString());
     db.prepare('INSERT INTO pal_request_sends (user_id, at) VALUES (?, ?)').run(user.id, now.toISOString());
-    notify(db, to.id, { kind: 'pal_request', text: `${user.display_name} wants to be Park Pals.`, link: '/pals#requests', actorId: user.id }, { now });
+    notify(db, to.id, { kind: 'pal_request', text: '{actor} wants to be Park Pals.', link: '/pals#requests', actorId: user.id }, { now });
   })();
   return { sent: true, to };
 }

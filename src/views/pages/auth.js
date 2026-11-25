@@ -6,18 +6,19 @@ import { visibilityForm } from './pals.js';
 const nextField = (next) => (next ? html`<input type="hidden" name="next" value="${next}">` : '');
 const withNext = (path, next) => (next ? `${path}?next=${encodeURIComponent(next)}` : path);
 
-export function signupPage({ csrf, values = {}, errors = {}, next, invite = null, inviteNotice = null, cityName = 'St. Pete' }) {
+export function signupPage({ csrf, values = {}, errors = {}, next, invite = null, inviteNotice = null, cityName = 'St. Pete', palInviter = null, inviteToken = '' }) {
   return {
     title: 'Create your passport',
     body: html`<div class="narrow">
-${invite ? html`<p class="eyebrow">You're invited</p>` : ''}
+${invite || palInviter ? html`<p class="eyebrow">You're invited</p>` : ''}
 <h1>Create your passport</h1>
-${invite?.inviter_name ? html`<p class="lede">${invite.inviter_name} invited you. Stamp every ${cityName} park you visit, earn badges and explore with friends.</p>` : ''}
+${invite?.inviter_name ? html`<p class="lede">${invite.inviter_name} invited you. Stamp every ${cityName} park you visit, earn badges and explore with friends. You'll be Park Pals with ${invite.inviter_name} as soon as you join.</p>` : ''}
+${palInviter ? html`<p class="lede">Sign up and you'll be Park Pals with ${palInviter.display_name} straight away, so you can see each other's stamps and badges.</p>` : ''}
 ${inviteNotice ? html`<p class="notice" role="status">${inviteNotice}</p>` : ''}
 ${errorSummary(errors, { display_name: 'Display name', email: 'Email', password: 'Password' })}
 <form method="post" action="/signup" class="card-form" novalidate>
-  ${csrfField(csrf)}${nextField(next)}
-  ${field({ name: 'display_name', label: 'Display name', value: values.display_name, error: errors.display_name, autocomplete: 'nickname', hint: 'Shown to Park Pals you choose to share with.', maxlength: 40 })}
+  ${csrfField(csrf)}${nextField(next)}${inviteToken ? html`<input type="hidden" name="invite_token" value="${inviteToken}">` : ''}
+  ${field({ name: 'display_name', label: 'Display name', value: values.display_name, error: errors.display_name, autocomplete: 'nickname', hint: "What others see. It doesn't have to be your real name: a nickname works. You can change it later in Account.", maxlength: 40 })}
   ${field({ name: 'email', label: 'Email', type: 'email', value: values.email, error: errors.email, autocomplete: 'email' })}
   ${field({ name: 'password', label: 'Password', type: 'password', error: errors.password, autocomplete: 'new-password', hint: 'At least 10 characters.' })}
   <div class="hp" aria-hidden="true"><label for="website">Leave this empty</label><input id="website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
@@ -154,7 +155,7 @@ function profilePhoto({ csrf, user, error }) {
 </section>`;
 }
 
-export function accountPage({ csrf, user, errors = {}, notice, ideas = false }) {
+export function accountPage({ csrf, user, errors = {}, notice, ideas = false, values = {} }) {
   return {
     title: 'Account',
     current: 'account',
@@ -163,8 +164,14 @@ export function accountPage({ csrf, user, errors = {}, notice, ideas = false }) 
 <h1>Account</h1>
 ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
 ${profilePhoto({ csrf, user, error: errors.photo })}
+${errors.display_name ? errorSummary({ display_name: errors.display_name }, { display_name: 'Display name' }) : ''}
+<form method="post" action="/account/name" class="card-form" id="name" novalidate>
+  ${csrfField(csrf)}
+  ${field({ name: 'display_name', label: 'Display name', value: values.display_name ?? user.display_name, error: errors.display_name, autocomplete: 'nickname', maxlength: 40,
+    hint: `What Park Pals and groups see. It doesn't have to be your real name. Changing it also changes your passport link (now @${user.handle}); old links stop working.` })}
+  <button type="submit" class="btn">Save name</button>
+</form>
 <dl class="facts">
-  <dt>Display name</dt><dd>${user.display_name}</dd>
   <dt>Email</dt><dd>${user.email}</dd>
   <dt>Handle</dt><dd>@${user.handle}</dd>
 </dl>
@@ -196,7 +203,7 @@ ${visibilityForm({ csrf, user })}
 
 <h2>Delete my account</h2>
 <p>This permanently removes your account and everything in it: visits, photos, ratings, badges and Park Pals.</p>
-${errorSummary(errors, { delete_password: 'Password' })}
+${errorSummary(errors.delete_password ? { delete_password: errors.delete_password } : {}, { delete_password: 'Password' })}
 <form method="post" action="/account/delete" class="card-form danger" novalidate>
   ${csrfField(csrf)}
   ${field({ name: 'delete_password', label: 'Confirm with your password', type: 'password', error: errors.delete_password, autocomplete: 'current-password' })}

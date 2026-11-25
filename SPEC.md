@@ -31,6 +31,11 @@ so that my passport is saved.
 Done when:
 - [ ] Signing up with display name, a valid email and a password of at least 10 characters
       creates the account, signs me in, and lands me on `/passport`.
+- [ ] My display name is what others see, and it needn't be my real name (sign-up and Account say
+      so; an admin's invite doesn't fill it in). I can change it in Account (1 to 40 characters); my
+      handle and passport link follow the new name (not for a change of case or spacing), and old
+      links stop working: nobody else can take an old handle, though I can take mine back.
+      Notifications show other members by the name they use now.
 - [ ] Signing up with an email that's already registered shows "An account with this email
       already exists" inline, and no second user row is created.
 - [ ] An invalid email or a short password shows an inline error on that field, and nothing is
@@ -195,7 +200,9 @@ Done when:
 - [ ] After stamping or earning a badge while my default is private, a dismissible nudge offers
       to share with Park Pals. Dismissing it 3 times stops it.
 - [ ] I get a personal invite link (`/pals/invite/:token`). Someone who opens it and accepts
-      becomes my pal (in both directions). I can regenerate the link, which invalidates the old
+      becomes my pal (in both directions). Someone new who creates their passport from the link is
+      my pal as soon as they sign up, with nothing left to accept (the sign-up page says so); they
+      land on their passport. An existing member logs in and taps Accept. I can regenerate the link, which invalidates the old
       one, and remove a pal. There is no user search.
 - [ ] A link that no longer works (regenerated, renewed after removing a pal, or cut short when
       pasted) shows "This invite link doesn't work anymore" with what to do next (status 404).
@@ -253,6 +260,8 @@ Done when:
       sign-up form and works for 30 days. Sign-up stays open to everyone. Existing members and
       addresses invited in the last 24 hours are refused. The list shows each invite as Pending or
       Joined. Only the token's hash is stored, and the join page loads no analytics.
+      Signing up from its emailed link (within the 30 days) makes the new member and the admin who
+      invited them Park Pals; signing up with the address alone only marks the invite Joined.
 - [ ] I can change the wording of every member email (subject, preview text, heading, message,
       button, small print, with {name}, {inviter} and {city}) and preview or reset it.
 - [ ] **Admin › Stats** shows counts only (no names, emails or locations): check-ins in 7 and 30

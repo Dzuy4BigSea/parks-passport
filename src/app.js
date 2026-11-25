@@ -149,7 +149,7 @@ export function buildApp({
     // Pages whose URL carries a secret (one-time or invite tokens) or a person's handle never load
     // GTM/Umami, and nothing copies their query string into other links.
     const pathname = req.url.split(/[?#]/)[0];
-    const private_ = NO_ANALYTICS.some((re) => re.test(pathname));
+    const private_ = NO_ANALYTICS.some((re) => re.test(pathname)) || /[?&]next=(%2F|\/)pals(%2F|\/)invite/i.test(req.url);
     const path = private_ ? pathname : req.url.split('#')[0];
     return this.type('text/html; charset=utf-8')
       .header('Cache-Control', 'no-store')

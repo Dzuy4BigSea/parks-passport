@@ -31,6 +31,9 @@ export function validatePassword(pw) {
   return null;
 }
 
+/** In use by another member, or given up by another member (retired). */
+const handleTaken = (db, handle, userId = 0) => Boolean(db.prepare('SELECT 1 FROM users WHERE handle = ? AND id != ?').get(handle, userId)
+  || db.prepare('SELECT 1 FROM retired_handles WHERE handle = ? AND user_id != ?').get(handle, userId));
 const handleBase = (name) => name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '').slice(0, 20) || 'explorer';
 
 export function findUserByEmail(db, email) {
@@ -55,12 +58,45 @@ export async function createUser(db, { display_name, email, password }, { now = 
   const base = handleBase(name);
   for (let attempt = 0; attempt < 20; attempt++) {
     const handle = attempt === 0 ? base : `${base}${Math.floor(1000 + Math.random() * 9000)}`;
+    if (handleTaken(db, handle)) continue;
     try {
       const { lastInsertRowid } = insert.run(e, passwordHash, name, handle, now.toISOString());
       return { user: findUserById(db, lastInsertRowid) };
     } catch (err) {
       if (!String(err.message).includes('UNIQUE')) throw err;
       if (findUserByEmail(db, e)) return { errors: { email: 'An account with this email already exists.' } };
+    }
+  }
+  throw new Error('could not allocate a handle');
+}
+
+/**
+ * Changes a member's display name (it needn't be their real name). Their handle, which is made from
+ * the name and shows in their passport link, follows it, so an old name doesn't linger there.
+ * Returns { user } or { errors }.
+ */
+export function setDisplayName(db, userId, displayName) {
+  const name = String(displayName || '').replace(/\s+/g, ' ').trim();
+  if (!name) return { errors: { display_name: 'Enter a display name.' } };
+  if (name.length > 40) return { errors: { display_name: 'Use 40 characters or fewer.' } };
+  const current = findUserById(db, userId);
+  if (current.display_name === name) return { user: current };
+  // Only the case or spacing changed: keep the handle (and the link).
+  if (handleBase(name) === handleBase(current.display_name)) {
+    db.prepare('UPDATE users SET display_name = ? WHERE id = ?').run(name, userId);
+    return { user: findUserById(db, userId) };
+  }
+  const base = handleBase(name);
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const handle = attempt === 0 ? base : `${base}${Math.floor(1000 + Math.random() * 9000)}`;
+    if (handle === current.handle || !handleTaken(db, handle, userId)) {
+      db.transaction(() => {
+        // The old handle is retired: nobody else can take it, so old links never lead to someone else.
+        db.prepare('INSERT OR REPLACE INTO retired_handles (handle, user_id) VALUES (?, ?)').run(current.handle, userId);
+        db.prepare('DELETE FROM retired_handles WHERE handle = ? AND user_id = ?').run(handle, userId);
+        db.prepare('UPDATE users SET display_name = ?, handle = ? WHERE id = ?').run(name, handle, userId);
+      })();
+      return { user: findUserById(db, userId) };
     }
   }
   throw new Error('could not allocate a handle');

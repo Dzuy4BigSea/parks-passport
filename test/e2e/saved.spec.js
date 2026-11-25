@@ -81,7 +81,7 @@ test('saved parks stay private: not on a public passport, and not in another mem
 
   await page.goto('/account');
   await page.getByLabel('Anyone with the link').check();
-  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
   const publicUrl = await page.locator('a[href^="/u/"]').first().getAttribute('href');
 
   const anon = await freshPage(browser, info);

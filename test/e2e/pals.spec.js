@@ -22,7 +22,7 @@ test('invite a pal, share, see each other in the feed and leaderboard, then go p
   const link = await page.getByLabel('Your invite link').inputValue();
   expect(link).toMatch(/\/pals\/invite\/[A-Za-z0-9_-]+\?city=st-pete$/);
 
-  // Ben opens the link signed out, signs up from it, and accepts.
+  // Ben opens the link signed out and signs up from it: that's all it takes to be Park Pals.
   const ben = await freshPage(browser, info);
   await ben.goto(new URL(link).pathname);
   await expect(ben.getByRole('heading', { level: 1 })).toHaveText('Ana invited you to be Park Pals');
@@ -32,9 +32,9 @@ test('invite a pal, share, see each other in the feed and leaderboard, then go p
   await ben.getByLabel('Email').fill(`ben-${Date.now()}@example.com`);
   await ben.getByLabel('Password').fill('correct horse battery');
   await ben.getByRole('button', { name: 'Create account' }).click();
-  await ben.getByRole('button', { name: 'Accept and become Park Pals' }).click();
-  await expect(ben.getByText("You're now Park Pals!")).toBeVisible();
+  await expect(ben).toHaveURL(/\/passport$/);
   await expect(ben.locator('.announcements')).toContainText('New badge: Better With Friends'); // a surprise (M19)
+  await ben.getByRole('link', { name: 'Pals', exact: true }).click();
 
   // Ben sees Ana's stamp and badge in the feed, and Ana on the leaderboard.
   await expect(ben.locator('.feed')).toContainText('Ana stamped Abercrombie Park');
@@ -53,7 +53,7 @@ test('invite a pal, share, see each other in the feed and leaderboard, then go p
   // Ana goes public; now anyone can see it.
   await page.goto('/account');
   await page.getByLabel('Anyone with the link').check();
-  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByRole('status').first()).toContainText('visible to anyone with the link');
   expect((await anon.goto(anaUrl)).status()).toBe(200);
   await expect(anon.locator('.passport-count')).toHaveText('1 of 102 parks stamped');

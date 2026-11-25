@@ -3,6 +3,7 @@ import { recordMilestone } from '../domain/milestones.js';
 import { magicLinkEmail, passwordResetEmail, deleteAccountEmail } from '../views/email.js';
 import { emailCopy } from '../domain/email-copy.js';
 import { inviteForToken, acceptInvites } from '../domain/invites.js';
+import { inviterForNext, palUpOnSignup } from '../domain/pals.js';
 import { canUseIdeas } from '../domain/ideas.js';
 import { awardFounding } from '../domain/founding.js';
 import { verifyPassword, burnPasswordCheck } from '../lib/crypto.js';
@@ -10,7 +11,7 @@ import {
   createUser, findUserByEmail, findUserById, createSession, deleteSession, deleteAllSessions,
   createAuthToken, peekAuthToken, consumeAuthToken, isLoginLocked, recordLoginFailure,
   clearLoginFailures, setPassword, validatePassword, deleteUser, normalizeEmail,
-  canSendAuthToken, revokeAuthTokens,
+  canSendAuthToken, revokeAuthTokens, setDisplayName,
 } from '../domain/users.js';
 import {
   signupPage, loginPage, checkEmailPage, sendFailedPage, linkExpiredPage, magicConfirmPage,
@@ -73,7 +74,8 @@ export default async function authRoutes(app) {
   // Sign up
   app.get('/signup', async (req, reply) => {
     if (req.user) return reply.redirect('/passport');
-    return reply.page(signupPage({ csrf: req.csrfToken(), next: str(req.query.next) }));
+    const next = str(req.query.next);
+    return reply.page(signupPage({ csrf: req.csrfToken(), next, palInviter: inviterForNext(db, next) }));
   });
 
   // Invite links from Admin › Members: the sign-up form, filled in from the invite. Sign-up is open
@@ -82,8 +84,8 @@ export default async function authRoutes(app) {
     if (req.user) return reply.redirect('/passport');
     const invite = inviteForToken(db, req.params.token, { now: now() });
     return reply.page(signupPage({
-      csrf: req.csrfToken(), invite, cityName: req.city.copy.short, next: safeNext(str(req.query.next)) === str(req.query.next) ? str(req.query.next) : '',
-      values: invite ? { email: invite.email, display_name: invite.name } : {},
+      csrf: req.csrfToken(), invite, inviteToken: invite ? req.params.token : '', cityName: req.city.copy.short, next: safeNext(str(req.query.next)) === str(req.query.next) ? str(req.query.next) : '',
+      values: invite ? { email: invite.email } : {},
       inviteNotice: invite ? null : 'This invite link has expired or was already used. You can still create a passport here.',
     }));
   });
@@ -96,14 +98,25 @@ export default async function authRoutes(app) {
     const { user, errors } = await createUser(db, { ...values, password: str(req.body.password) }, { now: now() });
     if (errors) {
       reply.code(422);
-      return reply.page(signupPage({ csrf: req.csrfToken(), values, errors, next: str(req.body.next) }));
+      const invite = inviteForToken(db, str(req.body.invite_token), { now: now() });
+      return reply.page(signupPage({ csrf: req.csrfToken(), values, errors, next: str(req.body.next), palInviter: inviterForNext(db, str(req.body.next)),
+        invite, inviteToken: invite ? str(req.body.invite_token) : '', cityName: req.city.copy.short }));
     }
+    // Joining from an invite (a pal's link, or an admin's email invite) makes you Park Pals with the
+    // person who sent it, both ways, so there's nothing left to accept.
+    // An admin's invite counts only through its emailed /join link (proof of the mailbox, within 30 days).
+    const palInviter = inviterForNext(db, str(req.body.next));
+    const joinInvite = inviteForToken(db, str(req.body.invite_token), { now: now() });
     acceptInvites(db, user.email, user.id, { now: now() });
     awardFounding(db, user.id, { now: now() }); // the first 75 (SPEC Flow 16)
+    const inviterIds = new Set([joinInvite?.invited_by, palInviter?.id].filter(Boolean));
+    let palled = false;
+    for (const id of inviterIds) palled = palUpOnSignup(db, id, user.id, { now: now(), random: app.random }) || palled;
     startSession(req, reply, user.id);
     app.track(user.id, 'sign_up', { method: 'password' });
+    if (palled) app.track(user.id, 'pal_accepted');
     // Straight to the passport: open it with a little ceremony (public/js/welcome.js).
-    const to = safeNext(req.body.next);
+    const to = palInviter ? '/passport' : safeNext(req.body.next);
     return reply.redirect(to === '/passport' ? '/passport?welcome=1' : to, 303);
   });
 
@@ -221,8 +234,17 @@ export default async function authRoutes(app) {
       csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user),
       notice: req.query.done === 'visibility' ? `Saved. Your passport is now visible to ${VISIBILITY_SAVED[req.user.default_visibility]}.`
         : req.query.done === 'editions' ? 'Saved your editions.'
-          : { avatar: 'Profile photo saved.', avatar_removed: 'Profile photo removed.' }[req.query.done] || null,
+          : { avatar: 'Profile photo saved.', avatar_removed: 'Profile photo removed.', name: `Saved. You're now ${req.user.display_name} (@${req.user.handle}).` }[req.query.done] || null,
     })));
+
+  // Display name (and the handle made from it).
+  app.post('/account/name', { preHandler: requireUser }, async (req, reply) => {
+    const result = setDisplayName(db, req.user.id, str(req.body.display_name, 200));
+    if (result.errors) {
+      return reply.code(422).page(accountPage({ csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user), errors: result.errors, values: { display_name: str(req.body.display_name, 200) } }));
+    }
+    return reply.redirect('/account?done=name', 303);
+  });
 
   // Profile photo (SPEC Flow 8): one per member, seen by whoever can see their passport.
   withUploads(app, (scope) => scope.post('/account/avatar', { preHandler: requireUser }, async (req, reply) => {

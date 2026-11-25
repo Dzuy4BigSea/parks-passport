@@ -399,3 +399,21 @@ sweep, and the existing suite.
 
 ### M29 — Our mission in admin (Flow 19)
 Checks: Admin › Mission in the admin axe sweep; 404 for members.
+
+### M30 — Join from an invite and you're Park Pals; choose your display name (Flows 1, 8 and 9)
+- Signing up from a pal's invite link (`/signup?next=/pals/invite/<token>`) makes the two Park Pals
+  straight away and lands on the passport; the sign-up page says so. A dead token in `next` just
+  signs up. Existing members still log in and tap Accept.
+- Signing up from an admin's emailed `/join/<token>` link (Admin › Members; the token rides in a hidden
+  field and is re-checked, so it proves the mailbox and the 30 days) makes the new member and that
+  admin Park Pals. The address alone doesn't. Sign-up and log-in pages whose `next` is an invite link
+  load no analytics.
+- Display names: "doesn't have to be your real name" at sign-up and in Account, where it can be
+  changed (`POST /account/name`, `setDisplayName`; the handle follows; migration 025
+  `retired_handles` keeps old handles from being reused by anyone else). Notifications store
+  `{actor}` and show the other member's current name. The admin invite no longer fills in the name.
+
+Checks: `test/unit/auth.test.js` (change name, handle follows, retired handles, limits, CSRF),
+`test/unit/pals.test.js` (pal link sign-up pals both ways, made-up and regenerated links, admin
+invite only via its link), `test/unit/analytics.test.js` (no analytics with an invite in `next`),
+`test/e2e/pals.spec.js` (sign up from the link, see the inviter's feed), and the existing suite.

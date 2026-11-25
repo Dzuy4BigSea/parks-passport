@@ -339,3 +339,37 @@ test('sendgrid mailer posts to the v3 API with click tracking off, and fails lou
   const noKey = createMailer({ transport: 'sendgrid', resolve: () => ({ apiKey: null, fromAddress: 'a@b.co' }) });
   await assert.rejects(noKey.send({ to: 'x@y.co', subject: 's', text: 't' }), /No SendGrid API key/);
 });
+
+test('members can change their display name (it needn\'t be their real name); the handle follows', async () => {
+  const { app, db } = makeApp();
+  const c = client(app);
+  await c.post('/signup', { display_name: 'Jane Realname', email: 'jane@example.com', password: 'correct horse battery' });
+  assert.match((await c.get('/account')).body, /doesn&#39;t have to be your real name|doesn't have to be your real name/);
+  assert.equal((await c.post('/account/name', { display_name: '' })).statusCode, 422);
+  assert.equal((await c.post('/account/name', { display_name: 'x'.repeat(41) })).statusCode, 422);
+  const res = await c.post('/account/name', { display_name: '  Trail   Fox ' });
+  assert.equal(res.headers.location, '/account?done=name');
+  const u = db.prepare("SELECT display_name, handle FROM users WHERE email = 'jane@example.com'").get();
+  assert.deepEqual(u, { display_name: 'Trail Fox', handle: 'trailfox' });
+  assert.match((await c.get('/account?done=name')).body, /You&#39;re now Trail Fox \(@trailfox\)|You're now Trail Fox \(@trailfox\)/);
+  // The old handle is retired: nobody else gets it, so the old link stays a 404; Jane can take it back.
+  const bob = client(app);
+  await bob.post('/signup', { display_name: 'Bob', email: 'bob@example.com', password: 'correct horse battery' });
+  await bob.post('/account/name', { display_name: 'Jane Realname' });
+  assert.notEqual(db.prepare("SELECT handle FROM users WHERE email = 'bob@example.com'").pluck().get(), 'janerealname');
+  db.prepare("UPDATE users SET default_visibility = 'public'").run();
+  assert.equal((await client(app).get('/u/janerealname')).statusCode, 404);
+  const d = client(app);
+  await d.post('/signup', { display_name: 'Jane Realname', email: 'dup@example.com', password: 'correct horse battery' });
+  assert.notEqual(db.prepare("SELECT handle FROM users WHERE email = 'dup@example.com'").pluck().get(), 'janerealname');
+  await c.post('/account/name', { display_name: 'Jane Realname' });
+  assert.equal(db.prepare("SELECT handle FROM users WHERE email = 'jane@example.com'").pluck().get(), 'janerealname');
+  // Only case or spacing: the handle stays.
+  await c.post('/account/name', { display_name: 'jane  realname' });
+  assert.equal(db.prepare("SELECT handle FROM users WHERE email = 'jane@example.com'").pluck().get(), 'janerealname');
+  // An error shows by the name form, not in the delete-account summary.
+  const bad = (await c.post('/account/name', { display_name: '' })).body;
+  assert.ok(bad.indexOf('Enter a display name') < bad.indexOf('action="/account/name"'));
+  // Without the CSRF token: refused.
+  assert.equal((await c.post('/account/name', { display_name: 'Nope' }, { csrf: false })).statusCode, 403);
+});
