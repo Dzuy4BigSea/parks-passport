@@ -99,7 +99,7 @@ export function passportPage({ user, csrf, parks, history, points, level, badges
   ${theme.motifs.length ? html`<span class="cover-pattern" aria-hidden="true">${Array.from({ length: 24 }, (_, i) => motifIcon(theme.motifs[i % theme.motifs.length]))}</span>` : ''}
   <div>
     <p class="eyebrow">Parks Passport${theme.key !== 'default' && theme.name ? ` · ${theme.name}` : ''}</p>
-    <h1 class="cover-name">${avatar(user, { size: 56 })} <span>${user.display_name}'s passport</span></h1>
+    <div class="cover-name">${avatar(user, { size: 56 })}<h1>${user.display_name}'s passport</h1></div>
     <p class="passport-count"><strong>${stamped.length} of ${total} parks stamped</strong></p>
     ${readOnly ? '' : html`<p class="passport-visibility">Visible to: ${VISIBILITY_LABELS[user.default_visibility]} · <a href="/account#visibility">Change</a></p>`}
     ${next ? html`<p class="cover-pills"><span class="pill pill-streak">${ICONS.flame}${streakText(next.streak).title}</span></p>` : ''}

@@ -53,7 +53,11 @@ export function buildApp({
 } = {}) {
   if (!db) throw new Error('buildApp needs a db');
   if (!mailer) throw new Error('buildApp needs a mailer');
-  const app = Fastify({ logger, trustProxy: true, bodyLimit: 1024 * 1024 });
+  // Trust only proxies on loopback and private networks: the shared nginx reaches us over the
+  // Docker network (CLAUDE.md "How traffic reaches an app"). req.ip is then the rightmost public
+  // address in X-Forwarded-For, the one nginx appended, never one a client typed further left
+  // (rate limits and the nearest-city suggestion depend on it).
+  const app = Fastify({ logger, trustProxy: 'loopback,linklocal,uniquelocal', bodyLimit: 1024 * 1024 });
 
   app.decorate('db', db);
   app.decorate('mailer', mailer);

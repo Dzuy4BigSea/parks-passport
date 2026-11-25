@@ -6,10 +6,12 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { makeApp, client, testClock } from './helpers.js';
 import { importParksCsv, PARK_CSV_COLUMNS } from '../../src/domain/csv-import.js';
-import { createRateLimiter } from '../../src/lib/rate-limit.js';
+import { createRateLimiter, limitKey } from '../../src/lib/rate-limit.js';
+import { isPublicIp } from '../../src/lib/geoip.js';
 import { avatarPath } from '../../src/lib/images.js';
 
 const PW = 'correct horse battery';
+const HOUR_MS = 3600000;
 
 async function world() {
   const now = testClock('2026-06-06T16:00:00Z');
@@ -62,6 +64,17 @@ test('sign-up: the hidden trap field creates no account; 5 sign-ups an hour per 
   const sent = mailer.sent.length;
   assert.equal((await from(app, '203.0.113.20', c, '/forgot', { email: 'p0@example.com' })).statusCode, 429);
   assert.equal(mailer.sent.length, sent);
+  // QA: a client can't dodge the limit with its own X-Forwarded-For: only the last hop (nginx) counts.
+  for (let i = 0; i < 5; i++) await from(app, `127.0.0.1, 9.9.9.${i}, 203.0.113.30`, c, '/forgot', { email: 'p0@example.com' });
+  assert.equal((await from(app, '10.0.0.1, 203.0.113.30', c, '/forgot', { email: 'p0@example.com' })).statusCode, 429);
+  // IPv6 by /64; IPv4 written as IPv6 is still IPv4.
+  assert.equal(limitKey('2001:db8:1:2:aaaa::1'), limitKey('2001:db8:1:2:bbbb::9'));
+  assert.notEqual(limitKey('2001:db8:1:2::1'), limitKey('2001:db8:1:3::1'));
+  assert.ok(!isPublicIp('::ffff:127.0.0.1') && isPublicIp('::ffff:8.8.8.8'));
+  // Memory stays bounded however many addresses show up.
+  const big = createRateLimiter({ limit: 5, windowMs: HOUR_MS });
+  for (let i = 0; i < 10_050; i++) big.hit(`198.18.${Math.floor(i / 250)}.${i % 250}`);
+  assert.ok(big.size() <= 10_000);
   // Local and private addresses (dev, tests) are never limited.
   const local = createRateLimiter({ limit: 1, windowMs: 1000 });
   assert.ok(local.hit('127.0.0.1') && local.hit('127.0.0.1') && local.hit('10.0.0.2') && local.hit('10.0.0.2'));
@@ -87,7 +100,9 @@ test('profile photo: re-encoded 256 px square with no EXIF; seen by whoever can 
   assert.deepEqual([meta.width, meta.height, meta.format, meta.exif], [256, 256, 'jpeg', undefined]);
   const url = `/avatars/${ana.id}/${key}.jpg`;
   assert.match((await ana.c.get('/account')).body, new RegExp(`src="${url}"`));
-  assert.equal((await ana.c.get(url)).statusCode, 200);
+  const own = await ana.c.get(url);
+  assert.equal(own.statusCode, 200);
+  assert.equal(own.headers['cache-control'], 'private, no-cache');
   // Private passport (the default): only Ana. 404 (never 403) for everyone else.
   assert.equal((await ben.c.get(url)).statusCode, 404);
   assert.equal((await client(app).get(url)).statusCode, 404);
@@ -107,6 +122,9 @@ test('profile photo: re-encoded 256 px square with no EXIF; seen by whoever can 
   assert.equal(db.prepare('SELECT avatar_key FROM users WHERE id = ?').pluck().get(ana.id), null);
   assert.ok(!fs.existsSync(avatarPath(uploadsDir, key2)));
   assert.match((await ana.c.get('/account')).body, /class="avatar avatar-lg avatar-initials"/);
+  // Kids edition: the form reminds you to use a photo of yourself.
+  await ana.c.post('/account/editions', { kids: '1' });
+  assert.match((await ana.c.get('/account')).body, /Kids edition is on: use a photo of yourself, not your kids\./);
   // Deleting the account removes the photo file.
   await ana.c.postMultipart('/account/avatar', {}, { photo: { buffer: await phonePhoto(), filename: 'me3.jpg', type: 'image/jpeg' } });
   const key3 = db.prepare('SELECT avatar_key FROM users WHERE id = ?').pluck().get(ana.id);

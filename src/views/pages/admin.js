@@ -497,7 +497,7 @@ ${sendError ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${
 const METHOD_NAMES = { gps: 'GPS', photo: 'Photo', honor: 'Honor system' };
 function barTable({ caption, rows, label, value, extra = null }) {
   const max = Math.max(1, ...rows.map((r) => r[value]));
-  return html`<div class="table-wrap"><table class="admin-table stats-table">
+  return html`<div class="table-wrap"><table class="stats-table">
   <caption>${caption}</caption>
   <thead><tr><th scope="col">${label.title}</th><th scope="col">Check-ins</th>${extra ? html`<th scope="col">${extra.title}</th>` : ''}</tr></thead>
   <tbody>${rows.map((r) => html`<tr><th scope="row">${label.get(r)}</th>
@@ -514,7 +514,7 @@ export function adminStats({ stats }) {
 <p class="muted">Counts only: no names, emails or locations. Check-ins count when they were made (UTC days).</p>
 <ul class="stat-tiles">
   ${tile(t.checkins7, 'check-ins in the last 7 days')}${tile(t.checkins30, 'check-ins in 30 days')}${tile(t.checkins, 'check-ins in all')}
-  ${tile(t.active7, 'members who stamped in 7 days')}${tile(t.active30, 'who stamped in 30 days')}${tile(t.members, `members (${t.newMembers7} new this week, ${t.newMembers30} in 30 days)`)}
+  ${tile(t.active7, 'members who stamped in 7 days')}${tile(t.active30, 'who stamped in 30 days')}${tile(t.members, `members (${t.newMembers7} new in 7 days, ${t.newMembers30} in 30 days)`)}
   ${tile(t.stampers, 'members who ever stamped')}${tile(t.palLinks, 'Park Pal links')}${tile(t.photos, 'photos')}
   ${tile(t.ratings, 'ratings')}${tile(t.activities, 'activities logged')}${tile(t.badgesEarned, 'badges earned')}
 </ul>

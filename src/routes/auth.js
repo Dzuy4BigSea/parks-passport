@@ -226,14 +226,16 @@ export default async function authRoutes(app) {
     if (stored.error) {
       return reply.code(422).page(accountPage({ csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user), errors: { photo: stored.error } }));
     }
-    const old = req.user.avatar_key;
+    // The key as it is now (another upload may have finished since this request began).
+    const old = db.prepare('SELECT avatar_key FROM users WHERE id = ?').pluck().get(req.user.id);
     db.prepare('UPDATE users SET avatar_key = ? WHERE id = ?').run(stored.key, req.user.id);
     await removeAvatar(app.config.uploadsDir, old);
     return reply.redirect('/account?done=avatar#photo', 303);
   }));
   app.post('/account/avatar/delete', { preHandler: requireUser }, async (req, reply) => {
+    const old = db.prepare('SELECT avatar_key FROM users WHERE id = ?').pluck().get(req.user.id);
     db.prepare('UPDATE users SET avatar_key = NULL WHERE id = ?').run(req.user.id);
-    await removeAvatar(app.config.uploadsDir, req.user.avatar_key);
+    await removeAvatar(app.config.uploadsDir, old);
     return reply.redirect('/account?done=avatar_removed#photo', 303);
   });
   // Served only to people who can see the member's passport (404 otherwise, never 403). The key in
@@ -245,7 +247,8 @@ export default async function authRoutes(app) {
       || !canViewOwner(db, req.user?.id ?? null, owner.id, owner.default_visibility)) return reply.callNotFound();
     const file = avatarPath(app.config.uploadsDir, m[1]);
     if (!fs.existsSync(file)) return reply.callNotFound();
-    return reply.type('image/jpeg').header('Cache-Control', 'private, max-age=604800, immutable').header('X-Content-Type-Options', 'nosniff')
+    // no-cache: browsers re-check each time, so a photo stops showing as soon as access ends.
+    return reply.type('image/jpeg').header('Cache-Control', 'private, no-cache').header('X-Content-Type-Options', 'nosniff')
       .send(fs.createReadStream(file));
   });
 

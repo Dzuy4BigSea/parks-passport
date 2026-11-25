@@ -1215,6 +1215,7 @@ html:not(.js) .js-only { display: none !important; }
 .photo-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.5rem 0 0.25rem; }
 .photo-form input[type=file] { max-width: 100%; }
 .cover-name { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.cover-name h1 { margin: 0; }
 .pal-who, .leaderboard .who { display: inline-flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
 
 /* "Your pals were here" (SPEC Flow 8). */
@@ -1235,3 +1236,6 @@ html:not(.js) .js-only { display: none !important; }
 .stats-table td { white-space: nowrap; }
 .stat-bar { display: inline-block; vertical-align: middle; height: 0.6rem; width: calc(var(--w) * 0.6); max-width: 60%; min-width: 2px; margin-right: 0.5rem;
   background: var(--aqua-ink, #00756c); border-radius: 4px; }
+.stats-table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; }
+.stats-table th, .stats-table td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--line); }
+.stats-table thead th { font-size: 0.85rem; }
