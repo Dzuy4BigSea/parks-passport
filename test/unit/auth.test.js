@@ -25,7 +25,7 @@ test('sign up creates the user, signs in, and redirects to /passport', async () 
   const c = client(app);
   const res = await signUp(c, { email: '  Sam@Example.COM ' });
   assert.equal(res.statusCode, 303);
-  assert.equal(res.headers.location, '/passport');
+  assert.equal(res.headers.location, '/passport?welcome=1');
   assert.equal(db.prepare('SELECT email FROM users').pluck().get(), 'sam@example.com');
   const passport = await c.get('/st-pete/passport');
   assert.equal(passport.statusCode, 200);

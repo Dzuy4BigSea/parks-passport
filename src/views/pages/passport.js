@@ -77,7 +77,7 @@ function cityTabs(cities, theme, href) {
 }
 
 export function passportPage({ user, csrf, parks, history, points, level, badges, readOnly = false, theme = { motifs: [], areas: [] }, next = null, week = null,
-  cities = null, cityHref = (city) => cityPath(city, '/passport') }) {
+  cities = null, cityHref = (city) => cityPath(city, '/passport'), welcome = false }) {
   const stamped = parks.filter((p) => p.first_visit);
   const total = parks.length;
   const mapData = parks.filter((p) => p.lat != null).map((p) => ({
@@ -93,8 +93,9 @@ export function passportPage({ user, csrf, parks, history, points, level, badges
     title: readOnly ? `${user.display_name}'s passport` : 'My passport',
     current: readOnly ? '' : 'passport',
     head: html`<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">`,
-    scripts: ['/js/passport-map.js'],
+    scripts: ['/js/passport-map.js', '/js/inspect.js', ...(welcome ? ['/js/welcome.js'] : [])],
     body: html`
+${welcome ? html`<span id="welcome-data" hidden data-name="${user.display_name}" data-city="${theme.copy?.short || ''}"></span>` : ''}
 <header class="passport-cover">
   ${theme.motifs.length ? html`<span class="cover-pattern" aria-hidden="true">${Array.from({ length: 24 }, (_, i) => motifIcon(theme.motifs[i % theme.motifs.length]))}</span>` : ''}
   <div>

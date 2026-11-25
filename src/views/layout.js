@@ -13,9 +13,9 @@ import { cityPath } from './urls.js';
 function announcementsBlock(a, base) {
   if (!a) return '';
   return html`<div class="announcements" role="status" tabindex="-1" data-announce>
-  ${a.levelUp ? html`<div class="announce announce-level"><span class="announce-art" aria-hidden="true">🚀</span>
+  ${a.levelUp ? html`<div class="announce announce-level" data-kind="level"><span class="announce-art" aria-hidden="true">🚀</span>
     <p><strong>Level up! You're now ${/^[AEIOU]/.test(a.levelUp.name) ? 'an' : 'a'} ${a.levelUp.name}.</strong></p></div>` : ''}
-  ${a.badges.map((b) => html`<div class="announce">${badgeArt(b.art, 'announce-art')}
+  ${a.badges.map((b) => html`<div class="announce" data-kind="${b.kind}">${badgeArt(b.art, 'announce-art')}
     <p><strong>New badge: ${b.name}</strong>${b.description ? html`<br>${b.description}` : ''}</p></div>`)}
   <p class="announce-more"><a href="${base}/passport#badges">See your badges</a></p>
 </div>`;
@@ -147,6 +147,7 @@ ${analyticsHead(analytics, consent, events)}
 ${head}
 ${scripts.map((src) => html`<script type="module" src="${src}"></script>`)}
 <script type="module" src="/js/announce.js"></script>
+${announcements ? html`<script type="module" src="/js/reveal.js"></script>` : ''}
 </head>
 <body${user ? html` class="has-tabbar"` : ''}>
 <a class="skip-link" href="#main">Skip to content</a>

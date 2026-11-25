@@ -158,6 +158,7 @@ export function accountPage({ csrf, user, errors = {}, notice, ideas = false }) 
   return {
     title: 'Account',
     current: 'account',
+    scripts: ['/js/prefs.js'],
     body: html`<div class="narrow">
 <h1>Account</h1>
 ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
@@ -174,6 +175,12 @@ ${ideas ? html`<p><a href="/ideas">Share a badge idea</a></p>` : ''}
 </form>
 
 ${visibilityForm({ csrf, user })}
+
+<section id="device" class="js-only" aria-labelledby="device-h">
+<h2 id="device-h">On this device</h2>
+<label class="check"><input type="checkbox" id="celebrations"> Show celebrations: badge reveals, the passport opening and badge cards that tilt. Never any sound.</label>
+<p id="celebrations-status" class="muted" role="status"></p>
+</section>
 
 <section id="editions" aria-labelledby="ed-h">
 <h2 id="ed-h">Editions</h2>

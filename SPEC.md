@@ -327,6 +327,21 @@ Done when:
       allowlist sanitizer (shapes only; no scripts, styles, links, text or event handlers) or is
       rejected. Without `ANTHROPIC_API_KEY` the button is off. API errors show a fixed message.
 
+- [ ] **Game feel: celebrations** (silent: never any sound). Built on the server-rendered news, so
+      without JS, or with celebrations off, the page still says the same thing.
+  - **Badge reveal:** a new badge or level-up opens a full-screen, face-down card ("Badge
+    unlocked!", "Surprise badge!", "Lucky find!", "Level up!"). Tapping it flips it over with a
+    shine, rays, confetti and a short buzz on phones; several queue up ("1 of 3", Next). The card
+    is hidden until the tap.
+  - **Inspect a badge:** on a passport, every badge opens a big card that tilts toward the
+    finger or mouse, with a glare, and flips over to its story, how to earn it, or its clue.
+  - **Getting a passport:** right after sign-up, the passport cover swings open, the member's name
+    is stamped in with the city and date, confetti and Gary; the `?welcome=1` flag is then dropped
+    from the address.
+  - **Accessible:** each is a dialog with focus moved in and back, Tab kept inside, Escape to close,
+    and axe clean. Reduced motion shows the same cards without movement.
+  - **Account › On this device:** "Show celebrations" turns them off in this browser.
+
 ### Flow 12: Healthy activities (Paws and Kids editions)
 As a member, once I've stamped a park I can log healthy things I do there, so that each visit
 has more to it and I have reasons to come back. Background and sources:

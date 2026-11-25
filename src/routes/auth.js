@@ -100,7 +100,9 @@ export default async function authRoutes(app) {
     acceptInvites(db, user.email, user.id, { now: now() });
     startSession(req, reply, user.id);
     app.track(user.id, 'sign_up', { method: 'password' });
-    return reply.redirect(safeNext(req.body.next), 303);
+    // Straight to the passport: open it with a little ceremony (public/js/welcome.js).
+    const to = safeNext(req.body.next);
+    return reply.redirect(to === '/passport' ? '/passport?welcome=1' : to, 303);
   });
 
   // Log in with password
