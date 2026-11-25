@@ -94,7 +94,7 @@ test('/parks shows hearts only when signed in, and the Want to go filter lists o
   // Ben has saved nothing.
   const ben = await people.ben.c.get('/st-pete/parks?saved=1');
   assert.deepEqual(cardSlugs(ben.body), []);
-  assert.match(ben.body, /Nothing saved yet/);
+  assert.match(ben.body, /Nothing saved in this city yet/);
 });
 
 test('passport Want to go lists saved parks not yet stamped; stamping moves a park off it', async () => {

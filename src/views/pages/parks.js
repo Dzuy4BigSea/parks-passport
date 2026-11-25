@@ -62,9 +62,9 @@ export function postcard(p, i, { theme, stamped, stampDates, near, selected, ext
     ${p.address ? html`<p class="address">${p.address}</p>` : ''}
     ${palFaces(palsHere?.get(p.id))}
     ${tags(p.categories, selected)}
-    <p class="pc-foot">${ex.rating ? html`<span class="pc-rating"><span aria-hidden="true">★</span> ${ex.rating.average.toFixed(1)}<span class="visually-hidden"> out of 5,</span> <span class="muted">(${ex.rating.count})</span></span>` : html`<span class="muted">No ratings yet</span>`}
+    <div class="pc-foot">${ex.rating ? html`<span class="pc-rating"><span aria-hidden="true">★</span> ${ex.rating.average.toFixed(1)}<span class="visually-hidden"> out of 5,</span> <span class="muted">(${ex.rating.count})</span></span>` : html`<span class="muted">No ratings yet</span>`}
       ${stamped && !isStamped ? html`<span class="pc-points">+10 pts</span>` : ''}
-      ${saved ? saveButton({ park: p, saved: saved.has(p.id), csrf, back }) : ''}</p>
+      ${saved ? saveButton({ park: p, saved: saved.has(p.id), csrf, back }) : ''}</div>
   </div>
 </li>`;
 }
@@ -127,8 +127,8 @@ export function parksPage({ parks, total, q, selected, categories, near, unvisit
     <p id="results-h" class="result-count" role="status">${countText}${near ? ', nearest first' : ''}</p>
     ${parks.length ? html`<ul class="park-list">
       ${parks.map((p, i) => postcard(p, i, { theme, stamped, stampDates, near, selected, extras, palsHere, saved, csrf, back }))}
-    </ul>` : html`<p class="empty">${onlySaved && !saved?.size
-      ? 'Nothing saved yet. Tap the heart on a park to add it to Want to go.'
+    </ul>` : html`<p class="empty">${onlySaved && !q && !selected.length && !unvisited && !palsOnly
+      ? 'Nothing saved in this city yet. Tap the heart on a park to add it to Want to go.'
       : 'No parks match. Try fewer amenities or a shorter name.'}</p>`}
   </section>
   <aside class="explore-map" aria-label="Map of these parks">

@@ -4,12 +4,11 @@ import { parseLatLng } from '../domain/geo.js';
 import { stampedParkIds } from '../domain/visits.js';
 import { palsWhoStamped } from '../domain/pals.js';
 import { parksPage } from '../views/pages/parks.js';
-import { cityPath } from '../views/urls.js';
+import { cityPath, parkPath } from '../views/urls.js';
 import { renderParkPage } from './park-view.js';
 import { urlCity, urlPark, movedParkPath, queryOf } from './city-params.js';
 import { safeNext } from '../lib/auth.js';
 import { savedParkIds, setSaved } from '../domain/saved.js';
-import { parkPath } from '../views/urls.js';
 
 export default async function parkRoutes(app) {
   const { db } = app;

@@ -14,6 +14,9 @@ test('save and unsave parks with the heart, filter Want to go, and see it on the
   // Hearts toggle in place on /parks (JS), with no page load.
   await page.goto('/parks');
   await expect(heart(page, 'Crescent Lake Park')).toHaveAttribute('aria-pressed', 'false');
+  // The heart sits in each card's footer row (a <form> can't live inside a <p>).
+  expect(await page.locator('.postcard .save-form').count()).toBeGreaterThan(0);
+  await expect(page.locator('.postcard .save-form')).toHaveCount(await page.locator('.postcard .pc-foot > .save-form').count());
   await heart(page, 'Crescent Lake Park').click();
   await expect(heart(page, 'Crescent Lake Park')).toHaveAttribute('aria-pressed', 'true');
   // By keyboard: the heart keeps focus after toggling.
