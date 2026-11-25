@@ -149,7 +149,7 @@ export function invitePal(db, from, group, palId, { now = new Date() } = {}) {
   const { changes } = db.prepare('INSERT OR IGNORE INTO group_invites (group_id, to_user, from_user, created_at) VALUES (?, ?, ?, ?)')
     .run(group.id, palId, from.id, iso(now));
   if (!changes) return { error: 'invited' };
-  notify(db, palId, { kind: 'group_invite', text: `{actor} invited you to join ${group.name}.`, link: '/groups#invites', actorId: from.id }, { now });
+  notify(db, palId, { kind: 'group_invite', text: `{actor} invited you to join ${group.name}.`, link: `/groups?invite=${group.id}#invites`, actorId: from.id }, { now });
   return { ok: true };
 }
 

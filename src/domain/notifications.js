@@ -17,17 +17,43 @@ export const unreadCount = (db, userId) => db.prepare('SELECT COUNT(*) FROM noti
 
 export const PAGE_SIZE = 30;
 
+// Group invites and join requests can be answered right here while they're open (SPEC Flow 23).
+// The group comes from the notification's own link, which the server wrote. An invite or request
+// counts for this notification only if it isn't newer than the notification, so an old one never
+// answers a later re-invite, or a new group that reused a deleted group's id.
+// state: 'open' | 'done' (answered: joined / let in) | 'answered' | 'gone' (group ended, or no longer mine to answer).
+function withGroupAction(db, userId, n) {
+  if (n.kind === 'group_invite') {
+    const groupId = Number(/^\/groups\?invite=(\d+)#invites$/.exec(n.link)?.[1]) || null;
+    if (!groupId) return n; // older notifications: just the link
+    const exists = db.prepare('SELECT 1 FROM member_groups WHERE id = ? AND created_at <= ?').get(groupId, n.created_at);
+    const open = exists && db.prepare('SELECT 1 FROM group_invites WHERE group_id = ? AND to_user = ? AND created_at <= ?').get(groupId, userId, n.created_at);
+    const member = exists && db.prepare('SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?').get(groupId, userId);
+    return { ...n, group: { kind: 'invite', id: groupId, state: !exists ? 'gone' : open ? 'open' : member ? 'done' : 'answered' } };
+  }
+  if (n.kind === 'group_request') {
+    const groupId = Number(/^\/groups\/(\d+)#requests$/.exec(n.link)?.[1]) || null;
+    if (!groupId || !n.actor_id) return n;
+    const group = db.prepare('SELECT owner_id FROM member_groups WHERE id = ? AND created_at <= ?').get(groupId, n.created_at);
+    if (!group || group.owner_id !== userId) return { ...n, group: { kind: 'request', id: groupId, state: 'gone' } };
+    const open = db.prepare('SELECT 1 FROM group_requests WHERE group_id = ? AND user_id = ? AND created_at <= ?').get(groupId, n.actor_id, n.created_at);
+    const member = db.prepare('SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?').get(groupId, n.actor_id);
+    return { ...n, group: { kind: 'request', id: groupId, userId: n.actor_id, state: open ? 'open' : member ? 'done' : 'answered' } };
+  }
+  return n;
+}
+
 /** A page of notifications, newest first: { items, hasMore }. */
 export function listNotifications(db, userId, { page = 1 } = {}) {
   // A pal request carries its open request (if it's still open), so it can be answered right here.
-  const rows = db.prepare(`SELECT n.id, n.kind, n.text, n.link, n.created_at, n.read_at, a.display_name AS actor,
+  const rows = db.prepare(`SELECT n.id, n.kind, n.text, n.link, n.created_at, n.read_at, n.actor_id, a.display_name AS actor,
       CASE WHEN n.kind = 'pal_request' THEN (SELECT r.id FROM pal_requests r WHERE r.from_user = n.actor_id AND r.to_user = n.user_id) END AS request_id,
       CASE WHEN n.kind = 'pal_request' THEN EXISTS (SELECT 1 FROM pal_links l WHERE (l.user_a = n.actor_id AND l.user_b = n.user_id)
         OR (l.user_b = n.actor_id AND l.user_a = n.user_id)) END AS now_pals
     FROM notifications n LEFT JOIN users a ON a.id = n.actor_id WHERE n.user_id = ?
     ORDER BY n.id DESC LIMIT ? OFFSET ?`).all(userId, PAGE_SIZE + 1, (Math.max(1, page) - 1) * PAGE_SIZE);
   // The other member's name as it is now (they may have changed it since).
-  const items = rows.slice(0, PAGE_SIZE).map(({ actor, ...n }) => ({ ...n, text: n.text.replace('{actor}', actor || 'Someone') }));
+  const items = rows.slice(0, PAGE_SIZE).map(({ actor, ...n }) => withGroupAction(db, userId, { ...n, text: n.text.replace('{actor}', actor || 'Someone') }));
   return { items, hasMore: rows.length > PAGE_SIZE };
 }
 
