@@ -1,4 +1,4 @@
-// M30 (SPEC Flow 20): an admin writes a message with a badge, previews its effect, sends it to a
+// M31 (SPEC Flow 20): an admin writes a message with a badge, previews its effect, sends it to a
 // ticked member (never "everyone": the e2e database is shared with the other specs), and the
 // member gets it full screen on their next page, then the badge reveal.
 import { test, expect } from '@playwright/test';

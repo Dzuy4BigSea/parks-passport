@@ -1,4 +1,4 @@
-// M32 (SPEC Flow 22): an admin approves an outfit in Admin › Gary; a member picks it in Account ›
+// M33 (SPEC Flow 22): an admin approves an outfit in Admin › Gary; a member picks it in Account ›
 // Gary's wardrobe, and Gary wears it in the lower right.
 import { test, expect } from '@playwright/test';
 import path from 'node:path';

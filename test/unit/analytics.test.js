@@ -144,7 +144,7 @@ test('pages with tokens or handles in the URL load no analytics and leak no quer
   db.prepare("UPDATE users SET default_visibility = 'public'").run();
   const invite = (await c.get('/pals')).body.match(/\/pals\/invite\/[A-Za-z0-9_-]+/)[0];
   const anon = client(app);
-  for (const url of ['/reset?token=SECRET123', '/auth/magic?token=SECRET123', '/account/delete/confirm?token=SECRET123', invite, '/u/ana']) {
+  for (const url of ['/reset?token=SECRET123', '/auth/magic?token=SECRET123', '/account/delete/confirm?token=SECRET123', invite, '/u/ana', `/signup?next=${encodeURIComponent(invite)}`, `/login?next=${encodeURIComponent(invite)}`]) {
     const body = (await anon.get(url)).body;
     assert.ok(!body.includes('gtm.js') && !body.includes('data-website-id'), `no analytics on ${url}`);
     assert.ok(!body.includes('consent-banner'), `no banner on ${url}`);

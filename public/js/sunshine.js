@@ -14,7 +14,9 @@ if (form) {
     const opt = select.selectedOptions[0];
     to.textContent = opt.value === 'department' ? `the parks department` : opt.textContent;
   };
-  select.addEventListener('change', sync);
+  // A park the member picked (or posted, on an error page) is never replaced by the GPS guess.
+  let touched = form.hasAttribute('data-chosen');
+  select.addEventListener('change', () => { touched = true; sync(); });
 
   const MAX_M = 2000;
   const meters = (a, b) => {
@@ -24,6 +26,7 @@ if (form) {
     return Math.sqrt(x * x + y * y) * 6371000;
   };
   const useNearest = (pos, { quiet = false } = {}) => {
+    if (quiet && touched) return;
     const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     let best = null;
     for (const p of pins) {
@@ -45,7 +48,7 @@ if (form) {
   if (pins.length && 'geolocation' in navigator && select) {
     if (locate) {
       locate.hidden = false;
-      locate.addEventListener('click', () => ask());
+      locate.addEventListener('click', () => { touched = true; ask(); });
     }
     // Already allowed: choose the closest park right away, without asking.
     navigator.permissions?.query({ name: 'geolocation' }).then((p) => { if (p.state === 'granted') ask({ quiet: true }); }).catch(() => {});

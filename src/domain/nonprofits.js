@@ -70,9 +70,10 @@ export function saveNonprofit(db, id, form, { now = new Date(), logo } = {}) {
   return db.transaction(() => {
     let npId = id;
     if (id) {
-      db.prepare(`UPDATE nonprofits SET name = ?, url = ?, mission = ?, reason = ?, city_id = ?, status = ?, serves = ?, updated_at = ?
+      // `serves` (the suggester's own words) is kept: the admin form doesn't edit it.
+      db.prepare(`UPDATE nonprofits SET name = ?, url = ?, mission = ?, reason = ?, city_id = ?, status = ?, updated_at = ?
         ${logo !== undefined ? ', logo = ?' : ''} WHERE id = ?`).run(...[values.name, values.url, values.mission, values.reason, cityId, status,
-        values.serves, ts, ...(logo !== undefined ? [logo] : []), id]);
+        ts, ...(logo !== undefined ? [logo] : []), id]);
     } else {
       npId = Number(db.prepare(`INSERT INTO nonprofits (name, url, mission, reason, status, city_id, serves, logo, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(values.name, values.url, values.mission, values.reason, status, cityId, values.serves,
@@ -106,6 +107,16 @@ export function spotlightFor(db, park, { now = new Date() } = {}) {
   const day = Math.floor(now.getTime() / 86400e3);
   return pool[day % pool.length];
 }
+
+/** Whether this spotlight can show on this park (its own parks, or every park in its city). */
+export function showsOn(db, nonprofit, parkId) {
+  const parks = db.prepare('SELECT park_id FROM nonprofit_parks WHERE nonprofit_id = ?').pluck().all(nonprofit.id);
+  if (parks.length) return parks.includes(parkId);
+  return Boolean(db.prepare('SELECT 1 FROM parks WHERE id = ? AND city_id = ?').get(parkId, nonprofit.city_id));
+}
+
+/** Crawlers and link previews: not counted as views or clicks. */
+export const isBot = (userAgent) => !userAgent || /bot|crawl|spider|slurp|preview|facebookexternalhit|embedly|headless/i.test(String(userAgent));
 
 const bump = (column) => (db, nonprofitId, parkId, { now = new Date() } = {}) => db.prepare(`INSERT INTO nonprofit_stats (nonprofit_id, park_id, day, ${column})
   VALUES (?, ?, ?, 1) ON CONFLICT (nonprofit_id, park_id, day) DO UPDATE SET ${column} = ${column} + 1`).run(nonprofitId, parkId, dayOf(now));

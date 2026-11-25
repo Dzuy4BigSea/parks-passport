@@ -9,7 +9,7 @@ import { badgeBoard } from '../domain/badges/index.js';
 import { palsWhoStamped } from '../domain/pals.js';
 import { isSaved } from '../domain/saved.js';
 import { activitiesForPark, visitToday, logsForVisit } from '../domain/activities.js';
-import { spotlightFor, recordView } from '../domain/nonprofits.js';
+import { spotlightFor, recordView, isBot } from '../domain/nonprofits.js';
 
 /**
  * Renders a park page with everything the viewer may see. `problem` ({ text, area, offerHonor })
@@ -40,7 +40,7 @@ export function renderParkPage(app, req, reply, park, { problem = null, stamped 
   }
   // One nonprofit spotlight (SPEC Flow 18); a view is counted for real page loads only.
   const spotlight = spotlightFor(db, park, { now: app.now() });
-  if (spotlight && req.method === 'GET' && !problem) recordView(db, spotlight.id, park.id, { now: app.now() });
+  if (spotlight && req.method === 'GET' && !problem && !isBot(req.headers['user-agent'])) recordView(db, spotlight.id, park.id, { now: app.now() });
   return reply.page({ events, ...parkPage({
     spotlight,
     activities,

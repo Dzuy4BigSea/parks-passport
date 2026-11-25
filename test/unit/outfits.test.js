@@ -1,4 +1,4 @@
-// M32: Gary's outfits and the weather (SPEC Flow 22).
+// M33: Gary's outfits and the weather (SPEC Flow 22).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeApp, client } from './helpers.js';
