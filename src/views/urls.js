@@ -1,4 +1,4 @@
-// City-scoped URLs (SPEC Flow 13). Parks and passports live under their city's key:
+// City-scoped URLs (SPEC Flow 14). Parks and passports live under their city's key:
 // /st-pete/parks, /westminster/parks/sigler-park, /westminster/passport.
 
 /** A path in a city: cityPath(city, '/parks') -> "/westminster/parks"; cityPath(city) -> "/westminster". */

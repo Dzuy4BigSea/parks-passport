@@ -1,6 +1,6 @@
 # Nearest-city suggestion (GeoIP)
 
-The home page can say "Looks like you're near Westminster" to a first-time visitor (SPEC Flow 13).
+The home page can say "Looks like you're near Westminster" to a first-time visitor (SPEC Flow 14).
 It looks the visitor's IP address up in a MaxMind **GeoLite2-City** database file on the server.
 The IP never leaves the server and is never stored or logged. Without the file the feature is off
 and nothing else changes.

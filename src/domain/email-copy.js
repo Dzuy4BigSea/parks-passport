@@ -43,6 +43,19 @@ export const EMAIL_KINDS = {
       note: "This invite link works for 30 days. If you weren't expecting it, you can ignore this email.",
     },
   },
+  idea_share: {
+    label: 'Badge ideas',
+    when: 'Sent when an admin shares badge ideas with someone from Admin › Badge ideas.',
+    subjectKey: 'subject_idea_share',
+    danger: false,
+    defaults: {
+      preheader: 'Got an idea for a badge? It takes one line.',
+      heading: 'Help us dream up badges',
+      body: "Hi {name},\n\n{inviter} would love your ideas for new Parks Passport badges. Fill in one line, \"Earn it when you…\", as many times as you like. The best ones become real badges.",
+      button: 'Share a badge idea',
+      note: "If you don't have a passport yet, the link sets one up first (it works for 30 days). If you weren't expecting this, you can ignore this email.",
+    },
+  },
   delete_account: {
     label: 'Confirm account deletion',
     when: 'Sent when a member asks to delete their account.',

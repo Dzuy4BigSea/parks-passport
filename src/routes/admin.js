@@ -17,6 +17,7 @@ import { themeJob, startThemeJob } from '../domain/theme-job.js';
 import { testEmail, memberEmail } from '../views/email.js';
 import { createInvite, recentInvites } from '../domain/invites.js';
 import { allActivities, badgeTargets, setActivityActive } from '../domain/activities.js';
+import { isSuperAdmin, ideaById, badgePrefill, markBuilt } from '../domain/ideas.js';
 import { EMAIL_KINDS, COPY_FIELDS, emailCopy, saveEmailCopy, resetEmailCopy, isCustomized } from '../domain/email-copy.js';
 import {
   adminCity, adminEmail, adminEmailMessage, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
@@ -28,6 +29,12 @@ const MAX_CSV_BYTES = 1024 * 1024;
 export default async function adminRoutes(app) {
   const { db } = app;
   const now = () => app.now();
+  // ?from_idea=<id>: the super admin turns a kept badge idea into a badge (SPEC Flow 13).
+  const keptIdea = (req, raw) => {
+    if (!isSuperAdmin(req.user) || !/^\d+$/.test(String(raw ?? ''))) return null;
+    const idea = ideaById(db, Number(raw));
+    return idea?.status === 'keep' ? idea : null;
+  };
 
   // Everything here is admins-only and 404s for everyone else (never 403). onRequest runs before
   // the body (uploads included) is read and before the CSRF check; req.user is already set.
@@ -134,6 +141,7 @@ export default async function adminRoutes(app) {
         shared: one("SELECT (SELECT COUNT(*) FROM photos WHERE visibility != 'private') + (SELECT COUNT(*) FROM ratings WHERE visibility != 'private' AND comment != '')"),
         users: one('SELECT COUNT(*) FROM users'),
         admins: one('SELECT COUNT(*) FROM users WHERE is_admin = 1'),
+        newIdeas: one("SELECT COUNT(*) FROM badge_ideas WHERE status = 'new'"),
       } }));
     });
 
@@ -185,7 +193,12 @@ export default async function adminRoutes(app) {
 
     // Badges
     r.get('/badges', async (req, reply) => reply.page(adminBadges({ badges: allBadgesForAdmin(db) })));
-    r.get('/badges/new', async (req, reply) => reply.page(adminBadgeForm({ csrf: req.csrfToken(), targets: badgeTargets(db), isNew: true })));
+    r.get('/badges/new', async (req, reply) => {
+      const idea = keptIdea(req, req.query.from_idea);
+      return reply.page(adminBadgeForm({
+        csrf: req.csrfToken(), targets: badgeTargets(db), isNew: true, fromIdea: idea?.id ?? null, values: idea ? badgePrefill(idea) : null,
+      }));
+    });
     r.get('/badges/:id', async (req, reply) => {
       const badge = badgeForAdmin(db, Number(req.params.id));
       if (!badge) return reply.callNotFound();
@@ -359,7 +372,7 @@ export default async function adminRoutes(app) {
       }
       if (!badge || Object.keys(errors).length) {
         reply.code(422);
-        return reply.page(adminBadgeForm({ csrf: req.csrfToken(), targets: badgeTargets(db), isNew, badge: existing, errors, values }));
+        return reply.page(adminBadgeForm({ csrf: req.csrfToken(), targets: badgeTargets(db), isNew, badge: existing, errors, values, fromIdea: keptIdea(req, values.from_idea)?.id ?? null }));
       }
       // No new emoji typed: keep an existing uploaded image.
       if (art) badge.art = art;
@@ -368,10 +381,12 @@ export default async function adminRoutes(app) {
       if (saved.error === 'slug_taken') {
         if (art) await removeBadgeArt(app.config.uploadsDir, art);
         reply.code(422);
-        return reply.page(adminBadgeForm({ csrf: req.csrfToken(), targets: badgeTargets(db), isNew, badge: existing, errors: { slug: 'Another badge already uses that slug.' }, values }));
+        return reply.page(adminBadgeForm({ csrf: req.csrfToken(), targets: badgeTargets(db), isNew, badge: existing, errors: { slug: 'Another badge already uses that slug.' }, values, fromIdea: keptIdea(req, values.from_idea)?.id ?? null }));
       }
       // Replaced art: remove the old file.
       if (existing?.art?.startsWith('upload:') && saved.art !== existing.art) await removeBadgeArt(app.config.uploadsDir, existing.art);
+      const idea = isNew && keptIdea(req, values.from_idea);
+      if (idea) markBuilt(db, idea.id, saved.id, { now: now() });
       return reply.redirect(`/admin/badges/${saved.id}?saved=1`, 303);
     };
     r.post('/badges/new', async (req, reply) => saveBadgeRoute(req, reply, null));

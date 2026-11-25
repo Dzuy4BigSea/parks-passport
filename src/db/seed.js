@@ -23,7 +23,7 @@ export const cityPackKeys = (dir = CITIES_DIR) => fs.readdirSync(dir, { withFile
   .filter((d) => d.isDirectory() && fs.existsSync(path.join(dir, d.name, 'city.json'))).map((d) => d.name).sort();
 
 /**
- * Loads every city pack, on every start (SPEC Flow 13): the city (its theme only the first time),
+ * Loads every city pack, on every start (SPEC Flow 14): the city (its theme only the first time),
  * its parks when the city has none yet, and any of its badges the database doesn't have.
  * Returns [{ key, motifs, parks, badges }] for the log.
  */

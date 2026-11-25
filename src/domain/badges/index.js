@@ -1,9 +1,25 @@
-import { DEFAULT_TIME_ZONE } from '../time.js';
+// Parks Passport's adapter for the gamification engine (src/gamification/): the context the rules
+// need about one member, and which badges show on their board. Awarding, revoking and the board
+// itself are the engine's.
+import { createBadgeEngine, addMissingBadges as addMissing } from '../../gamification/index.js';
 import { RULES, badgeEdition } from './rules.js';
+import { DEFAULT_TIME_ZONE } from '../time.js';
 
-const parseParams = (b) => {
-  try { return JSON.parse(b.rule_params || '{}'); } catch { return {}; }
-};
+export { takeUnseenBadges, seedBadgesIfEmpty } from '../../gamification/index.js';
+
+/**
+ * Adds badges from a seed list whose slugs aren't in the table yet. A city pack's badges.json
+ * passes its cityId: those badges count that city only (SPEC Flow 14).
+ */
+export function addMissingBadges(db, list, { now = new Date(), cityId = null } = {}) {
+  const had = new Set(db.prepare('SELECT slug FROM badges').pluck().all());
+  const added = addMissing(db, list, { now });
+  if (cityId != null) {
+    const set = db.prepare('UPDATE badges SET city_id = ? WHERE slug = ?');
+    for (const b of list) if (!had.has(b.slug)) set.run(cityId, b.slug);
+  }
+  return added;
+}
 
 // Everything the rules need about one user, loaded once per evaluation.
 export function buildContext(db, userId, { trigger = null, random = Math.random, palSameDay = null } = {}) {
@@ -42,8 +58,9 @@ const hasPalSameDay = (db, userId) => Boolean(db.prepare(`SELECT 1 FROM visits m
 
 // A city badge (badge.city_id set) sees only that city's visits, parks and activity logs, so
 // "Stamp 50 parks" or "Every park" mean parks in that city. Other badges count every city.
-function scopeToCity(ctx, cityId) {
-  const inCity = (parkId) => ctx.parkCity.get(parkId) === cityId;
+function scopeToCity(badge, ctx) {
+  if (!badge.city_id || !ctx.parkCity) return ctx;
+  const inCity = (parkId) => ctx.parkCity.get(parkId) === badge.city_id;
   return {
     ...ctx,
     visits: ctx.visits.filter((v) => inCity(v.park_id)),
@@ -52,115 +69,22 @@ function scopeToCity(ctx, cityId) {
   };
 }
 
-export function evaluateRule(badge, ctx) {
-  const rule = RULES[badge.rule_type];
-  if (!rule) return { earned: false };
-  return rule.evaluate(parseParams(badge), badge.city_id && ctx.parkCity ? scopeToCity(ctx, badge.city_id) : ctx);
-}
-
-/**
- * Awards every enabled badge the user now qualifies for and doesn't have yet.
- * Returns the newly awarded badges. Each badge is awarded at most once per user.
- */
-export function awardBadges(db, userId, trigger, { now = new Date(), random = Math.random } = {}) {
-  const candidates = db.prepare(`SELECT b.* FROM badges b WHERE b.enabled = 1 AND NOT EXISTS
-    (SELECT 1 FROM user_badges ub WHERE ub.user_id = ? AND ub.badge_id = b.id) ORDER BY b.sort, b.id`).all(userId);
-  if (!candidates.length) return [];
-  const ctx = buildContext(db, userId, { trigger, random });
-  const insert = db.prepare(`INSERT OR IGNORE INTO user_badges (user_id, badge_id, awarded_at, source_type, source_id, rule_snapshot)
-    VALUES (?, ?, ?, ?, ?, ?)`);
-  const awarded = [];
-  for (const badge of candidates) {
-    if (evaluateRule(badge, ctx).earned) {
-      const snapshot = JSON.stringify({ rule_type: badge.rule_type, rule_params: badge.rule_params });
-      if (insert.run(userId, badge.id, now.toISOString(), trigger?.type || 'recheck', trigger?.id ?? null, snapshot).changes) {
-        awarded.push(badge);
-      }
-    }
-  }
-  return awarded;
-}
-
-/**
- * After something is deleted: removes earned badges whose criteria are no longer met, judged by
- * the rule as it was when the badge was awarded (an admin editing the rule later never takes it
- * away). Lucky drops and disabled badges are kept.
- */
-export function revokeUnmetBadges(db, userId) {
-  const earned = db.prepare(`SELECT b.*, ub.rule_snapshot FROM user_badges ub JOIN badges b ON b.id = ub.badge_id
-    WHERE ub.user_id = ? AND b.enabled = 1`).all(userId);
-  const asAwarded = earned.map((b) => {
-    let snap;
-    try { snap = b.rule_snapshot ? JSON.parse(b.rule_snapshot) : null; } catch { snap = null; }
-    return snap ? { ...b, rule_type: snap.rule_type, rule_params: snap.rule_params } : b;
-  }).filter((b) => b.rule_type !== 'lucky');
-  if (!asAwarded.length) return [];
-  const ctx = buildContext(db, userId);
-  const del = db.prepare('DELETE FROM user_badges WHERE user_id = ? AND badge_id = ?');
-  const revoked = asAwarded.filter((b) => !evaluateRule(b, ctx).earned);
-  for (const b of revoked) del.run(userId, b.id);
-  return revoked;
-}
-
-/**
- * The user's badge board: earned (with date), then known (with progress), hidden and lucky
- * (no criteria shown). Disabled badges are shown only if already earned.
- */
-export function badgeBoard(db, userId, { cityId = null } = {}) {
-  // City badges show on their own city's board (and anywhere once earned). Without a city: every badge.
-  const rows = db.prepare(`SELECT b.*, ub.awarded_at FROM badges b
-    LEFT JOIN user_badges ub ON ub.badge_id = b.id AND ub.user_id = ?
-    WHERE (b.enabled = 1 OR ub.awarded_at IS NOT NULL)
-      AND (ub.awarded_at IS NOT NULL OR b.city_id IS NULL OR ? IS NULL OR b.city_id = ?)
-    ORDER BY b.sort, b.id`).all(userId, cityId, cityId);
-  const ctx = buildContext(db, userId, { random: () => 1 });
-  // Paws and Kids badges show only to members who turned that edition on (or already earned them).
+// Paws and Kids badges show only to members who turned that edition on (or already earned them).
+// With { cityId }, another city's badges stay off the board (they show once earned).
+function editionFilter(db, userId, { cityId = null } = {}) {
   const user = db.prepare('SELECT paws, kids FROM users WHERE id = ?').get(userId) || {};
   const editionOn = { core: true, paws: Boolean(user.paws), kids: Boolean(user.kids) };
   const activityEditions = new Map(db.prepare('SELECT slug, edition FROM activities').raw().all());
-  return rows.filter((b) => b.awarded_at || editionOn[badgeEdition(b, activityEditions)] !== false).map((b) => {
-    if (b.awarded_at) return { ...b, state: 'earned' };
-    if (b.kind === 'known') {
-      const r = evaluateRule(b, ctx);
-      return { ...b, state: 'known', progress: r.progress, target: r.target, unit: r.unit };
-    }
-    return { ...b, state: b.kind }; // hidden | lucky
-  });
+  return (b) => editionOn[badgeEdition(b, activityEditions)] !== false && (cityId == null || b.city_id == null || b.city_id === cityId);
 }
 
-// Badges awarded but not yet announced; marks them announced.
-export function takeUnseenBadges(db, userId, { now = new Date() } = {}) {
-  const rows = db.prepare(`SELECT b.* FROM user_badges ub JOIN badges b ON b.id = ub.badge_id
-    WHERE ub.user_id = ? AND ub.seen_at IS NULL ORDER BY ub.awarded_at, b.sort`).all(userId);
-  if (rows.length) db.prepare('UPDATE user_badges SET seen_at = ? WHERE user_id = ? AND seen_at IS NULL').run(now.toISOString(), userId);
-  return rows;
-}
+const engine = createBadgeEngine({ rules: RULES, loadContext: buildContext, boardFilter: editionFilter, scopeContext: scopeToCity });
 
-// Adds badges from a seed list whose slugs aren't in the table yet (later seed files, e.g.
-// seed/activity-badges.json, reach databases that were seeded before they existed). A city pack's
-// badges.json passes its cityId.
-export function addMissingBadges(db, list, { now = new Date(), cityId = null } = {}) {
-  const ins = db.prepare(`INSERT OR IGNORE INTO badges (slug, name, description, hint, art, rule_type, rule_params, kind, sort, created_at, city_id)
-    VALUES (@slug, @name, @description, @hint, @art, @rule_type, @rule_params, @kind, @sort, @created_at, @city_id)`);
-  let sort = db.prepare('SELECT COALESCE(MAX(sort), 0) FROM badges').pluck().get();
-  let added = 0;
-  db.transaction(() => list.forEach((b) => {
-    added += ins.run({
-      description: '', hint: '', art: '🏅', ...b, rule_params: JSON.stringify(b.rule_params || {}), sort: sort + 1, created_at: now.toISOString(),
-      city_id: cityId,
-    }).changes;
-    sort += 1;
-  }))();
-  return added;
-}
-
-// Loads seed/badges.json into an empty badges table.
-export function seedBadgesIfEmpty(db, list, { now = new Date() } = {}) {
-  if (db.prepare('SELECT COUNT(*) FROM badges').pluck().get() > 0) return 0;
-  const ins = db.prepare(`INSERT INTO badges (slug, name, description, hint, art, rule_type, rule_params, kind, sort, created_at)
-    VALUES (@slug, @name, @description, @hint, @art, @rule_type, @rule_params, @kind, @sort, @created_at)`);
-  db.transaction(() => list.forEach((b, i) => ins.run({
-    description: '', hint: '', art: '🏅', ...b, rule_params: JSON.stringify(b.rule_params || {}), sort: i, created_at: now.toISOString(),
-  })))();
-  return list.length;
-}
+/** Whether one badge's rule is met for this context: { earned, progress?, target?, unit? }. */
+export const { evaluateRule } = engine;
+/** Awards every enabled badge the member now qualifies for; returns the new ones (each at most once). */
+export const { awardBadges } = engine;
+/** After a deletion: takes back badges no longer met (by the rule as awarded). Lucky drops stay. */
+export const { revokeUnmetBadges } = engine;
+/** Earned, then known (with progress), hidden and lucky; edition badges only when the edition is on. */
+export const { badgeBoard } = engine;

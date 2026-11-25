@@ -1,4 +1,4 @@
-// Multi-city (SPEC Flow 13): city packs, city URLs, per-city time zones, city and travel badges,
+// Multi-city (SPEC Flow 14): city packs, city URLs, per-city time zones, city and travel badges,
 // the nearest-city suggestion and the admin city bar.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -68,12 +68,12 @@ test('seedCities loads both cities once; admin theme edits stay, the pack\'s cop
   assert.equal(count("SELECT COUNT(*) FROM badges WHERE slug = 'two-cities'"), 1);
 });
 
-test('migration 014 keeps every visit, photo and rating, and puts the existing parks in St. Pete', () => {
+test('migration 016 keeps every visit, photo and rating, and puts the existing parks in St. Pete', () => {
   const dir = path.join(import.meta.dirname, '..', '..', 'src', 'db', 'migrations');
   const db = new Database(':memory:');
   db.pragma('foreign_keys = ON');
   db.exec('CREATE TABLE schema_migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)');
-  for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.sql') && x < '014').sort()) {
+  for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.sql') && x < '016').sort()) {
     db.exec(fs.readFileSync(path.join(dir, f), 'utf8'));
     db.prepare('INSERT INTO schema_migrations VALUES (?, ?)').run(f, 'x');
   }

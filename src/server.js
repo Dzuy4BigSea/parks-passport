@@ -8,6 +8,7 @@ import { emailSettings, sendgridKey } from './domain/settings.js';
 import { buildApp } from './app.js';
 import { createThemeGenerator } from './lib/theme-ai.js';
 import { createGeoIp } from './lib/geoip.js';
+import { createIdeaTriager } from './lib/idea-ai.js';
 
 const config = loadConfig();
 const db = openDb(path.join(config.dataDir, 'app.db'));
@@ -30,6 +31,7 @@ const geoip = await createGeoIp({ file: config.geoipDb, log: { warn: (obj, msg) 
 });
 const app = buildApp({
   db, mailer, secretBox, geoip, logger: config.nodeEnv !== 'test', themeAi: createThemeGenerator({ apiKey: config.anthropicApiKey }),
+  ideaAi: createIdeaTriager({ apiKey: config.anthropicApiKey }),
   config: {
     baseUrl: config.baseUrl, secureCookies: config.secureCookies, uploadsDir: path.join(config.dataDir, 'uploads'),
     mailTransport: config.mail.transport, mailFrom: config.mail.from, sendgridEnvKey: config.mail.sendgridApiKey,

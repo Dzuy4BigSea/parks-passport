@@ -3,7 +3,7 @@ import net from 'node:net';
 import maxmind from 'maxmind';
 
 // Rough visitor location from their IP address, for the home page's "nearest city" suggestion
-// (SPEC Flow 13). Reads a MaxMind GeoLite2-City database file on this server: the IP is never
+// (SPEC Flow 14). Reads a MaxMind GeoLite2-City database file on this server: the IP is never
 // sent anywhere, stored or logged, and only the city-level point is used. Off (null) without
 // GEOIP_DB or when the file is missing.
 

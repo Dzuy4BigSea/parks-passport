@@ -148,7 +148,15 @@ export const clearLoginFailures = (db, email) =>
 
 // Deletes the user; every user-owned table cascades. Callers remove stored files first.
 export function deleteUser(db, userId) {
+  // Badge-idea access is keyed by email, so remove it too (their ideas cascade).
+  db.prepare('DELETE FROM idea_contributors WHERE email = (SELECT email FROM users WHERE id = ?)').run(userId);
   db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+}
+
+// Super admin (SPEC Flow 13) implies admin; removing it leaves admin as it was.
+export function setSuperAdmin(db, email, isSuper) {
+  return db.prepare(`UPDATE users SET is_super_admin = ?, is_admin = CASE WHEN ? THEN 1 ELSE is_admin END WHERE email = ?`)
+    .run(isSuper ? 1 : 0, isSuper ? 1 : 0, normalizeEmail(email)).changes;
 }
 
 export function setAdmin(db, email, isAdmin) {

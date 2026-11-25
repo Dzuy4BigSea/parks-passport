@@ -4,7 +4,7 @@ import { DEFAULT_TIME_ZONE } from './time.js';
 
 export { DEFAULT_TIME_ZONE };
 
-// Cities (SPEC Flow 13). Each city is a city_themes row: its theme (accent colors, neighborhood
+// Cities (SPEC Flow 14). Each city is a city_themes row: its theme (accent colors, neighborhood
 // areas and landmark motifs) plus what the app needs to work there (time zone, map bounds, page
 // copy). The brand palette is national; this layer is what makes a city feel like itself.
 // A city's files live in seed/cities/<key>/ (a "city pack": city.json, parks.csv, badges.json).
@@ -18,7 +18,7 @@ export const RESERVED_CITY_KEYS = new Set(['account', 'activities', 'admin', 'au
   'passport', 'photos', 'privacy', 'reset', 'signup', 'stamp', 'stats', 'u', 'vendor', 'visits']);
 const TIME_ZONES = new Set(Intl.supportedValuesOf('timeZone'));
 
-// Used when no city exists (never after migration 014, which adds St. Pete): neutral, no motifs.
+// Used when no city exists (never after migration 016, which adds St. Pete): neutral, no motifs.
 const FALLBACK = Object.freeze({
   id: null, key: 'default', name: 'your city', tagline: '', accent: '#FF7A59', accent_2: '#7C6CF2', areas: [], motifs: [],
   time_zone: DEFAULT_TIME_ZONE, bounds: null, center: null, listed: true, copy: cityCopy({ name: 'your city' }, {}),

@@ -33,6 +33,7 @@ import passportRoutes from './routes/passport.js';
 import palRoutes from './routes/pals.js';
 import photoRoutes from './routes/photos.js';
 import adminRoutes from './routes/admin.js';
+import ideaRoutes from './routes/ideas.js';
 import activityRoutes from './routes/activities.js';
 import { shareNudge } from './views/pages/pals.js';
 
@@ -46,7 +47,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
  * config: { baseUrl, secureCookies, uploadsDir }
  */
 export function buildApp({
-  db, mailer, secretBox = null, now = () => new Date(), random = Math.random, logger = false, themeAi = null, geoip = null,
+  db, mailer, secretBox = null, now = () => new Date(), random = Math.random, logger = false, themeAi = null, ideaAi = null, geoip = null,
   config = { baseUrl: 'http://localhost:8080', secureCookies: false, uploadsDir: './data/uploads' },
 } = {}) {
   if (!db) throw new Error('buildApp needs a db');
@@ -63,6 +64,7 @@ export function buildApp({
   app.decorate('theme', () => getTheme(db)); // the default city (emails); pages use req.city
   app.decorate('geoip', geoip); // lib/geoip.js: { lookup(ip) } or null (nearest-city suggestion off)
   app.decorate('themeAi', themeAi); // Admin › City theme generator (lib/theme-ai.js); null = off
+  app.decorate('ideaAi', ideaAi); // Admin › Badge ideas suggestions (lib/idea-ai.js); null = off
   app.decorate('track', (userId, name, params = {}) => queueEvent(db, userId, name, params, { now: now(), log: app.log }));
   app.decorate('emailSettings', () => emailSettings(db, { envFrom: config.mailFrom || '' }));
   // Removes a user's photo files before their rows are deleted (rows cascade).
@@ -92,7 +94,7 @@ export function buildApp({
   // Multipart (uploads) is registered only around the photo routes: see lib/uploads.js.
   app.register(cookie);
   app.register(authPlugin, { db, now, secureCookies: config.secureCookies });
-  app.register(cityContext, { db, secureCookies: config.secureCookies }); // req.city (SPEC Flow 13)
+  app.register(cityContext, { db, secureCookies: config.secureCookies }); // req.city (SPEC Flow 14)
   app.register(fastifyStatic, {
     root: path.join(ROOT, 'public'), prefix: '/', index: false, wildcard: false, maxAge: '1h',
   });
@@ -199,6 +201,7 @@ export function buildApp({
   app.register(palRoutes);
   app.register(photoRoutes);
   app.register(adminRoutes);
+  app.register(ideaRoutes);
   app.register(activityRoutes);
   app.register(consentRoutes);
 

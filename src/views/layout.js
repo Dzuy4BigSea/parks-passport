@@ -107,7 +107,7 @@ export function statusPills(status) {
 export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null, nudge = null,
   analytics = null, consent = { chosen: true, analytics: false, ads: false }, events = [], showConsentBanner = false, path = '/',
   theme = null, cities = [], status = null, description = null, baseUrl = '', canonicalPath = null }) {
-  // Parks and Passport links stay in the city being viewed (SPEC Flow 13).
+  // Parks and Passport links stay in the city being viewed (SPEC Flow 14).
   const base = theme?.key && theme.key !== 'default' ? cityPath(theme) : '';
   const nav = user
     ? [[`${base}/parks`, 'Parks', 'parks'], [`${base}/passport`, 'Passport', 'passport'], ['/pals', 'Pals', 'pals'], ['/account', 'Account', 'account'],

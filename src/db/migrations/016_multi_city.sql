@@ -1,5 +1,5 @@
 -- migrate:foreign-keys-off
--- Multi-city (SPEC Flow 13). A city is a city_themes row: its theme plus what makes the app work
+-- Multi-city (SPEC Flow 14). A city is a city_themes row: its theme plus what makes the app work
 -- there (time zone, map bounds, copy). Parks and some badges belong to a city.
 -- The parks table is rebuilt (slugs become unique per city), so this migration runs with foreign
 -- keys off: dropping the old table must not cascade to visits, photos or ratings. The runner

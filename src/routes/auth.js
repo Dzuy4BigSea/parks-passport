@@ -2,6 +2,7 @@ import { requireUser, safeNext } from '../lib/auth.js';
 import { magicLinkEmail, passwordResetEmail, deleteAccountEmail } from '../views/email.js';
 import { emailCopy } from '../domain/email-copy.js';
 import { inviteForToken, acceptInvites } from '../domain/invites.js';
+import { canUseIdeas } from '../domain/ideas.js';
 import { verifyPassword, burnPasswordCheck } from '../lib/crypto.js';
 import {
   createUser, findUserByEmail, findUserById, createSession, deleteSession, deleteAllSessions,
@@ -63,7 +64,7 @@ export default async function authRoutes(app) {
     if (req.user) return reply.redirect('/passport');
     const invite = inviteForToken(db, req.params.token, { now: now() });
     return reply.page(signupPage({
-      csrf: req.csrfToken(), invite, cityName: req.city.copy.short,
+      csrf: req.csrfToken(), invite, cityName: req.city.copy.short, next: safeNext(str(req.query.next)) === str(req.query.next) ? str(req.query.next) : '',
       values: invite ? { email: invite.email, display_name: invite.name } : {},
       inviteNotice: invite ? null : 'This invite link has expired or was already used. You can still create a passport here.',
     }));
@@ -191,7 +192,7 @@ export default async function authRoutes(app) {
   const VISIBILITY_SAVED = { private: 'only you', pals: 'your Park Pals', public: 'anyone with the link' };
   app.get('/account', { preHandler: requireUser }, async (req, reply) =>
     reply.page(accountPage({
-      csrf: req.csrfToken(), user: req.user,
+      csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user),
       notice: req.query.done === 'visibility' ? `Saved. Your passport is now visible to ${VISIBILITY_SAVED[req.user.default_visibility]}.`
         : req.query.done === 'editions' ? 'Saved your editions.' : null,
     })));

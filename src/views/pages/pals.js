@@ -22,7 +22,51 @@ function feedItem(item) {
   <p>${who} earned the <strong>${item.badge_name}</strong> badge <span class="muted">${when}</span></p></li>`;
 }
 
-export function palsPage({ user, csrf, inviteUrl, pals, board, feed, page, notice }) {
+function requestsSection({ requests, csrf }) {
+  const { incoming, outgoing } = requests;
+  if (!incoming.length && !outgoing.length) return '';
+  const button = (r, action, label, cls) => html`<form method="post" action="/pals/requests/${r.id}/${action}">
+      ${csrfField(csrf)}<button type="submit" class="btn btn-small ${cls}">${label}<span class="visually-hidden"> ${r.display_name}</span></button></form>`;
+  return html`<section aria-labelledby="req-h" id="requests">
+  <h2 id="req-h">Pal requests</h2>
+  ${incoming.length ? html`<ul class="pal-list">${incoming.map((r) => html`<li>
+    <span><strong>${r.display_name}</strong> <span class="muted">@${r.handle}</span> wants to be Park Pals</span>
+    <span class="request-actions">${button(r, 'accept', 'Accept', 'btn-primary')}${button(r, 'decline', 'Decline', 'btn-quiet')}</span>
+  </li>`)}</ul>` : ''}
+  ${outgoing.length ? html`<h3>Waiting for an answer</h3><ul class="pal-list">${outgoing.map((r) => html`<li>
+    <span>${r.display_name} <span class="muted">@${r.handle}</span></span>
+    ${button(r, 'cancel', 'Cancel request', 'btn-quiet')}
+  </li>`)}</ul>` : ''}
+</section>`;
+}
+
+function codeSection({ csrf, friendCode, codeError, codeValue }) {
+  return html`<section aria-labelledby="code-h" class="card-form" id="add">
+  <h2 id="code-h">Friend codes</h2>
+  <p>Share your code, or type a friend's. A code sends a request; you're Park Pals once they accept.</p>
+  <div class="copy-row">
+    <label for="my-code">Your friend code</label>
+    <input id="my-code" type="text" readonly value="${friendCode}" class="friend-code">
+    <button type="button" class="btn" data-copy="#my-code" hidden>Copy code</button>
+  </div>
+  <form method="post" action="/pals/code" class="add-code" novalidate>
+    ${csrfField(csrf)}
+    <div class="field${codeError ? ' field-error' : ''}">
+      <label for="code">Add a pal by code</label>
+      ${codeError ? html`<p class="error-text" id="code-error" role="alert" tabindex="-1" data-announce>${codeError}</p>` : ''}
+      <input id="code" name="code" type="text" class="friend-code" value="${codeValue ?? ''}" placeholder="ABCD-EFGH" maxlength="20"
+        autocomplete="off" autocapitalize="characters" spellcheck="false"${codeError ? html` aria-invalid="true" aria-describedby="code-error"` : ''}>
+    </div>
+    <button type="submit" class="btn btn-primary">Send request</button>
+  </form>
+  <form method="post" action="/pals/code/regenerate" class="inline-form">
+    ${csrfField(csrf)}
+    <button type="submit" class="btn btn-quiet">Make a new code (the old one stops working)</button>
+  </form>
+</section>`;
+}
+
+export function palsPage({ user, csrf, inviteUrl, pals, board, feed, page, notice, friendCode, requests = { incoming: [], outgoing: [] }, codeError = null, codeValue = '' }) {
   return {
     title: 'Park Pals',
     current: 'pals',
@@ -32,6 +76,10 @@ export function palsPage({ user, csrf, inviteUrl, pals, board, feed, page, notic
 ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
 ${user.default_visibility === 'private' ? html`<p class="notice">Your passport is private, so your pals can't see your stamps yet.
   <a href="/account#visibility">Change who can see it</a>.</p>` : ''}
+
+${requestsSection({ requests, csrf })}
+
+${codeSection({ csrf, friendCode, codeError, codeValue })}
 
 <section aria-labelledby="invite-h" class="card-form">
   <h2 id="invite-h">Invite a pal</h2>
@@ -105,6 +153,21 @@ export function invitePage({ inviter, user, csrf, token, state }) {
     body: html`<div class="narrow">
 <h1>${inviter.display_name} invited you to be Park Pals</h1>
 ${action}
+</div>`,
+  };
+}
+
+// An invite link that doesn't match anyone's current link (regenerated, renewed after removing a
+// pal, or cut short when pasted). Says nothing about whose it was.
+export function deadInvitePage({ user }) {
+  return {
+    title: 'Invite link not working',
+    body: html`<div class="narrow">
+<h1>This invite link doesn't work anymore</h1>
+<p>Your friend may have made a new link, or part of the link got cut off when it was pasted.</p>
+<p>Ask them to copy their link again from their Park Pals page, or to send you their <strong>friend code</strong>.</p>
+${user ? html`<p><a class="btn btn-primary" href="/pals#add">Add a pal by code</a></p>`
+    : html`<p><a class="btn btn-primary" href="/signup?next=/pals">Create your passport</a> <a class="btn" href="/login?next=/pals">Log in</a></p>`}
 </div>`,
   };
 }

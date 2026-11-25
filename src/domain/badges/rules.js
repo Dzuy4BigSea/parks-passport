@@ -1,4 +1,5 @@
 /**
+ * Parks Passport's badge rule types, plugged into the gamification engine (src/gamification/).
  * Badge rule types. Each takes (params, ctx) and returns { earned, progress?, target? }.
  * progress/target drive the "7 / 10 parks" display for known badges.
  *
@@ -14,9 +15,9 @@
  * }
  */
 import { DEFAULT_TIME_ZONE } from '../time.js';
+import { countProgress as count } from '../../gamification/index.js';
 
 const distinctParks = (visits) => new Set(visits.map((v) => v.park_id));
-const count = (n, target, unit) => ({ earned: n >= target, progress: Math.min(n, target), target, unit });
 
 // "HH:MM" on the clock where the park is (each city has its own time zone).
 const timeFmts = new Map();
@@ -127,6 +128,7 @@ export const RULES = {
   lucky: {
     label: 'Awarded at random on a stamp',
     params: { probability: 'number' },
+    permanent: true, // a lucky drop is never taken back
     // Only rolls when a stamp triggered the evaluation; never re-rolled on other events.
     evaluate: ({ probability }, ctx) => ({ earned: ctx.trigger?.type === 'visit' && ctx.random() < probability }),
   },

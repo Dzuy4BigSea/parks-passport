@@ -3,6 +3,7 @@ import { rebuildParkVisitPoints } from './points.js';
 import { localDate, isValidDate } from './time.js';
 import { deleteVisitActivityPoints } from './activities.js';
 import { parkTimeZone } from './city.js';
+import { removeSourcePoints } from '../gamification/index.js';
 
 export const EARLIEST_STAMP_DATE = '2000-01-01';
 
@@ -57,7 +58,7 @@ export function deleteVisit(db, { user, visitId }, { now = new Date() } = {}) {
   const visit = db.prepare('SELECT * FROM visits WHERE id = ? AND user_id = ?').get(visitId, user.id);
   if (!visit) return null;
   db.transaction(() => {
-    db.prepare("DELETE FROM point_events WHERE source_type = 'visit' AND source_id = ?").run(visit.id);
+    removeSourcePoints(db, 'visit', visit.id);
     deleteVisitActivityPoints(db, visit.id); // its activity logs cascade with the visit
     db.prepare('DELETE FROM visits WHERE id = ?').run(visit.id);
     rebuildParkVisitPoints(db, user.id, visit.park_id, { now });

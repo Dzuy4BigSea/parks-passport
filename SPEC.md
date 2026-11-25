@@ -2,7 +2,7 @@
 
 ## Summary
 Parks Passport is a mobile-first web app where anyone can keep a personal "passport" of the
-City of St. Petersburg, FL parks they've visited (and, since Flow 13, the parks of other cities,
+City of St. Petersburg, FL parks they've visited (and, since Flow 14, the parks of other cities,
 starting with Westminster, CA). Users find a park, stamp a visit (GPS
 check-in preferred, honor system always allowed), add photos and a 1–5 star rating, and
 earn points, levels and badges: known ones with visible progress, hidden ones, and lucky
@@ -18,6 +18,10 @@ and then publicly. It's a personal project, not an official City app. v1 succeed
 - **Admin:** a member with the admin flag. Can edit parks, import the park CSV, manage badges,
   hide photos or reviews, and promote or demote admins. The first admin is set with a CLI
   command (`npm run make-admin -- <email>`).
+- **Super admin:** an admin with the super-admin flag, set only by CLI
+  (`npm run make-super-admin -- <email>`). Sees every badge idea and triages them (Flow 13).
+- **Idea contributor:** a member an admin shared badge ideas with. Can submit badge ideas and
+  see their own; nothing else changes.
 
 ## Core flows and acceptance criteria
 
@@ -166,6 +170,19 @@ Done when:
 - [ ] I get a personal invite link (`/pals/invite/:token`). Someone who opens it and accepts
       becomes my pal (in both directions). I can regenerate the link, which invalidates the old
       one, and remove a pal. There is no user search.
+- [ ] A link that no longer works (regenerated, renewed after removing a pal, or cut short when
+      pasted) shows "This invite link doesn't work anymore" with what to do next (status 404).
+- [ ] **Friend codes:** the Pals page shows my friend code (8 characters shown as `XXXX-XXXX`,
+      no look-alike characters such as 0/O or 1/I/L), with Copy and "New code" (the old one stops
+      working). Typing a friend's code (any case, spaces or dash optional) under "Add a pal by
+      code" sends them a **pal request**. It doesn't make us pals until they accept.
+- [ ] **Pal requests:** the Pals page lists requests to me (Accept / Decline) and requests I
+      sent (Cancel). Accepting makes us pals both ways and checks badges, like an invite link.
+      If they already sent me a request, entering their code makes us pals at once. My own
+      code, an existing pal, or a repeat request gets a clear message. Wrong codes are limited
+      to 10 per hour and requests sent to 20 per day per person (cancelling doesn't give one
+      back), so codes can't be guessed. Something that isn't a code at all doesn't count as a guess.
+      Declining tells the sender nothing; their request just disappears.
 - [ ] **Pals feed** (`/pals`) shows my pals' recent stamps, photos and badges that are visible
       to me, newest first, 20 per page.
 - [ ] **Pals leaderboard** ranks me and my pals by unique parks stamped (points as the
@@ -312,7 +329,40 @@ Done when:
       rule types with a target picker. The park form has an optional walking-loop length
       (`loop_mi`), shown next to "Walk a mile".
 
-### Flow 13: More cities (city packs)
+### Flow 13: Badge ideas
+As an admin, I can collect badge ideas from myself and people I trust, so that the super admin
+can keep, kill or combine them and hand the keepers to Claude Code to build.
+Done when:
+- [ ] `/ideas` is open to admins and idea contributors and returns 404 to everyone else
+      (signed out included). It shows a fill-in-the-blank form, "Earn **[badge name]** when you
+      **[do what]**", with an optional emoji, and my own ideas newest first with their status.
+      The name is optional (60 characters); "when you" is required, one line, 160 characters.
+      At most 30 ideas per person per day.
+- [ ] **Share:** Admin › Badge ideas lists contributors and lets any admin add one by email. A
+      member gets the "Badge ideas" email with a link to `/ideas`. Someone without an account
+      gets the same email with a `/join/<token>?next=/ideas` link (an invite, Flow 9) and has
+      access as soon as they sign up with that address. Removing a contributor stops their access;
+      their ideas stay. The email's wording is editable in Admin › Email › Messages.
+- [ ] **Triage (super admin only):** Admin › Badge ideas lists every idea with its author's
+      display name, filtered by New, Kept, Combined, Killed and Built. For each idea I can keep
+      it, kill it, or combine it into another open idea, with an optional note and the rule type
+      it fits (an existing rule type or "needs a new rule"). Plain admins see only the share
+      section, and the triage routes 404 for them.
+- [ ] **Suggest with Claude** (off without `ANTHROPIC_API_KEY`): a background job reads up to
+      100 New ideas plus the existing badges and rule types, and proposes keep/kill/combine, a
+      reason, and a rule type with parameters or a description of the new rule needed. Output is
+      validated (unknown ideas, verdicts and rule types are dropped) and only stored as
+      suggestions; I apply each one with a button. Idea text is treated as data, not instructions.
+- [ ] **Build:** a Kept idea that fits an existing rule type has "Create badge", which opens
+      the badge form filled in from the idea (disabled until I enable it). Saving it links the
+      badge and marks the idea Built.
+- [ ] **Export for Claude Code:** `/admin/ideas/export.md` downloads a Markdown brief of the
+      Kept ideas that aren't built yet, combined ideas folded into their keeper, split into "fits
+      an existing rule" and "needs a new rule", with the file pointers and checks Claude Code
+      needs. It contains no names, emails or other personal details.
+- [ ] Deleting an account deletes its ideas.
+
+### Flow 14: More cities (city packs)
 As anyone, I can explore the parks of every Parks Passport city with one account, so the app can
 grow beyond St. Pete (Westminster, CA and Asheville, NC as proofs of concept).
 Done when:
@@ -354,14 +404,14 @@ Done when:
       go in it and must be inside its bounds; edited parks stay in their own city. Import loads
       that city's CSV or seed file. "Generate landmark drafts" works on that city.
 - [ ] **St. Pete is unchanged** apart from its URLs gaining `/st-pete`: same parks, badges,
-      points and copy, and every existing visit, photo and rating kept (migration 014 rebuilds
+      points and copy, and every existing visit, photo and rating kept (migration 016 rebuilds
       `parks` with foreign keys off and checks them before committing).
 
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.
 - **users**: id, email (unique, lower-cased), password_hash (scrypt, nullable for magic-link-only
   accounts), display_name, handle (unique), default_visibility, is_admin, share_nudge_dismissals,
-  paws, kids (editions), created_at
+  is_super_admin, paws, kids (editions), created_at
 - **sessions**: id (random token hash), user_id, expires_at, created_at
 - **auth_tokens**: id, user_id or email, purpose (magic_link | password_reset), token_hash,
   expires_at, used_at
@@ -383,6 +433,8 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
   measure, minutes (credited for a check), points, sort, active
 - **activity_logs**: id, user_id, visit_id, activity_id, amount, minutes, miles, logged_on,
   created_at, unique(visit_id, activity_id). Private to the owner.
+- **pal_codes**: user_id, code (unique), created_at. **pal_requests**: from_user, to_user,
+  created_at, unique(from_user, to_user). **pal_request_sends** and **pal_code_failures**: user_id, at.
 - **pal_links**: user_a, user_b (a < b), created_at. **pal_invites**: user_id, token_hash,
   created_at, revoked_at
 - **feed** is a query over visits, photos and user_badges filtered by visibility, not a table.
@@ -391,6 +443,10 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
   seeded_at, updated_at. **city_motifs**: id, theme_id, slug, name, blurb, svg (sanitized), status
   (draft|approved), source (seed|ai|admin), sort, created_at. The AI job's state is the
   `theme_ai_job` row in **settings**.
+- **idea_contributors**: id, email (unique), added_by, created_at. **badge_ideas**: id, user_id,
+  name, pitch, art, status (new|keep|kill|combined|built), merged_into, rule_type, note,
+  ai_suggestion (JSON), badge_id, created_at, updated_at. The AI job's state is the
+  `idea_ai_job` row in **settings**.
 
 ## Integrations
 | Service | Direction | Auth | Failure behavior |
@@ -400,7 +456,7 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 | Google Tag Manager / GA4 | write (client) | `GTM_ID` and `GTM_SCRIPT_ORIGIN` in `.env` | Not loaded when `GTM_ID` is empty. Gated by Consent Mode v2. |
 | Browser Geolocation API | read (client) | user permission | Falls back to the honor system with an explanation. |
 | Map tiles (OpenStreetMap tiles via Leaflet) | read (client) | none (attribution shown) | The map area shows "Map unavailable" and the list still works. |
-| Anthropic Claude API (Admin › City theme) | read (admin-triggered) | `ANTHROPIC_API_KEY` in `.env` | Optional. Without a key the Generate button is off. A failed run shows a fixed message (key rejected, rate limited, try again) and adds nothing. Output is validated and sanitized, and only becomes drafts. |
+| Anthropic Claude API (Admin › City theme, Admin › Badge ideas) | read (admin-triggered) | `ANTHROPIC_API_KEY` in `.env` | Optional. Without a key the Generate button is off. A failed run shows a fixed message (key rejected, rate limited, try again) and adds nothing. Output is validated and sanitized, and only becomes drafts. |
 | Geocoder (US Census Geocoder, falling back to OSM Nominatim at 1 request/s) | one-time read | none | Used only by the seed script. Parks it can't place are flagged `needs_pin` for an admin to place on a map. |
 | St. Pete Parks & Rec website | one-time import | none | Used only by `npm run seed:scrape` to build `seed/parks.csv`, never called at runtime. |
 
@@ -440,7 +496,7 @@ aster behind the shared nginx at `https://parkspassport.dzuynguyen.com`, with da
 - Native iOS/Android apps (the web/PWA only)
 - Real-world prizes, coupons or redemption
 - Cities beyond the shipped packs without a code change by an admin (a new city is a new
-  `seed/cities/<key>/` pack and a deploy; Flow 13)
+  `seed/cities/<key>/` pack and a deploy; Flow 14)
 - Offline stamping
 - User search and public user directory
 - Comments/likes on other people's photos or stamps
@@ -469,13 +525,13 @@ aster behind the shared nginx at `https://parkspassport.dzuynguyen.com`, with da
   where it runs. v1 only makes this a config switch (Flow 10).
 - **Check-in radius:** the 150 m default may be too small for large parks such as Boyd Hill
   or Weedon Island. Per-park overrides exist, but the right values need a walk-test.
-- **Westminster data (Flow 13):** parks come from the City's "Parks and Facilities" page (saved
+- **Westminster data (Flow 14):** parks come from the City's "Parks and Facilities" page (saved
   from a browser: the site blocks automated fetches) via `scripts/seed-westminster.js`. Pins
   are OpenStreetMap park centers (16 parks), or the street address where OSM has none (7) or a
   different park (Tony Lam Park, Westminster Village Park). Amenities are only those the page
   names (splash pad, ball fields, skate park, tennis, pickleball); the City's amenity table isn't
   in the saved page. Dzuy reviews pins and amenities before the demo.
-- **Asheville data (Flow 13):** 68 parks from the City's Parks & Recreation locations directory
+- **Asheville data (Flow 14):** 68 parks from the City's Parks & Recreation locations directory
   (`scripts/seed-asheville.js`), with the City's own pins, addresses and features. Community
   centers, the golf course and venues are left out unless they're also a park. Greenways get a
   300 m check-in radius. Several riverfront parks (Carrier Park and others) are partly closed

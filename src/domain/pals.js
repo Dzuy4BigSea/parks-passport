@@ -33,13 +33,126 @@ export const inviterForToken = (db, token) => (typeof token === 'string' && toke
  */
 export function acceptInvite(db, inviter, accepter, { now = new Date(), random = Math.random } = {}) {
   if (inviter.id === accepter.id) return { error: 'self' };
-  const [a, b] = pair(inviter.id, accepter.id);
-  const { changes } = db.prepare('INSERT OR IGNORE INTO pal_links (user_a, user_b, created_at) VALUES (?, ?, ?)')
-    .run(a, b, now.toISOString());
-  if (!changes) return { error: 'already' };
-  for (const id of [inviter.id, accepter.id]) awardBadges(db, id, { type: 'pal', id: id === a ? b : a }, { now, random });
-  return { ok: true };
+  return makePals(db, inviter.id, accepter.id, { now, random }) ? { ok: true } : { error: 'already' };
 }
+
+// Links two users (both directions), clears any requests between them and checks badges for
+// both. Returns false if they were already pals.
+function makePals(db, userId, otherId, { now = new Date(), random = Math.random } = {}) {
+  const [a, b] = pair(userId, otherId);
+  const linked = db.transaction(() => {
+    const { changes } = db.prepare('INSERT OR IGNORE INTO pal_links (user_a, user_b, created_at) VALUES (?, ?, ?)')
+      .run(a, b, now.toISOString());
+    db.prepare('DELETE FROM pal_requests WHERE (from_user = ? AND to_user = ?) OR (from_user = ? AND to_user = ?)').run(a, b, b, a);
+    return changes > 0;
+  })();
+  if (!linked) return false;
+  for (const id of [a, b]) awardBadges(db, id, { type: 'pal', id: id === a ? b : a }, { now, random });
+  return true;
+}
+
+// ---------- Friend codes and pal requests (SPEC Flow 8) ----------
+// A code only lets someone ask; the code's owner decides. Codes are 8 characters from 31
+// (no 0/O, 1/I/L): about 850 billion, and wrong guesses are limited per person.
+
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+export const CODE_LIMITS = { failuresPerHour: 10, requestsPerDay: 20 };
+
+function newCode() {
+  return Array.from({ length: 8 }, () => CODE_ALPHABET[crypto.randomInt(CODE_ALPHABET.length)]).join('');
+}
+
+/** "ABCD-EFGH" for display. */
+export const formatCode = (code) => `${code.slice(0, 4)}-${code.slice(4)}`;
+
+/** What someone typed, as a stored code (or null): any case, spaces and dashes ignored. */
+export function normalizeCode(input) {
+  const code = String(input ?? '').toUpperCase().replace(/[\s-]+/g, '');
+  return code.length === 8 && [...code].every((c) => CODE_ALPHABET.includes(c)) ? code : null;
+}
+
+// The user's friend code, created on first use.
+export function friendCodeFor(db, userId, { now = new Date() } = {}) {
+  const row = db.prepare('SELECT code FROM pal_codes WHERE user_id = ?').get(userId);
+  return row ? row.code : regenerateFriendCode(db, userId, { now });
+}
+
+// Replaces the user's friend code; the old one stops working. Retries the rare collision.
+export function regenerateFriendCode(db, userId, { now = new Date() } = {}) {
+  for (;;) {
+    const code = newCode();
+    if (db.prepare('SELECT 1 FROM pal_codes WHERE code = ? AND user_id != ?').get(code, userId)) continue;
+    db.prepare(`INSERT INTO pal_codes (user_id, code, created_at) VALUES (?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET code = excluded.code, created_at = excluded.created_at`).run(userId, code, now.toISOString());
+    return code;
+  }
+}
+
+/**
+ * Sends a pal request to the owner of a code. Returns { sent, to } or { paired, to } (they had
+ * already asked me, so we're pals now) or { error, to? }:
+ * 'limited' | 'format' | 'invalid' | 'self' | 'already' | 'pending' | 'daily'.
+ */
+export function requestByCode(db, user, input, { now = new Date(), random = Math.random } = {}) {
+  const hourAgo = new Date(now.getTime() - 3600e3).toISOString();
+  db.prepare('DELETE FROM pal_code_failures WHERE at < ?').run(hourAgo);
+  if (db.prepare('SELECT COUNT(*) FROM pal_code_failures WHERE user_id = ?').pluck().get(user.id) >= CODE_LIMITS.failuresPerHour) {
+    return { error: 'limited' };
+  }
+  const code = normalizeCode(input);
+  if (!code) return { error: 'format' }; // not a code at all: no lookup, so not a guess
+  const to = db.prepare(`SELECT u.id, u.display_name, u.handle FROM pal_codes c JOIN users u ON u.id = c.user_id
+    WHERE c.code = ?`).get(code);
+  if (!to) {
+    db.prepare('INSERT INTO pal_code_failures (user_id, at) VALUES (?, ?)').run(user.id, now.toISOString());
+    return { error: 'invalid' };
+  }
+  if (to.id === user.id) return { error: 'self' };
+  if (areLinked(db, user.id, to.id)) return { error: 'already', to };
+  // They asked me first: entering their code is a yes.
+  if (db.prepare('SELECT 1 FROM pal_requests WHERE from_user = ? AND to_user = ?').get(to.id, user.id)) {
+    makePals(db, user.id, to.id, { now, random });
+    return { paired: true, to };
+  }
+  if (db.prepare('SELECT 1 FROM pal_requests WHERE from_user = ? AND to_user = ?').get(user.id, to.id)) return { error: 'pending', to };
+  // Counted from a log that cancel, decline and accept never shorten.
+  const dayAgo = new Date(now.getTime() - 86400e3).toISOString();
+  db.prepare('DELETE FROM pal_request_sends WHERE at < ?').run(dayAgo);
+  if (db.prepare('SELECT COUNT(*) FROM pal_request_sends WHERE user_id = ?').pluck().get(user.id) >= CODE_LIMITS.requestsPerDay) {
+    return { error: 'daily' };
+  }
+  db.transaction(() => {
+    db.prepare('INSERT INTO pal_requests (from_user, to_user, created_at) VALUES (?, ?, ?)').run(user.id, to.id, now.toISOString());
+    db.prepare('INSERT INTO pal_request_sends (user_id, at) VALUES (?, ?)').run(user.id, now.toISOString());
+  })();
+  return { sent: true, to };
+}
+
+const areLinked = (db, x, y) => {
+  const [a, b] = pair(x, y);
+  return Boolean(db.prepare('SELECT 1 FROM pal_links WHERE user_a = ? AND user_b = ?').get(a, b));
+};
+
+/** Requests to me and from me, newest first, with the other person's name and handle. */
+export function palRequests(db, userId) {
+  const q = (col, other) => db.prepare(`SELECT r.id, r.created_at, u.display_name, u.handle FROM pal_requests r
+    JOIN users u ON u.id = r.${other} WHERE r.${col} = ? ORDER BY r.created_at DESC, r.id DESC`).all(userId);
+  return { incoming: q('to_user', 'from_user'), outgoing: q('from_user', 'to_user') };
+}
+
+/** Accepts or declines a request sent to me. Returns { ok, from } or null if it isn't mine. */
+export function answerRequest(db, userId, requestId, accept, { now = new Date(), random = Math.random } = {}) {
+  const r = db.prepare(`SELECT r.*, u.display_name FROM pal_requests r JOIN users u ON u.id = r.from_user
+    WHERE r.id = ? AND r.to_user = ?`).get(requestId, userId);
+  if (!r) return null;
+  if (accept) makePals(db, userId, r.from_user, { now, random });
+  else db.prepare('DELETE FROM pal_requests WHERE id = ?').run(r.id);
+  return { ok: true, from: r.display_name };
+}
+
+/** Withdraws a request I sent. */
+export const cancelRequest = (db, userId, requestId) =>
+  db.prepare('DELETE FROM pal_requests WHERE id = ? AND from_user = ?').run(requestId, userId).changes > 0;
 
 // Removes a pal. The remover's invite link is renewed so the removed pal can't simply re-accept it.
 export function removePal(db, userId, palId, { now = new Date() } = {}) {

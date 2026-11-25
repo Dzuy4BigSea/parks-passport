@@ -25,6 +25,7 @@ where noted, by hand.
 src/
   app.js  server.js  config.js
   db/        index.js  migrations/
+  gamification/  badge engine, points ledger, levels (domain-free; M14)
   domain/    points.js levels.js badges/ visibility.js geo.js csv-import.js
   routes/    parks.js auth.js visits.js photos.js ratings.js passport.js pals.js admin.js
   views/     html.js layout.js pages/…
@@ -197,9 +198,63 @@ Checks: `test/unit/activities.test.js` (seed files valid, every new rule type, c
 deletion reverse points, editions, Kids photo default, admin), `test/e2e/activities.spec.js`
 (stamp, then log at 375 px with axe clean and no sideways scroll), and the existing suite.
 
-### M13 — More cities: city packs, Westminster (Flow 13)
-Outcome: SPEC Flow 13. Westminster, CA and Asheville, NC as proofs of concept beside St. Pete.
-- Migration 014 (city time zone, bounds, copy, listed, sort, seeded_at; `parks` rebuilt with
+### M13 — Badge ideas (Flow 13)
+Outcome: SPEC Flow 13.
+- Migration 014 (`users.is_super_admin`, `idea_contributors`, `badge_ideas`),
+  `scripts/make-super-admin.js` (`npm run make-super-admin -- <email> [--remove]`).
+- `src/domain/ideas.js` (access, submit with a daily cap, contributors, triage, combine,
+  build link, export brief), `src/domain/idea-job.js` + `src/lib/idea-ai.js` (Claude
+  suggestions as a background job, strict `save_triage` tool, validated output).
+- `src/routes/ideas.js` (`/ideas` and `/admin/ideas/*`), `src/views/pages/ideas.js`, the
+  `idea_share` email kind, `/join/<token>?next=` support, a "Badge ideas" link on Account and
+  the admin home, and "Create badge" prefilling `/admin/badges/new?from_idea=<id>`.
+
+Checks: `test/unit/ideas.test.js` (404 matrix for signed out / member / admin / super admin,
+submit and validation and cap, share to a member and a non-member with the join flow, remove,
+triage verdicts and combine, create badge links the idea, export has the right groups and no
+names or emails, AI job with a fake client drops bad output, account deletion removes ideas),
+`test/e2e/ideas.spec.js` (submit at 375 px and triage at 1440 px, axe clean, no sideways
+scroll), and the existing suite.
+
+### M14 — Gamification engine as a module
+Outcome: the engine works without knowing about parks, so it can be reused (M15).
+Behavior-preserving: no SPEC change.
+- `src/gamification/` holds the domain-free core: the rule registry (`defineRules`), award,
+  revoke with rule snapshots, the badge board, points ledger helpers and levels.
+- The parks-specific parts (the context loader, the 16 rule types, point values, level names,
+  edition filtering) live in `src/domain/badges/` and `src/domain/points.js` / `levels.js` as
+  an adapter the core is configured with.
+
+Checks: the existing suite passes unchanged (`badges.test.js`, `activities.test.js`,
+`visits.test.js`), plus `test/unit/gamification.test.js`, which runs the core against a toy
+adapter with no parks tables.
+
+### M15 — Gamification template repo
+Outcome: a private repo (`gamification-engine`) that starts a new app's gamification.
+- The M14 core, a README (concepts, adapter contract, how to add a rule type, the badge-ideas
+  workflow), an example adapter with its own SQL schema, and `node --test` tests with CI.
+- Parks Passport keeps its own copy of the core; the template is the starting point, not a
+  shared dependency (no publish step to maintain).
+
+Checks: the template's CI passes; its README's quick start runs as written.
+
+### M16 — Friend codes and pal requests (Flow 8)
+Outcome: the friend-code and pal-request bullets of SPEC Flow 8, and a clear page for dead invite links.
+- Migration 015 (`pal_codes`, `pal_requests`, `pal_request_sends`, `pal_code_failures`).
+- `src/domain/pals.js`: `friendCodeFor`, `regenerateFriendCode`, `normalizeCode`,
+  `requestByCode` (rate limits, mutual request accepts), `answerRequest`, `cancelRequest`,
+  `palRequests`; accepting reuses the invite's link-and-badges step.
+- `src/routes/pals.js` (`/pals/code`, `/pals/code/regenerate`, `/pals/requests/:id/accept|decline|cancel`),
+  the Pals page sections, and the "link doesn't work anymore" page.
+
+Checks: `test/unit/pals.test.js` (code format and normalizing, request then accept or decline,
+mutual request, cancel, self / already pals / repeat, wrong-code and daily limits, new code kills
+the old one, dead link page is a 404 with help, account deletion removes codes and requests),
+`test/e2e/pals.spec.js` (add by code at 375 px, accept, axe clean), and the existing suite.
+
+### M17 — More cities: city packs, Westminster and Asheville (Flow 14)
+Outcome: SPEC Flow 14. Westminster, CA and Asheville, NC as proofs of concept beside St. Pete.
+- Migration 016 (city time zone, bounds, copy, listed, sort, seeded_at; `parks` rebuilt with
   `city_id` and per-city slugs; `badges.city_id`). The runner runs a migration marked
   `-- migrate:foreign-keys-off` with foreign keys off and checks them before committing.
 - City packs in `seed/cities/<key>/` (St. Pete moved there), loaded on every start by
@@ -209,7 +264,8 @@ Outcome: SPEC Flow 13. Westminster, CA and Asheville, NC as proofs of concept be
 - `src/domain/city.js` (many cities, copy, nearest city, park time zone), `src/lib/city-context.js`
   (`req.city`, `pp_city`), `src/lib/geoip.js` (`GEOIP_DB`, `maxmind`), `src/views/urls.js`,
   `src/routes/city-params.js`; city URLs and redirects in the park, visit, photo, activity and
-  passport routes; city tabs; the admin city bar; the `cities_count` rule.
+  passport routes; city tabs; the admin city bar; the `cities_count` rule. The gamification core
+  gains two generic hooks (`scopeContext`, board options) so city badges stay in the adapter.
 
 Checks: `test/unit/cities.test.js` (packs valid, seeding idempotent, migration keeps every visit,
 photo and rating, city URLs and redirects, remembered city, park-local "today" and Early Bird,

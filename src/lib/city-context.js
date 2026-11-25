@@ -1,7 +1,7 @@
 import fp from 'fastify-plugin';
 import { cityByKey, defaultCity } from '../domain/city.js';
 
-// The city a request is about (SPEC Flow 13), as req.city:
+// The city a request is about (SPEC Flow 14), as req.city:
 //   1. the first path segment, when it names a city (/westminster/parks); that city is remembered;
 //   2. else the remembered city (a cookie holding only the city key);
 //   3. else the default city (St. Pete).
