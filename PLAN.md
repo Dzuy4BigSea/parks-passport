@@ -310,3 +310,17 @@ validation), updated rule and level tests, and the existing suite.
 Checks: `test/e2e/celebrations.spec.js` (passport opening, surprise reveal tapped open, inspect and
 flip, Escape returns focus, axe clean and no sideways scroll at 375 px, off switch, reduced motion),
 the sign-up redirect in `test/unit/auth.test.js`, the existing suite, and `npm run lighthouse`.
+
+### M21 — Give a badge and the notification center (Flows 8 and 9)
+- Migration 019 (`notifications`, `user_badges.note`), `src/domain/notifications.js` (notify,
+  unread count, list, mark read, keep 200), notifications for badges earned and given, level-ups,
+  pal requests and new pals.
+- `manual` rule type; given badges (`source_type = 'grant'`) are skipped when the rules take
+  badges back. `grantBadge` and `takeBackGrant` in `src/domain/badges/index.js`.
+- Admin › Members › Give a badge (`/admin/users/:id/badges`); the bell in the header and
+  `/notifications`; the reveal shows a gift as "A gift for you!" with the note.
+
+Checks: `test/unit/notifications.test.js` (admin only, note limit, already has it, pops up with the
+note, bell count and marked read, never taken back by the rules, take back, earned badge and pal
+notifications, private, signed out, deleted with the other member), `test/e2e/notifications.spec.js`
+(give in admin, gift reveal with the note, bell, list, axe at 375 px), and the existing suite.

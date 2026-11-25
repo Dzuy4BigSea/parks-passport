@@ -138,6 +138,12 @@ export const RULES = {
 
   // ---- Reward schedule (SPEC Flow 7): surprises early, rarer later ----
 
+  manual: {
+    label: 'Given by an admin only (never earned automatically)',
+    params: {},
+    evaluate: () => ({ earned: false }),
+  },
+
   milestone: {
     label: 'Do something for the first time (a surprise)',
     params: { action: 'milestone' },

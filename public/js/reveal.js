@@ -4,18 +4,20 @@
 import { celebrationsOn, reducedMotion, burst, buzz, openDialog, el } from './fx.js';
 
 const box = document.querySelector('.announcements');
-const KICKERS = { known: 'Badge unlocked!', hidden: 'Surprise badge!', lucky: 'Lucky find!', level: 'Level up!' };
+const KICKERS = { known: 'Badge unlocked!', hidden: 'Surprise badge!', lucky: 'Lucky find!', level: 'Level up!', gift: 'A gift for you!' };
 
 if (box && celebrationsOn()) {
   const items = [...box.querySelectorAll('.announce')].map((a) => {
     const strong = a.querySelector('strong');
     const title = (strong?.textContent || '').replace(/^New badge:\s*/, '').trim();
+    const note = (a.querySelector('.gift-note')?.textContent || '').trim();
     const full = (a.querySelector('p')?.textContent || '').trim();
     return {
+      note,
       kind: a.dataset.kind || 'known',
       art: a.querySelector('.announce-art')?.cloneNode(true) || null,
       title,
-      desc: full.slice((strong?.textContent || '').length).trim(),
+      desc: full.slice((strong?.textContent || '').length, note ? full.length - note.length : undefined).trim(),
     };
   }).filter((i) => i.title);
   if (!items.length) {
@@ -35,7 +37,8 @@ function show(items) {
   const frontArt = el('span', { class: 'reveal-art', 'aria-hidden': 'true' });
   const frontName = el('span', { class: 'reveal-name' });
   const frontDesc = el('span', { class: 'reveal-desc' });
-  const front = el('span', { class: 'reveal-face reveal-front' }, frontArt, frontName, frontDesc);
+  const frontNote = el('span', { class: 'reveal-note' });
+  const front = el('span', { class: 'reveal-face reveal-front' }, frontArt, frontName, frontDesc, frontNote);
   const card = el('button', { type: 'button', class: 'reveal-card' }, el('span', { class: 'reveal-flip' }, back, front), el('span', { class: 'reveal-shine', 'aria-hidden': 'true' }));
   const hint = el('p', { class: 'reveal-hint' }, 'Tap the card to reveal it');
   const live = el('p', { class: 'visually-hidden', 'aria-live': 'polite' });
@@ -55,6 +58,8 @@ function show(items) {
     frontArt.replaceChildren(...(item.art ? [item.art.cloneNode(true)] : []));
     frontName.textContent = item.title;
     frontDesc.textContent = item.desc;
+    frontNote.textContent = item.note;
+    frontNote.hidden = !item.note;
     card.setAttribute('aria-label', `${KICKERS[item.kind] || KICKERS.known} Tap to reveal`);
     card.disabled = false;
     hint.hidden = false;
@@ -69,7 +74,7 @@ function show(items) {
     dialog.classList.add('is-revealed');
     card.removeAttribute('aria-label'); // now named by what it shows
     hint.hidden = true;
-    live.textContent = `${item.kind === 'level' ? '' : 'New badge: '}${item.title}. ${item.desc}`;
+    live.textContent = `${item.kind === 'level' ? '' : 'New badge: '}${item.title}. ${item.desc} ${item.note}`.trim();
     buzz(item.kind === 'lucky' || item.kind === 'level' ? [30, 60, 30, 60, 60] : [20, 50, 35]);
     setTimeout(() => {
       const r = card.getBoundingClientRect();

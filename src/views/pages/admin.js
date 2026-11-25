@@ -298,11 +298,12 @@ ${invites.length ? html`<div class="table-wrap"><table class="admin-table">
 <h2>All members</h2>
 <div class="table-wrap"><table class="admin-table">
   <caption class="visually-hidden">Members</caption>
-  <thead><tr><th scope="col">Member</th><th scope="col">Parks</th><th scope="col">Joined</th><th scope="col">Admin</th></tr></thead>
+  <thead><tr><th scope="col">Member</th><th scope="col">Parks</th><th scope="col">Joined</th><th scope="col">Badges</th><th scope="col">Admin</th></tr></thead>
   <tbody>${users.map((u) => html`<tr>
     <td data-label="Member">${u.display_name} <span class="muted">@${u.handle}</span><br><span class="muted">${u.email}</span></td>
     <td data-label="Parks">${u.parks}</td>
     <td data-label="Joined">${dateOf(u.created_at)}</td>
+    <td data-label="Badges"><a href="/admin/users/${u.id}/badges">Give a badge<span class="visually-hidden"> to ${u.display_name}</span></a></td>
     <td data-label="Admin">${u.id === me.id ? html`Admin (you)` : html`<form method="post" action="/admin/users/${u.id}/admin">${csrfField(csrf)}
       <input type="hidden" name="admin" value="${u.is_admin ? '0' : '1'}">
       <button type="submit" class="btn btn-small" aria-label="${u.is_admin ? `Remove admin (${u.display_name})` : `Make admin (${u.display_name})`}">${u.is_admin ? 'Remove admin' : 'Make admin'}</button></form>`}</td>
@@ -530,4 +531,23 @@ ${barTable({ caption: 'By method (all time)', rows: stats.byMethod, value: 'chec
     extra: { title: 'Last 30 days', get: (r) => r.checkins30 || 0 } })}
 ${stats.topParks.length ? barTable({ caption: 'Top parks, last 30 days', rows: stats.topParks, value: 'checkins', label: { title: 'Park', get: (r) => `${r.name} (${r.city})` },
     extra: { title: 'Members', get: (r) => r.members } }) : html`<p>No check-ins in the last 30 days.</p>`}`);
+}
+
+// Give a member a badge (SPEC Flow 9). It pops up on their next page, with the note.
+export function adminGiveBadge({ member, earned, available, csrf, error = null, notice = null, values = {} }) {
+  return page(`Give ${member.display_name} a badge`, html`<p class="breadcrumb"><a href="/admin">Admin</a> › <a href="/admin/users">Members</a></p>
+<h1>Give ${member.display_name} a badge</h1>
+${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${notice}</p>` : ''}
+${error ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${error}</p>` : ''}
+${available.length ? html`<form method="post" action="/admin/users/${member.id}/badges" class="card-form admin-form">
+  ${csrfField(csrf)}
+  <div class="field"><label for="badge_id">Badge</label>
+    <select id="badge_id" name="badge_id" required><option value="">Choose…</option>${available.map((b) => html`<option value="${b.id}"${String(values.badge_id) === String(b.id) ? html` selected` : ''}>${b.name}${b.rule_type === 'manual' ? ' (given only)' : ''}${b.enabled ? '' : ' (disabled)'}</option>`)}</select></div>
+  ${input('note', 'Note (optional)', values.note, { hint: 'Shown with the badge, e.g. "Thanks for helping at the park cleanup!" Up to 140 characters.', attrs: html`maxlength="140"` })}
+  <p class="hint">${member.display_name} sees it pop up the next time they open Parks Passport, and in their notifications. Badges you give are never taken away by the rules.</p>
+  <button type="submit" class="btn btn-pop">Give badge</button>
+</form>` : html`<p>${member.display_name} already has every badge.</p>`}
+<h2>Their badges (${earned.length})</h2>
+${earned.length ? html`<ul class="given-list">${earned.map((b) => html`<li>${badgeArt(b.art, 'table-art')} ${b.name} <span class="muted">· ${dateOf(b.awarded_at)}${b.source_type === 'grant' ? ` · given by ${b.given_by || 'an admin'}` : ''}</span>
+  ${b.source_type === 'grant' ? html`<form method="post" action="/admin/users/${member.id}/badges/${b.id}/delete" class="inline-form">${csrfField(csrf)}<button type="submit" class="btn btn-quiet btn-small">Take back<span class="visually-hidden"> ${b.name}</span></button></form>` : ''}</li>`)}</ul>` : html`<p>None yet.</p>`}`);
 }

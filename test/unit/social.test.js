@@ -146,7 +146,7 @@ test('"your pals were here": park cards, a filter and the park page show pals wh
   await setVis('ben', 'pals');
   list = (await ana.c.get('/st-pete/parks')).body;
   assert.match(list, /ben stamped this/);
-  assert.doesNotMatch(list, /cat/); // cat's passport is still private
+  assert.doesNotMatch(list, /cat stamped this|and cat stamped/); // cat's passport is still private
   await setVis('cat', 'public');
   list = (await ana.c.get('/st-pete/parks')).body;
   assert.match(list, /ben and cat stamped this|cat and ben stamped this/);

@@ -1259,6 +1259,7 @@ html.fx-locked { overflow: hidden; }
   backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.6); }
 .reveal-back { background: repeating-conic-gradient(from 0deg, #7c6cf2 0 15deg, #6a5ae0 15deg 30deg); border: 5px solid #fffaf0; }
 .fx-reveal[data-kind="lucky"] .reveal-back { background: repeating-conic-gradient(#00b3a4 0 15deg, #00968a 15deg 30deg); }
+.fx-reveal[data-kind="gift"] .reveal-back { background: repeating-conic-gradient(#7a4fd6 0 15deg, #6a3fc4 15deg 30deg); }
 .fx-reveal[data-kind="level"] .reveal-back { background: repeating-conic-gradient(#ff7a59 0 15deg, #f2633f 15deg 30deg); }
 .reveal-q { display: grid; place-items: center; width: 6rem; height: 6rem; border-radius: 50%; border: 5px dashed #fffaf0; font: 800 3.5rem/1 var(--display, inherit); color: #fffaf0; }
 .reveal-front { transform: rotateY(180deg); background: linear-gradient(160deg, var(--sun-tint, #fff5d6), #fffdf8 65%); border: 5px solid var(--sun, #ffc83d); color: var(--ink, #0e2a33); }
@@ -1267,6 +1268,8 @@ html.fx-locked { overflow: hidden; }
 .fx-reveal.is-revealed .reveal-art { animation: badge-pop 0.7s 0.35s both cubic-bezier(.2, 1.4, .4, 1); }
 .reveal-name { font: 800 1.45rem/1.15 var(--display, inherit); }
 .reveal-desc { font-size: 0.95rem; color: var(--muted, #4a5f66); }
+.reveal-note { font-size: 0.95rem; font-style: italic; color: var(--ink, #12343b); overflow-wrap: anywhere; }
+.reveal-note[hidden] { display: none; }
 .reveal-shine { position: absolute; inset: 0; border-radius: 22px; pointer-events: none; overflow: hidden; }
 .fx-reveal.is-revealed .reveal-shine::before { content: ""; position: absolute; top: -20%; bottom: -20%; width: 40%; left: -60%;
   background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.85), transparent); transform: skewX(-20deg); animation: fx-shine 0.9s 0.55s ease-out both; }
@@ -1360,3 +1363,16 @@ html.fx-locked { overflow: hidden; }
 .inspect-flip { position: relative; inset: auto; display: grid; min-height: 22rem; }
 .inspect-face { position: relative; inset: auto; grid-area: 1 / 1; }
 .welcome-gary { right: 0; }
+
+/* Notification center (SPEC Flow 8). */
+.pill-bell { display: inline-flex; align-items: center; gap: 0.25rem; position: relative; }
+.pill-bell svg { width: 1.15rem; height: 1.15rem; }
+.bell-count { min-width: 1.3rem; padding: 0 0.3rem; border-radius: 999px; background: #c8155a; color: #fff; font-size: 0.75rem; font-weight: 800; text-align: center; line-height: 1.3rem; }
+.notifications { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: 0.5rem; }
+.notification { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem 0.9rem; border-radius: 12px; background: var(--surface, #fff); border: 1px solid var(--line); }
+.notification.is-new { border-color: var(--sun, #ffc83d); background: var(--sun-tint, #fff5d6); }
+.notification p { margin: 0; }
+.new-pill { display: inline-block; padding: 0 0.45rem; border-radius: 999px; background: #c8155a; color: #fff; font-size: 0.75rem; font-weight: 800; }
+.gift-note { font-style: italic; }
+.given-list { list-style: none; padding: 0; display: grid; gap: 0.5rem; }
+.given-list li { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }

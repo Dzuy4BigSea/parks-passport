@@ -21,8 +21,9 @@ import { isSuperAdmin, ideaById, badgePrefill, markBuilt } from '../domain/ideas
 import { EMAIL_KINDS, COPY_FIELDS, emailCopy, saveEmailCopy, resetEmailCopy, isCustomized } from '../domain/email-copy.js';
 import {
   adminCity, adminEmail, adminEmailMessage, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
-  adminActivities, adminStats,
+  adminActivities, adminStats, adminGiveBadge,
 } from '../views/pages/admin.js';
+import { grantBadge, takeBackGrant } from '../domain/badges/index.js';
 import { adminStats as computeStats } from '../domain/stats.js';
 
 const MAX_CSV_BYTES = 1024 * 1024;
@@ -317,6 +318,38 @@ export default async function adminRoutes(app) {
     r.get('/users', async (req, reply) => reply.page(usersPage(req, {
       notice: { invited: 'Invite sent.' }[req.query.done] || (req.query.done ? 'Saved.' : null),
     })));
+    // Give a member a badge (and take back one that was given).
+    const giveView = (req, member, extra = {}) => adminGiveBadge({
+      member, csrf: req.csrfToken(), ...extra,
+      earned: db.prepare(`SELECT b.*, ub.awarded_at, ub.source_type, g.display_name AS given_by FROM user_badges ub
+        JOIN badges b ON b.id = ub.badge_id LEFT JOIN users g ON g.id = ub.source_id AND ub.source_type = 'grant'
+        WHERE ub.user_id = ? ORDER BY ub.awarded_at DESC`).all(member.id),
+      available: db.prepare(`SELECT id, name, rule_type, enabled FROM badges b WHERE NOT EXISTS
+        (SELECT 1 FROM user_badges ub WHERE ub.badge_id = b.id AND ub.user_id = ?) ORDER BY b.name COLLATE NOCASE`).all(member.id),
+    });
+    const memberOf = (req) => (/^\d+$/.test(req.params.id) ? db.prepare('SELECT id, display_name FROM users WHERE id = ?').get(Number(req.params.id)) : null);
+    r.get('/users/:id/badges', async (req, reply) => {
+      const member = memberOf(req);
+      if (!member) return reply.callNotFound();
+      return reply.page(giveView(req, member, { notice: { given: 'Badge given. It pops up the next time they open the app.', taken: 'Badge taken back.' }[req.query.done] || null }));
+    });
+    r.post('/users/:id/badges', async (req, reply) => {
+      const member = memberOf(req);
+      if (!member) return reply.callNotFound();
+      const badgeId = /^\d+$/.test(String(req.body.badge_id || '')) ? Number(req.body.badge_id) : 0;
+      const result = grantBadge(db, { admin: req.user, userId: member.id, badgeId, note: req.body.note }, { now: now() });
+      if (result.error) {
+        const message = { not_found: 'Choose a badge.', already: 'They already have that badge.', note: 'Keep the note to 140 characters.' }[result.error];
+        return reply.code(422).page(giveView(req, member, { error: message, values: req.body }));
+      }
+      return reply.redirect(`/admin/users/${member.id}/badges?done=given`, 303);
+    });
+    r.post('/users/:id/badges/:badgeId/delete', async (req, reply) => {
+      const member = memberOf(req);
+      if (!member || !/^\d+$/.test(req.params.badgeId) || !takeBackGrant(db, member.id, Number(req.params.badgeId))) return reply.callNotFound();
+      return reply.redirect(`/admin/users/${member.id}/badges?done=taken`, 303);
+    });
+
     // Invite by email: records the invite, then sends the branded invitation with a /join link.
     r.post('/invites', async (req, reply) => {
       const result = createInvite(db, { email: req.body.invite_email, name: req.body.invite_name, inviter: req.user }, { now: now() });

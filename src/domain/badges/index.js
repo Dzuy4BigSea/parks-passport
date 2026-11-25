@@ -3,9 +3,10 @@
 // itself are the engine's.
 import { createBadgeEngine, addMissingBadges as addMissing } from '../../gamification/index.js';
 import { RULES, badgeEdition } from './rules.js';
+import { notify } from '../notifications.js';
 import { DEFAULT_TIME_ZONE } from '../time.js';
 
-export { takeUnseenBadges, seedBadgesIfEmpty } from '../../gamification/index.js';
+export { seedBadgesIfEmpty } from '../../gamification/index.js';
 
 /**
  * Adds badges from a seed list whose slugs aren't in the table yet. A city pack's badges.json
@@ -91,8 +92,45 @@ const engine = createBadgeEngine({ rules: RULES, loadContext: buildContext, boar
 
 /** Whether one badge's rule is met for this context: { earned, progress?, target?, unit? }. */
 export const { evaluateRule } = engine;
-/** Awards every enabled badge the member now qualifies for; returns the new ones (each at most once). */
-export const { awardBadges } = engine;
+/** Awards every enabled badge the member now qualifies for; returns the new ones (each at most once). Each goes in the notification center. */
+export function awardBadges(db, userId, trigger, opts = {}) {
+  const awarded = engine.awardBadges(db, userId, trigger, opts);
+  for (const b of awarded) notify(db, userId, { kind: 'badge', text: `You earned ${b.name}.`, link: '/passport#badges' }, { now: opts.now });
+  return awarded;
+}
+
+/** Badges awarded but not yet announced, with a gift's note and giver; marks them announced. */
+export function takeUnseenBadges(db, userId, { now = new Date() } = {}) {
+  const rows = db.prepare(`SELECT b.*, ub.note AS award_note, CASE WHEN ub.source_type = 'grant' THEN g.display_name END AS given_by
+    FROM user_badges ub JOIN badges b ON b.id = ub.badge_id LEFT JOIN users g ON g.id = ub.source_id
+    WHERE ub.user_id = ? AND ub.seen_at IS NULL ORDER BY ub.awarded_at, b.sort`).all(userId);
+  if (rows.length) db.prepare('UPDATE user_badges SET seen_at = ? WHERE user_id = ? AND seen_at IS NULL').run(now.toISOString(), userId);
+  return rows;
+}
+
+export const NOTE_MAX = 140;
+
+/**
+ * An admin gives a member a badge (any badge, even one the rules would never award). It shows on
+ * their next page as a new badge, with the note, and in their notifications. Never taken back by
+ * the rules. Returns { ok } or { error: 'not_found' | 'already' | 'note' }.
+ */
+export function grantBadge(db, { admin, userId, badgeId, note = '' }, { now = new Date() } = {}) {
+  const member = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
+  const badge = db.prepare('SELECT * FROM badges WHERE id = ?').get(badgeId);
+  if (!member || !badge) return { error: 'not_found' };
+  const text = String(note || '').replace(/\s+/g, ' ').trim();
+  if (text.length > NOTE_MAX) return { error: 'note' };
+  const { changes } = db.prepare(`INSERT OR IGNORE INTO user_badges (user_id, badge_id, awarded_at, source_type, source_id, note)
+    VALUES (?, ?, ?, 'grant', ?, ?)`).run(userId, badgeId, now.toISOString(), admin.id, text || null);
+  if (!changes) return { error: 'already' };
+  notify(db, userId, { kind: 'gift', text: `${admin.display_name} gave you the ${badge.name} badge${text ? `: “${text}”` : '.'}`, link: '/passport#badges' }, { now });
+  return { ok: true, badge };
+}
+
+/** Takes back a badge an admin gave (only given ones). */
+export const takeBackGrant = (db, userId, badgeId) => db.prepare(`DELETE FROM user_badges WHERE user_id = ? AND badge_id = ?
+  AND source_type = 'grant'`).run(userId, badgeId).changes > 0;
 /** After a deletion: takes back badges no longer met (by the rule as awarded). Lucky drops stay. */
 export const { revokeUnmetBadges } = engine;
 /** Earned, then known (with progress), hidden and lucky; edition badges only when the edition is on. */
