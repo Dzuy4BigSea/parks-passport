@@ -40,6 +40,8 @@ import activityRoutes from './routes/activities.js';
 import notificationRoutes from './routes/notifications.js';
 import { canSendFeedback } from './domain/founding.js';
 import communityRoutes from './routes/community.js';
+import messageRoutes from './routes/messages.js';
+import { takeMessages } from './domain/messages.js';
 import { shareNudge } from './views/pages/pals.js';
 
 // Paths with tokens or handles in the URL: no analytics scripts there (see reply.page).
@@ -134,7 +136,10 @@ export function buildApp({
     if (view.status) this.code(view.status);
     const req = this.request;
     // HEAD runs the GET handler but discards the body: don't use up announcements on it.
-    const announcements = req.user && this.statusCode < 400 && req.method !== 'HEAD' ? takeAnnouncements(req.user) : null;
+    const delivering = req.user && this.statusCode < 400 && req.method !== 'HEAD';
+    // Messages from the team first (SPEC Flow 20): their badges are given now, so they're announced below.
+    const messages = delivering && !req.url.startsWith('/admin') ? takeMessages(db, req.user, { now: now() }) : [];
+    const announcements = delivering ? takeAnnouncements(req.user) : null;
     // After a stamp or a new badge, nudge a private passport towards sharing (until dismissed 3 times).
     const nudge = req.user && (announcements || view.offerShare) && req.user.default_visibility === 'private'
       && req.user.share_nudge_dismissals < 3 ? shareNudge({ csrf: req.csrfToken(), back: req.url }) : null;
@@ -154,7 +159,7 @@ export function buildApp({
     return this.type('text/html; charset=utf-8')
       .header('Cache-Control', 'no-store')
       .send(String(layout({
-        ...view, user: req.user, csrf: req.csrfToken(), announcements, nudge, events, consent, path,
+        ...view, user: req.user, csrf: req.csrfToken(), announcements, messages, nudge, events, consent, path,
         theme: view.city || req.city, cities: listCities(db).filter((c) => c.listed),
         baseUrl: config.baseUrl, shareImages,
         canonicalPath: private_ ? null : pathname,
@@ -221,6 +226,7 @@ export function buildApp({
   app.register(activityRoutes);
   app.register(notificationRoutes);
   app.register(communityRoutes);
+  app.register(messageRoutes);
   app.register(consentRoutes);
 
   // Friendly HTML errors instead of Fastify's JSON (e.g. an upload over the size limit).

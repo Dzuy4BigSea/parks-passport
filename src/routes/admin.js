@@ -145,6 +145,7 @@ export default async function adminRoutes(app) {
         admins: one('SELECT COUNT(*) FROM users WHERE is_admin = 1'),
         newIdeas: one("SELECT COUNT(*) FROM badge_ideas WHERE status = 'new'"),
         openFeedback: one('SELECT COUNT(*) FROM feedback WHERE done_at IS NULL'),
+        liveMessages: one("SELECT COUNT(*) FROM team_messages WHERE status = 'live'"),
         newSunshine: one("SELECT COUNT(*) FROM sunshine_notes WHERE status = 'new'"),
         nonprofitsSuggested: one("SELECT COUNT(*) FROM nonprofits WHERE status = 'suggested'"),
         nonprofitsActive: one("SELECT COUNT(*) FROM nonprofits WHERE status = 'active'"),

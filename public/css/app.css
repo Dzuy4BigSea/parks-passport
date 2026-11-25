@@ -1564,3 +1564,53 @@ body:has(.feedback-fab) .site-footer { padding-bottom: 5.5rem; }
 .mission-center { font: 700 15px var(--sans); fill: var(--muted); }
 .mission-steps { margin: 0; padding-left: 1.4rem; display: grid; gap: 0.5rem; }
 @media (prefers-reduced-motion: no-preference) { .mission-ring > circle { animation: sun-spin 60s linear infinite; transform-origin: 160px 160px; } }
+
+/* ---------- Messages from the team (SPEC Flow 20) ---------- */
+/* The card: what shows without JS (top of the page), in the dialog, and in Admin › Messages. */
+.team-messages { display: grid; gap: 1rem; margin: 1rem 0; }
+.team-message { background: var(--surface); border: 2px solid var(--ink); border-radius: var(--radius); box-shadow: 4px 4px 0 var(--ink); padding: 1.1rem 1.25rem; color: var(--ink); text-align: left; }
+.team-message-from { display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.35rem; font: 700 0.8rem var(--sans); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.team-message-gary { width: 44px; height: 44px; border-radius: 50%; background: var(--sun-tint); object-fit: cover; object-position: 50% 20%; }
+.team-message h2 { margin: 0.2rem 0 0.5rem; font: 800 1.4rem/1.15 var(--display); }
+.team-message-body p { margin: 0 0 0.6rem; }
+.team-message-body p:last-child { margin-bottom: 0; }
+.team-message-badges { list-style: none; margin: 0.8rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.team-message-badges li { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.7rem 0.3rem 0.35rem; border-radius: 999px; background: var(--sun-tint); font-weight: 700; }
+.team-message-badge-art { width: 1.8rem; height: 1.8rem; font-size: 1.3rem; display: inline-grid; place-items: center; }
+.team-message-badge-art img, .team-message-badge-art svg { width: 100%; height: 100%; }
+
+/* Full screen (public/js/message.js). */
+.fx-message { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; overflow-y: auto; }
+.message-stage { position: relative; display: grid; justify-items: center; gap: 1rem; width: min(26rem, 100%); animation: fx-pop 0.45s cubic-bezier(.2, 1.4, .4, 1); }
+.message-stage .team-message { width: 100%; box-shadow: 6px 6px 0 var(--sun); }
+.fx-message.is-notice .message-stage { animation: fx-fade 0.4s ease-out; }
+.fx-message.is-notice .message-stage .team-message { box-shadow: 6px 6px 0 var(--aqua); }
+.fx-message .reveal-count { color: #e9f4f2; }
+/* Giveaway: a box that wiggles, then its lid flies off. */
+.message-gift { position: relative; width: 6rem; height: 5.5rem; }
+.message-gift-box { position: absolute; left: 0.5rem; right: 0.5rem; bottom: 0; height: 3.6rem; border-radius: 8px; background: linear-gradient(90deg, transparent 42%, var(--sun) 42% 58%, transparent 58%), var(--pink); }
+.message-gift-lid { position: absolute; left: 0; right: 0; top: 0.6rem; height: 1.6rem; border-radius: 8px; background: linear-gradient(90deg, transparent 42%, var(--sun) 42% 58%, transparent 58%), var(--pink-ink); transition: transform 0.5s cubic-bezier(.2, 1.4, .4, 1), opacity 0.5s; }
+.is-gift-shaking .message-gift { animation: fx-shake 0.55s ease-in-out infinite; }
+.is-gift-open .message-gift-lid { transform: translate(2.5rem, -3rem) rotate(35deg); opacity: 0; }
+/* Hearts, leaves and snow drifting across the screen. */
+.fx-drift { position: fixed; inset: 0; z-index: 1001; pointer-events: none; overflow: hidden; }
+.fx-drift span { position: absolute; left: var(--x); font-size: var(--size); line-height: 1; opacity: 0; animation: var(--anim) var(--dur) ease-in var(--delay) forwards; }
+.fx-drift.is-down span { top: -2rem; --anim: fx-fall; }
+.fx-drift.is-up span { bottom: -2rem; --anim: fx-rise; }
+@keyframes fx-fall { 0% { opacity: 0; transform: translate(0, 0) rotate(0); } 10% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--sway), 105vh) rotate(var(--spin)); } }
+@keyframes fx-rise { 0% { opacity: 0; transform: translate(0, 0) scale(0.6); } 15% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--sway), -95vh) scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { .fx-message *, .fx-drift { animation: none !important; transition: none !important; } }
+
+/* Admin › Messages */
+.effect-picker { border: 0; padding: 0; margin: 0 0 0.5rem; display: grid; gap: 0.5rem; }
+.effect-picker legend { font-weight: 700; margin-bottom: 0.4rem; }
+.effect-option { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }
+.effect-option .hint { flex: 1 1 12rem; margin: 0; }
+.radio-row { display: flex; gap: 0.5rem; align-items: center; margin: 0.35rem 0; font-weight: 600; }
+.field.indent { margin: 0.2rem 0 0.6rem 1.75rem; }
+.badge-ticks { display: flex; flex-wrap: wrap; gap: 0.4rem; max-height: 14rem; overflow-y: auto; padding: 0.25rem; }
+.message-review { margin: 1rem 0; }
+.message-facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1rem; }
+.message-facts dt { font-weight: 700; }
+.message-facts dd { margin: 0; }
+@media (max-width: 30rem) { .message-facts { grid-template-columns: 1fr; } .message-facts dd { margin-bottom: 0.4rem; } }

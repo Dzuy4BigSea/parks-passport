@@ -14,7 +14,7 @@ function palRequestActions(n, csrf) {
   return html`<span class="muted request-answered">${n.now_pals ? "You're Park Pals now." : 'Answered.'}</span>`;
 }
 
-const ICON = { badge: '🏅', gift: '🎁', level: '🚀', pal_request: '👋', pal_new: '🤝' };
+const ICON = { badge: '🏅', gift: '🎁', level: '🚀', pal_request: '👋', pal_new: '🤝', message: '💌' };
 
 // Notification center (SPEC Flow 8). Items that were unread when the page opened are marked "New".
 export function notificationsPage({ items, page, hasMore, unreadIds, timeZone, csrf = '', notice = null }) {

@@ -5,6 +5,7 @@ import { ICONS, BRAND_MARK } from './icons.js';
 import { motifIcon } from './motif.js';
 import { photosFor } from '../domain/city-photos.js';
 import { cityPath } from './urls.js';
+import { teamMessagesBlock } from './pages/messages.js';
 
 /**
  * Page shell. `head` adds per-page tags (e.g. Leaflet CSS); `scripts` are module URLs loaded with defer.
@@ -144,7 +145,7 @@ export function statusPills(status) {
 <span class="pill pill-points"><span>${points}<span class="visually-hidden"> points</span></span><span aria-hidden="true"> pts</span></span>`;
 }
 
-export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null, nudge = null,
+export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null, messages = [], nudge = null,
   analytics = null, consent = { chosen: true, analytics: false, ads: false }, events = [], showConsentBanner = false, path = '/',
   theme = null, cities = [], status = null, description = null, baseUrl = '', canonicalPath = null, shareImages = null, feedback = false }) {
   // Parks and Passport links stay in the city being viewed (SPEC Flow 14).
@@ -182,6 +183,7 @@ ${analyticsHead(analytics, consent, events)}
 ${head}
 ${scripts.map((src) => html`<script type="module" src="${src}"></script>`)}
 <script type="module" src="/js/announce.js"></script>
+${messages?.length ? html`<script type="module" src="/js/message.js"></script>` : ''}
 ${announcements ? html`<script type="module" src="/js/reveal.js"></script>` : ''}
 ${feedback ? html`<script type="module" src="/js/feedback.js"></script>` : ''}
 </head>
@@ -204,7 +206,7 @@ ${feedback ? html`<script type="module" src="/js/feedback.js"></script>` : ''}
   </div>
 </header>
 ${showConsentBanner ? consentBanner(csrf, path) : ''}
-<main id="main" class="wrap" tabindex="-1">${announcementsBlock(announcements, base)}${nudge}${body}</main>
+<main id="main" class="wrap" tabindex="-1">${teamMessagesBlock(messages)}${announcementsBlock(announcements, base)}${nudge}${body}</main>
 <footer class="site-footer">
   <div class="wrap">
     ${theme?.motifs?.length ? html`<div class="motif-strip" aria-hidden="true">${theme.motifs.map((m) => motifIcon(m))}</div>` : ''}

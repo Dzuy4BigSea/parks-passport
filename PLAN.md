@@ -399,3 +399,38 @@ sweep, and the existing suite.
 
 ### M29 — Our mission in admin (Flow 19)
 Checks: Admin › Mission in the admin axe sweep; 404 for members.
+
+### M30 — Messages from the team (Flow 20)
+- Migration 025 (`team_messages`, `team_message_recipients`, `team_message_views`),
+  `src/domain/messages.js` (validate, audience count, publish, end, take the member's next live
+  messages and give their badges), Admin › Messages (`/admin/messages`), "Message ticked members"
+  in Admin › Members.
+- The layout renders delivered messages above the announcements; `public/js/message.js` plays the
+  effect (`public/js/effects.js`: confetti, hearts, leaves, snow, gift, calm) before the badge
+  reveals; the admin form previews them.
+
+Checks: `test/unit/messages.test.js` (admin only and 404, validation, each audience and
+"joined before", window, once per member, badges given once and never taken back, notification,
+no-JS card, ended and drafts never shown), `test/e2e/messages.spec.js` (compose and preview,
+member sees it with the effect then the badge reveal, axe at 375 px), and the existing suite.
+
+### M31 — Gary on every screen (Flow 21)
+- `src/views/gary-help.js` (screens, 4+ tips each, sign-offs, replies), the Gary button and
+  bubble in the layout (a `<details>`, enhanced by `public/js/gary.js`), the talk-back form for
+  founding explorers using `POST /feedback`; the old Feedback button and dialog go.
+
+Checks: `test/unit/gary-help.test.js` (every screen has 4+ tips with a sign-off, screen matching,
+talk-back only for founding explorers, reply per kind, feedback saved with the page),
+`test/e2e/gary.spec.js` (open, close with Escape, talk back shows three messages, no sideways
+scroll and axe clean at 375 px), and the existing suite.
+
+### M32 — Gary's outfits and the weather (Flow 22)
+- Migration 026 (`gary_outfits`, `users.gary_outfit`), `seed/gary-outfits.json` (13 drafts),
+  `src/views/gary-art.js` (Gary with an outfit), `src/domain/outfits.js` (wardrobe, unlocks,
+  weather choice), `src/lib/weather.js` (Open-Meteo, 1 h cache, 2 s timeout), Admin › Gary,
+  Account › Gary's wardrobe.
+
+Checks: `test/unit/outfits.test.js` (seeded as drafts, approve and hide, starters, Early Bird,
+badge unlocks, choose only what you have, weather mapping and fallback with a fake fetch),
+`test/e2e/outfits.spec.js` (admin approves, member picks, Gary changes, axe at 375 px), and the
+existing suite.
