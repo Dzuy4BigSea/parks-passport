@@ -14,6 +14,7 @@ const today = (city, weather) => (weather ? `Today in ${city.copy?.short || city
 export function wardrobePage({ csrf, outfits, chosen, current, city, weather, badgeNames, notice = null }) {
   const owned = outfits.filter((o) => o.owned);
   const locked = outfits.filter((o) => !o.owned);
+  if (!owned.some((o) => o.slug === chosen)) chosen = ''; // a pick that was hidden since: back to the weather
   const option = (value, checked, label, art, desc) => html`<label class="outfit-card${checked ? ' is-chosen' : ''}">
     <input type="radio" name="outfit" value="${value}"${checked ? html` checked` : ''}>
     ${art}<span class="outfit-name">${label}</span>${desc ? html`<span class="outfit-blurb">${desc}</span>` : ''}</label>`;
@@ -40,7 +41,7 @@ ${locked.length ? html`<h2>Still to unlock</h2>
 <ul class="outfit-grid is-locked">${locked.map((o) => html`<li class="outfit-card is-locked">
   ${garySvg(o.art, { id: `l-${o.slug}`, width: 140, height: 140, still: true, className: 'is-silhouette' })}
   <span class="outfit-name">${o.name}</span>
-  <span class="outfit-blurb">Earn ${o.unlock_badges.map((b) => badgeNames[b] || b).join(' or ')} to unlock.</span></li>`)}</ul>` : ''}
+  <span class="outfit-blurb">Earn ${[...new Set(o.unlock_badges.map((b) => badgeNames[b] || b))].join(' or ')} to unlock.</span></li>`)}</ul>` : ''}
 </div>`,
   };
 }

@@ -24,6 +24,8 @@ export function loadConfig(env = process.env) {
     anthropicApiKey: env.ANTHROPIC_API_KEY || '',
     // Home page "nearest city" suggestion: a MaxMind GeoLite2-City .mmdb file. Empty = off.
     geoipDb: env.GEOIP_DB || '',
+    // Gary dresses for the weather (Open-Meteo, no key). WEATHER=off turns it off (the e2e tests do).
+    weatherOn: env.WEATHER !== 'off',
     mail: {
       transport: env.MAIL_TRANSPORT || (production ? 'sendgrid' : 'outbox'),
       outboxDir: path.join(dataDir, 'outbox'),

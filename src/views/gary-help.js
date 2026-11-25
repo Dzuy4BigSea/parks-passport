@@ -130,7 +130,7 @@ export const SCREENS = [
     key: 'home', label: 'home', match: new RegExp(`^(?!/(?:privacy|credits|consent|activities|badges)$)${CITY}$|^/$`),
     tips: [
       'Hi, I’m Gary, your park guide! Find a park, stamp it when you get there, and collect badges along the way.',
-      'Start with the closest park you haven’t stamped. Your first stamp is worth extra points.',
+      'Start with the closest park you haven’t stamped. A park you’ve never stamped is worth the most points.',
       'Every week you stamp a park, your streak grows. Keep it going and watch your level climb.',
       'Tap me any time and I’ll tell you what you can do on that screen.',
       'Bring a friend! Park Pals see each other’s stamps and unlock badges together.',
@@ -143,7 +143,7 @@ const OTHER = {
   tips: [
     'Hi, I’m Gary, your park guide. Tap Parks to find your next adventure, or Passport to see how far you’ve come.',
     'Every park you stamp fills in your passport. Let’s find one you haven’t been to yet.',
-    'Lost? The tabs at the bottom (or the menu up top) take you anywhere you need to go.',
+    'Lost? The menu takes you anywhere you need to go: parks, your passport, your pals.',
     'I’m always down here if you need me. Just tap!',
   ],
 };
@@ -154,20 +154,20 @@ export const SIGN_OFFS = ['Let’s go!', 'Happy exploring!', 'See you out there!
 export const REPLIES = {
   idea: [
     'Ooh, I like where your head’s at! I’ve passed it to the crew. Thanks for dreaming big with us. Let’s go!',
-    'Great idea! It’s on its way to the team, and they read every one. Thank you!',
+    'Great idea! It’s on its way to the team, and they read every one. Thank you, and onward!',
     'You just made Parks Passport a little better. I’ve logged it for the crew. Happy exploring!',
     'Love it. Noted and sent to the people who build things around here. Keep ’em coming!',
   ],
   bug: [
     'Thanks for the heads-up! I’ll get this to the crew so they can fix it. Sorry for the bump in the trail. Let’s go!',
-    'Good catch, explorer! It’s logged for the team. Thank you for helping us smooth things out.',
-    'Oof, sorry about that. I’ve passed it straight to the fixers. Thanks for telling us!',
+    'Good catch, explorer! It’s logged for the team. Thanks for helping us smooth the trail. Let’s go!',
+    'Oof, sorry about that. I’ve passed it straight to the fixers. Thanks for telling us, and happy exploring!',
     'Bug spotted, bug reported. The crew’s on it. Thank you, and onward!',
   ],
   love: [
     'Aw, that made my day! I’ll share it with the whole crew. Thank you! Let’s go!',
     'You’re the best. I’m passing this along so the team can smile too. Happy exploring!',
-    'That’s so kind. The crew is going to love reading this. Thank you!',
+    'That’s so kind. The crew is going to love reading this. Thank you! See you out there!',
     'Right back at you, explorer! Message delivered with a big grin. Onward!',
   ],
 };

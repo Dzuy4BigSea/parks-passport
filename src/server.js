@@ -32,7 +32,7 @@ const geoip = await createGeoIp({ file: config.geoipDb, log: { warn: (obj, msg) 
   return null;
 });
 const app = buildApp({
-  db, mailer, secretBox, geoip, logger: config.nodeEnv !== 'test', themeAi: createThemeGenerator({ apiKey: config.anthropicApiKey }),
+  db, mailer, secretBox, geoip, weather: config.weatherOn ? null : { current: () => null, refresh: async () => null }, logger: config.nodeEnv !== 'test', themeAi: createThemeGenerator({ apiKey: config.anthropicApiKey }),
   ideaAi: createIdeaTriager({ apiKey: config.anthropicApiKey }),
   config: {
     baseUrl: config.baseUrl, secureCookies: config.secureCookies, uploadsDir: path.join(config.dataDir, 'uploads'),

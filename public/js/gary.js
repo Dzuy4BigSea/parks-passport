@@ -12,6 +12,7 @@ if (box) {
   const talk = box.querySelector('[data-gary-talk-open]');
   closeBtn.hidden = false;
   chat.setAttribute('aria-live', 'polite');
+  chat.tabIndex = -1; // holds focus while Gary "types"
   // With JS the form waits behind "Talk to Gary".
   if (form && talk) { form.hidden = true; talk.hidden = false; }
 
@@ -56,6 +57,7 @@ if (box) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'That didn’t send. Try again in a moment.');
+      chat.focus();
       form.hidden = true;
       bubble('me', text);
       // A beat while Gary "types", then his reply. That's the end of the chat: he isn't a chatbot.

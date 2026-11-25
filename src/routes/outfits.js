@@ -6,7 +6,7 @@ import { wardrobePage, adminGaryPage } from '../views/pages/outfits.js';
 export default async function outfitRoutes(app) {
   const { db } = app;
   const now = () => app.now();
-  const badges = () => db.prepare('SELECT slug, name FROM badges ORDER BY name COLLATE NOCASE').all();
+  const badges = () => db.prepare('SELECT slug, name, kind FROM badges ORDER BY name COLLATE NOCASE').all();
 
   const wardrobeView = (req, notice = null) => {
     const weather = app.weather.current(req.city);
@@ -14,7 +14,8 @@ export default async function outfitRoutes(app) {
     return wardrobePage({
       csrf: req.csrfToken(), outfits: wardrobe(db, req.user.id), chosen: user.gary_outfit || '', city: req.city, weather,
       current: outfitFor(db, { ...user, gary_outfit: null }, weather).outfit,
-      badgeNames: Object.fromEntries(badges().map((b) => [b.slug, b.name])), notice,
+      // Hidden and lucky badges stay a surprise: a locked outfit says "a hidden badge" instead of the name.
+      badgeNames: Object.fromEntries(badges().map((b) => [b.slug, b.kind === 'known' ? b.name : `a ${b.kind === 'lucky' ? 'lucky' : 'hidden'} badge`])), notice,
     });
   };
   app.get('/account/gary', { preHandler: requireUser }, async (req, reply) => reply.page(wardrobeView(req, req.query.done === 'saved' ? 'Saved. Gary’s changed.' : null)));

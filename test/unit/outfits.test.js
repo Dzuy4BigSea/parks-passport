@@ -131,7 +131,8 @@ test('Account › Gary\'s wardrobe: pick an outfit, it shows in the lower right;
   assert.match(page, /Today in St\. Pete: rainy, 52°F\./);
   assert.match(page, /value="sun-hat"/);
   assert.match(page, /Earn Four-Week Streak to unlock\./);
-  assert.match(page, /Earn Founding Member or Early Bird Edition to unlock\./);
+  assert.match(page, /Earn a hidden badge to unlock\./); // Founding Member and Early Bird Edition are hidden badges
+  assert.doesNotMatch(page, /Night Owl|Weekend Warrior|Golden Acorn/); // hidden and lucky badges stay a surprise
   // Dressed for the rain by default.
   assert.match((await people.ana.c.get('/st-pete/parks')).body, /class="gary-fab">[\s\S]*#ffc83d/);
   assert.equal((await people.ana.c.post('/account/gary', { outfit: 'explorer' })).statusCode, 422);
@@ -140,6 +141,10 @@ test('Account › Gary\'s wardrobe: pick an outfit, it shows in the lower right;
   assert.equal(db.prepare('SELECT gary_outfit FROM users WHERE id = ?').pluck().get(people.ana.id), 'sun-hat');
   const parks = (await people.ana.c.get('/st-pete/parks')).body;
   assert.match(parks, /class="gary-fab">[\s\S]*#ff7a59/); // the sun hat's coral shirt
+  // A pick that an admin hides since: Gary goes back to the weather, and so does the form.
+  setOutfitStatus(db, 'sun-hat', 'hidden');
+  assert.match((await people.ana.c.get('/account/gary')).body, /value="" checked/);
+  setOutfitStatus(db, 'sun-hat', 'approved');
   await people.ana.c.post('/account/gary', { outfit: '' });
   assert.equal(db.prepare('SELECT gary_outfit FROM users WHERE id = ?').pluck().get(people.ana.id), null);
 });
