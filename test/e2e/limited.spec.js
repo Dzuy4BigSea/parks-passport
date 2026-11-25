@@ -1,4 +1,4 @@
-// M22 (SPEC Flow 9): an admin ticks members in Admin › Members and gives them Early Bird Edition, a
+// M24 (SPEC Flow 9): an admin ticks members in Admin › Members and gives them Early Bird Edition, a
 // numbered limited edition; the member gets a holographic reveal with their number.
 import { test, expect } from '@playwright/test';
 import path from 'node:path';

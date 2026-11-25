@@ -1,0 +1,9 @@
+[
+  { "slug": "half-of-cookeville", "name": "Half of Cookeville", "art": "🦅", "kind": "known",
+    "description": "Stamped 5 different Cookeville parks.", "rule_type": "parks_count", "rule_params": { "n": 5 } },
+  { "slug": "every-cookeville-park", "name": "Every Cookeville Park", "art": "🏆", "kind": "known",
+    "description": "Stamped every park in Cookeville.", "rule_type": "all_parks", "rule_params": {} },
+  { "slug": "upper-cumberland-rambler", "name": "Upper Cumberland Rambler", "art": "🥾", "kind": "hidden",
+    "hint": "Take the long way around.",
+    "description": "Stamped 3 Cookeville parks with trails.", "rule_type": "category_count", "rule_params": { "category": "trails", "n": 3 } }
+]

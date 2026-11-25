@@ -1,4 +1,4 @@
-// M21 (SPEC Flows 8 and 9): an admin gives a member a badge with a note; the member sees it pop up
+// M23 (SPEC Flows 8 and 9): an admin gives a member a badge with a note; the member sees it pop up
 // on their next page, and in the notification center behind the bell.
 import { test, expect } from '@playwright/test';
 import path from 'node:path';

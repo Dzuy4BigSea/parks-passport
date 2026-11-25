@@ -14,7 +14,7 @@ and then publicly. It's a personal project, not an official City app. v1 succeed
 - **Visitor (signed out):** sees the home page, the park list, park pages (with public photos,
   reviews and the average rating), public passports, and sign-up/login pages.
 - **Member (signed in):** everything a visitor can do, plus stamping visits, uploading photos,
-  rating parks, earning badges, managing Park Pals, and setting privacy.
+  rating parks, saving parks to "Want to go", earning badges, managing Park Pals, and setting privacy.
 - **Admin:** a member with the admin flag. Can edit parks, import the park CSV, manage badges,
   hide photos or reviews, and promote or demote admins. The first admin is set with a CLI
   command (`npm run make-admin -- <email>`).
@@ -482,6 +482,28 @@ Done when:
       points and copy, and every existing visit, photo and rating kept (migration 016 rebuilds
       `parks` with foreign keys off and checks them before committing).
 
+### Flow 15: Want to go (saved parks)
+As a member, I can save parks I want to visit so that I have a shortlist of where to go next.
+Done when:
+- [ ] Signed in, each park card on a city's park list and the park page show a heart toggle
+      ("Want to go"). It is a POST form (`/:city/parks/:slug/save`) with a CSRF token that works
+      without JavaScript and returns me to the same page (search and filters kept). With
+      JavaScript it toggles in place without a reload. The button keeps one accessible name and
+      exposes its state with `aria-pressed`.
+- [ ] Saving sets the state sent rather than toggling, so a repeated submit doesn't flip it back.
+      One saved row per member per park. Saving an unknown or inactive park returns 404; without
+      a valid CSRF token, 403; signed out, the login redirect.
+- [ ] A "Want to go" filter on the park list (signed in only, GET `saved=1`) shows only my saved
+      parks and combines with search, amenities, "Not visited yet" and "Stamped by a pal".
+- [ ] My passport for a city has a "Want to go" section listing my saved active parks in that
+      city that I haven't stamped yet, A–Z, each with its heart. Stamping a saved park removes it.
+- [ ] The "Up next" closest-new-park card (passport, stamp celebration) prefers my closest saved
+      unstamped park, labelled "Want to go", and otherwise falls back to the closest unstamped park.
+- [ ] Saved parks are private to me: they never appear on public or pals-visible passports
+      (`/u/:handle`), the Pals page or feed, or another member's pages, and signed-out visitors
+      see no hearts.
+- [ ] Deleting my account deletes my saved parks (`ON DELETE CASCADE`).
+
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.
 - **users**: id, email (unique, lower-cased), password_hash (scrypt, nullable for magic-link-only
@@ -502,6 +524,8 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 - **badges**: id, slug, name, description, hint, art, rule_type, rule_params (JSON), kind
   (known|hidden|lucky), enabled, city_id (null = every city)
 - **user_badges**: user_id, badge_id, awarded_at, source_visit_id, unique(user_id, badge_id)
+- **saved_parks**: user_id, park_id, created_at, unique(user_id, park_id); both foreign keys
+  `ON DELETE CASCADE`. Private to the member (Flow 15).
 - **point_events**: id, user_id, source_type, source_id, points, created_at (the ledger; total
   and level are derived from it)
 - **activities**: id, slug (unique), name, description, pillar, edition, category (nullable),

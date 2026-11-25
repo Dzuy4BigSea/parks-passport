@@ -1,0 +1,93 @@
+{
+  "key": "bend",
+  "name": "Bend",
+  "tagline": "Oregon High Desert",
+  "sort": 5,
+  "listed": true,
+  "time_zone": "America/Los_Angeles",
+  "bounds": {
+    "minLat": 43.98,
+    "maxLat": 44.19,
+    "minLng": -121.44,
+    "maxLng": -121.21,
+    "center": {
+      "lat": 44.058,
+      "lng": -121.315
+    }
+  },
+  "copy": {
+    "short": "Bend",
+    "place": "Bend, Oregon",
+    "official": "the Bend Park and Recreation District",
+    "gary": "I've been wandering Bend parks and I still find something new on most visits, like the ducks on Mirror Pond at Drake Park or a misty morning on the Deschutes River Trail.",
+    "description": "Check in at every Bend, Oregon park you visit, collect stamps and badges, rate your favorites and explore with your Park Pals.",
+    "search_examples": "Drake, Shevlin, Pine Nursery…",
+    "made_for": "Bend and Central Oregon"
+  },
+  "accent": "#2B6E5E",
+  "accent_2": "#E9A23B",
+  "areas": [
+    {
+      "slug": "northwest",
+      "name": "Northwest Bend",
+      "lat": 44.075,
+      "lng": -121.33
+    },
+    {
+      "slug": "northeast",
+      "name": "Northeast Bend",
+      "lat": 44.075,
+      "lng": -121.27
+    },
+    {
+      "slug": "southwest",
+      "name": "Southwest Bend",
+      "lat": 44.03,
+      "lng": -121.33
+    },
+    {
+      "slug": "southeast",
+      "name": "Southeast Bend",
+      "lat": 44.03,
+      "lng": -121.27
+    }
+  ],
+  "motifs": [
+    {
+      "slug": "pilot-butte",
+      "name": "Pilot Butte",
+      "blurb": "Pilot Butte is a cinder cone volcano right in town. Walk or drive to the top for a view of the Cascades.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 40l14-22c2-3 4-4 6-4s4 1 6 4l14 22z\"/><path d=\"M20 16c1 2 3 3 4 3s3-1 4-3\"/><path d=\"M24 14V6\"/><path d=\"M24 6h6v4h-6\"/><path d=\"M2 44h44\"/></svg>"
+    },
+    {
+      "slug": "mirror-pond",
+      "name": "Mirror Pond",
+      "blurb": "At Drake Park the Deschutes River widens into Mirror Pond, home to ducks, geese and the best picnic spots downtown.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 30h40\"/><path d=\"M8 36h32M14 42h20\"/><path d=\"M14 30c0-4 3-7 7-7h6c3 0 5-2 5-5\"/><path d=\"M32 18c0-2 2-4 4-4l2 2-3 2\"/><path d=\"M21 23l3 7\"/></svg>"
+    },
+    {
+      "slug": "whitewater-park",
+      "name": "Whitewater Park",
+      "blurb": "The Bend Whitewater Park, on the Deschutes by McKay Park, has a passage for floaters and a standing wave for surfers.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 38c6-10 14-14 22-12 6 2 8 8 4 10s-6-2-4-4\"/><path d=\"M4 44h40\"/><path d=\"M14 22l6-8 6 4\"/><circle cx=\"26\" cy=\"10\" r=\"3\"/><path d=\"M10 26l22-6\"/></svg>"
+    },
+    {
+      "slug": "cascades",
+      "name": "The Cascades",
+      "blurb": "From parks all over Bend you can see the Cascade peaks to the west: Mount Bachelor, Broken Top and the Three Sisters.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M2 38l10-14 6 6 8-16 8 12 4-4 8 16z\"/><path d=\"M22 20l4-6 4 6-4-1z\"/><path d=\"M10 27l2-3 3 3\"/><path d=\"M2 44h44\"/></svg>"
+    },
+    {
+      "slug": "ponderosa",
+      "name": "Ponderosa pines",
+      "blurb": "Shevlin Park follows Tumalo Creek through a forest of tall ponderosa pines, Central Oregon's signature tree.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M24 4l-8 12h5l-9 12h7l-9 12h28l-9-12h7l-9-12h5z\"/><path d=\"M24 40v6\"/></svg>"
+    },
+    {
+      "slug": "smokestacks",
+      "name": "Old Mill smokestacks",
+      "blurb": "The Old Mill District's three smokestacks are a reminder of the lumber mills that built Bend along the river.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M8 44V26h32v18\"/><path d=\"M14 26V6h4v20M22 26V6h4v20M30 26V6h4v20\"/><path d=\"M4 44h40\"/><path d=\"M14 34h4M22 34h4M30 34h4\"/><path d=\"M16 4c2-2 4-2 6 0\"/></svg>"
+    }
+  ]
+}

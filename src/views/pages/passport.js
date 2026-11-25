@@ -12,6 +12,7 @@ import { motifIcon } from '../motif.js';
 import { ICONS } from '../icons.js';
 import { nextUpCards, streakText } from '../nextup.js';
 import { cityPath, parkPath } from '../urls.js';
+import { saveButton } from '../save-button.js';
 
 function stampTile(p, theme, i) {
   return html`<li class="stamp${p.first_visit ? ' is-stamped' : ''}" style="--i:${i}">
@@ -78,7 +79,9 @@ function cityTabs(cities, theme, href) {
 }
 
 export function passportPage({ user, csrf, parks, history, points, level, badges, readOnly = false, theme = { motifs: [], areas: [] }, next = null, week = null,
-  cities = null, cityHref = (city) => cityPath(city, '/passport'), welcome = false }) {
+  cities = null, cityHref = (city) => cityPath(city, '/passport'), welcome = false, wantToGo = null }) {
+  // Saved parks are private: only the owner's own passport passes wantToGo (never /u/:handle).
+  const showWantToGo = !readOnly && Array.isArray(wantToGo);
   const stamped = parks.filter((p) => p.first_visit);
   const total = parks.length;
   const mapData = parks.filter((p) => p.lat != null).map((p) => ({
@@ -94,7 +97,7 @@ export function passportPage({ user, csrf, parks, history, points, level, badges
     title: readOnly ? `${user.display_name}'s passport` : 'My passport',
     current: readOnly ? '' : 'passport',
     head: html`<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">`,
-    scripts: ['/js/passport-map.js', '/js/inspect.js', ...(welcome ? ['/js/welcome.js'] : [])],
+    scripts: ['/js/passport-map.js', '/js/inspect.js', ...(welcome ? ['/js/welcome.js'] : []), ...(showWantToGo ? ['/js/want-to-go.js'] : [])],
     body: html`
 ${welcome ? html`<span id="welcome-data" hidden data-name="${user.display_name}" data-city="${theme.copy?.short || ''}"></span>` : ''}
 <header class="passport-cover">
@@ -117,6 +120,15 @@ ${welcome ? html`<span id="welcome-data" hidden data-name="${user.display_name}"
 ${cityTabs(cities, theme, cityHref)}
 ${next ? nextUpCards(next, { city: theme }) : ''}
 ${week && !readOnly ? weekCard({ week, goals: WEEKLY_GOALS }) : ''}
+
+${showWantToGo ? html`<section aria-labelledby="want-h" id="want-to-go">
+  <h2 id="want-h">Want to go</h2>
+  <p class="muted">Parks you saved and haven't stamped yet. Only you can see this list.</p>
+  ${wantToGo.length ? html`<ul class="want-list">${wantToGo.map((p) => html`<li>
+    <span><a href="${parkPath(p)}">${p.name}</a>${p.address ? html`<br><span class="muted">${p.address}</span>` : ''}</span>
+    ${saveButton({ park: p, saved: true, csrf, back: `${cityPath(theme, '/passport')}#want-to-go` })}
+  </li>`)}</ul>` : html`<p>Nothing here yet. Tap the heart on a <a href="${cityPath(theme, '/parks')}">park</a> to save it for later.</p>`}
+</section>` : ''}
 
 <section aria-labelledby="stamps-h">
   <h2 id="stamps-h">Stamps</h2>

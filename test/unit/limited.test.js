@@ -1,4 +1,4 @@
-// M22: limited edition badges, numbered as they're given; Early Bird; giving from the members list.
+// M24: limited edition badges, numbered as they're given; Early Bird; giving from the members list.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeApp, client, testClock } from './helpers.js';

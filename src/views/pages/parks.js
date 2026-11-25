@@ -6,6 +6,7 @@ import { formatMiles, travelTime } from '../../domain/geo.js';
 import { motifForPark, areaForPark } from '../../domain/city.js';
 import { motifIcon } from '../motif.js';
 import { ICONS } from '../icons.js';
+import { saveButton } from '../save-button.js';
 
 // Explore page: a property-search style list + map. Cards are "postcards": a member's public
 // photo in duotone when there is one, otherwise a risograph-style print of the park's motif.
@@ -38,7 +39,7 @@ function tags(categories, selected) {
   return html`<ul class="chips tags" aria-label="Amenities">${sorted.map((c, i) => html`<li${i >= 3 ? html` class="visually-hidden"` : ''}>${categoryLabel(c)}</li>`)}${extra > 0 ? html`<li class="more" aria-hidden="true">+${extra}</li>` : ''}</ul>`;
 }
 
-export function postcard(p, i, { theme, stamped, stampDates, near, selected, extras, palsHere = null }) {
+export function postcard(p, i, { theme, stamped, stampDates, near, selected, extras, palsHere = null, saved = null, csrf = '', back = '' }) {
   const isStamped = stamped?.has(p.id);
   const area = areaForPark(theme, p);
   const motif = motifForPark(theme, p.slug);
@@ -61,15 +62,17 @@ export function postcard(p, i, { theme, stamped, stampDates, near, selected, ext
     ${p.address ? html`<p class="address">${p.address}</p>` : ''}
     ${palFaces(palsHere?.get(p.id))}
     ${tags(p.categories, selected)}
-    <p class="pc-foot">${ex.rating ? html`<span class="pc-rating"><span aria-hidden="true">★</span> ${ex.rating.average.toFixed(1)}<span class="visually-hidden"> out of 5,</span> <span class="muted">(${ex.rating.count})</span></span>` : html`<span class="muted">No ratings yet</span>`}
-      ${stamped && !isStamped ? html`<span class="pc-points">+10 pts</span>` : ''}</p>
+    <div class="pc-foot">${ex.rating ? html`<span class="pc-rating"><span aria-hidden="true">★</span> ${ex.rating.average.toFixed(1)}<span class="visually-hidden"> out of 5,</span> <span class="muted">(${ex.rating.count})</span></span>` : html`<span class="muted">No ratings yet</span>`}
+      ${stamped && !isStamped ? html`<span class="pc-points">+10 pts</span>` : ''}
+      ${saved ? saveButton({ park: p, saved: saved.has(p.id), csrf, back }) : ''}</div>
   </div>
 </li>`;
 }
 
 export function parksPage({ parks, total, q, selected, categories, near, unvisited = false, stamped = null, stampDates = null,
-  signedIn = false, theme = { motifs: [], areas: [] }, extras = new Map(), palsHere = null, palsOnly = false, hasPals = false }) {
-  const filtered = q || selected.length || unvisited || palsOnly;
+  signedIn = false, theme = { motifs: [], areas: [] }, extras = new Map(), palsHere = null, palsOnly = false, hasPals = false,
+  saved = null, onlySaved = false, csrf = '', back = '' }) {
+  const filtered = q || selected.length || unvisited || palsOnly || onlySaved;
   const listPath = theme.key ? cityPath(theme, '/parks') : '/parks';
   const countText = filtered ? `${parks.length} of ${total} parks match` : `${total} parks`;
   // Map data: only what the map needs, no private fields.
@@ -81,7 +84,7 @@ export function parksPage({ parks, total, q, selected, categories, near, unvisit
     title: theme.copy?.short ? `${theme.copy.short} parks` : 'Parks',
     current: 'parks',
     head: html`<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">`,
-    scripts: ['/js/near-me.js', '/js/explore.js'],
+    scripts: saved ? ['/js/near-me.js', '/js/explore.js', '/js/want-to-go.js'] : ['/js/near-me.js', '/js/explore.js'],
     body: html`
 <div class="explore">
 <header class="explore-head">
@@ -109,6 +112,7 @@ export function parksPage({ parks, total, q, selected, categories, near, unvisit
         </fieldset>
       </details>
       ${signedIn ? html`<label class="check chip-check toggle-chip"><input type="checkbox" name="unvisited" value="1"${unvisited ? html` checked` : ''}> Not visited yet</label>` : ''}
+      ${signedIn ? html`<label class="check chip-check toggle-chip"><input type="checkbox" name="saved" value="1"${onlySaved ? html` checked` : ''}> Want to go</label>` : ''}
       ${hasPals ? html`<label class="check chip-check toggle-chip"><input type="checkbox" name="pals" value="1"${palsOnly ? html` checked` : ''}> Stamped by a pal</label>` : ''}
       ${near ? html`<input type="hidden" name="lat" value="${near.lat}"><input type="hidden" name="lng" value="${near.lng}">` : ''}
       <button type="submit" class="btn btn-primary">Search</button>
@@ -122,8 +126,10 @@ export function parksPage({ parks, total, q, selected, categories, near, unvisit
   <section class="explore-list" aria-labelledby="results-h">
     <p id="results-h" class="result-count" role="status">${countText}${near ? ', nearest first' : ''}</p>
     ${parks.length ? html`<ul class="park-list">
-      ${parks.map((p, i) => postcard(p, i, { theme, stamped, stampDates, near, selected, extras, palsHere }))}
-    </ul>` : html`<p class="empty">No parks match. Try fewer amenities or a shorter name.</p>`}
+      ${parks.map((p, i) => postcard(p, i, { theme, stamped, stampDates, near, selected, extras, palsHere, saved, csrf, back }))}
+    </ul>` : html`<p class="empty">${onlySaved && !q && !selected.length && !unvisited && !palsOnly
+      ? 'Nothing saved in this city yet. Tap the heart on a park to add it to Want to go.'
+      : 'No parks match. Try fewer amenities or a shorter name.'}</p>`}
   </section>
   <aside class="explore-map" aria-label="Map of these parks">
     <div id="explore-map" class="park-map" data-parks="${JSON.stringify(mapData)}"${near ? html` data-near="${JSON.stringify(near)}"` : ''}></div>

@@ -1,4 +1,4 @@
-// M21: an admin gives a member a badge (pops up next time, with a note) and the notification center.
+// M23: an admin gives a member a badge (pops up next time, with a note) and the notification center.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeApp, client, testClock } from './helpers.js';
