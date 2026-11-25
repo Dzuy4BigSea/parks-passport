@@ -1468,27 +1468,6 @@ html.fx-locked { overflow: hidden; }
 .give-tick { width: 1.4rem; height: 1.4rem; }
 
 /* ---------- Feedback for founding explorers (Flow 16) ---------- */
-.feedback-fab {
-  position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: 1.25rem; z-index: 40;
-  display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 1rem; border-radius: 999px;
-  background: #ffd166; color: var(--ink); font-weight: 800; text-decoration: none; /* ink on sun: 12:1 */
-  box-shadow: 0 10px 24px -10px rgba(14, 42, 51, 0.6), 0 0 0 3px #fffaf0, 0 0 0 5px #7c6cf2;
-}
-.feedback-fab svg { width: 18px; height: 18px; }
-.feedback-fab:hover svg { animation: fb-twinkle 0.9s var(--ease-spring); }
-.has-tabbar .feedback-fab { bottom: calc(var(--tabbar-h) + 1rem); }
-/* Park list on a phone: the Map/List toggle sits bottom center, so the button shrinks to its icon. */
-@media (max-width: 1023.98px) {
-  body:has(.map-toggle) .feedback-fab { width: 48px; padding: 0; justify-content: center; }
-  body:has(.map-toggle) .feedback-fab span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-}
-/* Room below the footer so the button never covers its last links. */
-body:has(.feedback-fab) .site-footer { padding-bottom: 5.5rem; }
-@keyframes fb-twinkle { 50% { transform: rotate(45deg) scale(1.25); } }
-.feedback-dialog { width: min(30rem, calc(100vw - 2rem)); border: 0; border-radius: var(--radius); padding: 1.25rem; background: var(--surface); color: var(--ink);
-  box-shadow: 0 30px 60px -20px rgba(14, 42, 51, 0.6), inset 0 0 0 3px #ffd166; }
-.feedback-dialog::backdrop { background: rgba(14, 42, 51, 0.55); }
-.feedback-dialog h2 { margin: 0.2rem 0 0.8rem; font-size: 1.25rem; }
 .feedback-eyebrow { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #9a5b00; }
 .feedback-eyebrow svg { width: 16px; height: 16px; }
 .feedback-kinds { border: 0; padding: 0; margin: 0 0 0.6rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
@@ -1496,8 +1475,7 @@ body:has(.feedback-fab) .site-footer { padding-bottom: 5.5rem; }
 .feedback-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
 .feedback-heart { font-size: 2.5rem; margin: 0; animation: fb-pop 0.6s var(--ease-spring); }
 @keyframes fb-pop { from { transform: scale(0.3); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .feedback-heart, .feedback-fab:hover svg { animation: none; } }
-@media print { .feedback-fab { display: none; } }
+@media (prefers-reduced-motion: reduce) { .feedback-heart { animation: none; } }
 
 /* ---------- Drops of Sunshine (Flow 17) ---------- */
 .sunshine-eyebrow { margin: 0; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.8rem; color: #9a5b00; }
@@ -1614,3 +1592,40 @@ body:has(.feedback-fab) .site-footer { padding-bottom: 5.5rem; }
 .message-facts dt { font-weight: 700; }
 .message-facts dd { margin: 0; }
 @media (max-width: 30rem) { .message-facts { grid-template-columns: 1fr; } .message-facts dd { margin-bottom: 0.4rem; } }
+
+/* ---------- Gary on every screen (SPEC Flow 21) ---------- */
+.gary-help { position: fixed; right: max(0.85rem, env(safe-area-inset-right)); bottom: 1rem; z-index: 45; }
+.has-tabbar .gary-help { bottom: calc(var(--tabbar-h) + 0.75rem); }
+.gary-fab { list-style: none; display: grid; place-items: center; width: 60px; height: 60px; border-radius: 50%; overflow: hidden; cursor: pointer;
+  background: var(--sun); box-shadow: 0 10px 24px -10px rgba(14, 42, 51, 0.6), 0 0 0 3px #fffaf0, 0 0 0 5px var(--aqua-ink); transition: transform 0.2s var(--ease-spring, ease); }
+.gary-fab::-webkit-details-marker { display: none; }
+.gary-fab:hover { transform: translateY(-2px) rotate(-4deg); }
+.gary-fab:focus-visible { outline: 3px solid var(--focus); outline-offset: 5px; }
+/* Just his face: Gary's art scaled up around his head. */
+.gary-fab-art { width: 60px; height: 60px; transform: scale(1.85); transform-origin: 50% 40%; pointer-events: none; }
+.gary-help[open] .gary-fab { box-shadow: 0 0 0 3px #fffaf0, 0 0 0 5px var(--pink); }
+.gary-panel { position: absolute; right: 0; bottom: calc(100% + 0.75rem); width: min(21rem, calc(100vw - 1.7rem)); max-height: min(34rem, 70vh); overflow-y: auto;
+  padding: 0.9rem; border-radius: var(--radius); background: var(--surface); color: var(--ink); border: 2px solid var(--ink);
+  box-shadow: 5px 5px 0 var(--ink); animation: gary-pop 0.3s cubic-bezier(.2, 1.4, .4, 1); transform-origin: 90% 100%; }
+.gary-chat { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
+.gary-msg { max-width: 92%; padding: 0.55rem 0.75rem; border-radius: 16px; }
+.gary-msg p { margin: 0; }
+.gary-msg.is-gary { background: var(--sun-tint); border-bottom-left-radius: 4px; justify-self: start; }
+.gary-msg.is-me { background: var(--aqua-tint); border-bottom-right-radius: 4px; justify-self: end; }
+.gary-msg.is-typing p { letter-spacing: 0.2em; animation: gary-typing 1s ease-in-out infinite; }
+.gary-name { display: block; font: 800 0.72rem var(--sans); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.1rem; }
+.gary-chat.is-page { margin: 1rem 0; }
+.gary-chat.is-page .gary-msg { max-width: 32rem; }
+.gary-talk-open { margin-top: 0.75rem; }
+.gary-talk { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 2px dashed var(--line); }
+.gary-talk-note { display: flex; gap: 0.4rem; align-items: flex-start; margin: 0 0 0.6rem; font-size: 0.9rem; color: #7a4800; }
+.gary-talk-note svg { flex: none; width: 16px; height: 16px; margin-top: 0.15rem; }
+.gary-talk .feedback-kinds { margin-bottom: 0.5rem; }
+.gary-talk button[type="submit"] { margin-top: 0.5rem; }
+.gary-close { display: block; margin: 0.75rem 0 0 auto; padding: 0.3rem 0.6rem; border: 0; background: none; color: var(--aqua-ink); font: 700 0.9rem var(--sans); text-decoration: underline; cursor: pointer; }
+/* Room below the footer so Gary never covers its last links. */
+body:has(.gary-help) .site-footer { padding-bottom: 5.5rem; }
+@keyframes gary-pop { from { opacity: 0; transform: scale(0.6); } }
+@keyframes gary-typing { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .gary-panel, .gary-msg.is-typing p, .gary-fab { animation: none; transition: none; } }
+@media print { .gary-help { display: none; } }

@@ -81,7 +81,9 @@ test('feedback: the button and /feedback only for Founding Members and Early Bir
   addUsers(db, 75, 100); // use up the founding numbers
   backfillFounding(db);
   const mia = await signup('mia'); // no founding badge left
-  assert.doesNotMatch((await mia.c.get('/st-pete/parks')).body, /feedback-fab/);
+  const plain = (await mia.c.get('/st-pete/parks')).body;
+  assert.match(plain, /class="gary-fab"/); // Gary is there for everyone (Flow 21)
+  assert.doesNotMatch(plain, /data-gary-talk|action="\/feedback"/); // but only founding explorers talk back
   assert.equal((await mia.c.get('/feedback')).statusCode, 404);
   assert.equal((await mia.c.post('/feedback', { text: 'hi' })).statusCode, 404);
   assert.match((await client(app).get('/feedback')).headers.location, /^\/login/); // signed out: log in
@@ -90,8 +92,8 @@ test('feedback: the button and /feedback only for Founding Members and Early Bir
   const eb = db.prepare("SELECT id FROM badges WHERE slug = 'early-bird-100'").pluck().get();
   grantBadge(db, { admin: { id: mia.id, display_name: 'Boss' }, userId: mia.id, badgeId: eb });
   const page = (await mia.c.get('/st-pete/parks')).body;
-  assert.match(page, /class="feedback-fab" href="\/feedback\?from=%2Fst-pete%2Fparks"/);
-  assert.match(page, /<dialog class="feedback-dialog"/);
+  assert.match(page, /<form method="post" action="\/feedback" class="gary-talk feedback-form" data-gary-talk>/);
+  assert.match(page, /goes to the Parks Passport team as <strong>feedback<\/strong>/);
   assert.match(page, /name="page" value="\/st-pete\/parks"/);
   assert.equal((await mia.c.get('/feedback?from=/st-pete/parks')).statusCode, 200);
 });
@@ -105,8 +107,10 @@ test('feedback: send (form and JSON), validation, daily limit, admin inbox and d
   assert.match((await ben.c.post('/feedback', { kind: 'bug', text: '   ' })).body, /Write a few words first/);
   assert.match((await ben.c.post('/feedback', { kind: 'bug', text: 'x'.repeat(1001) })).body, /1,000 characters/);
   const sent = await ben.c.post('/feedback', { kind: 'bug', text: 'The map <b>jumps</b>', page: '/st-pete/parks?lat=27.7&lng=-82.6' });
-  assert.equal(sent.headers.location, '/feedback?done=sent');
-  assert.match((await ben.c.get('/feedback?done=sent')).body, /Thank you. We read every one./);
+  assert.equal(sent.headers.location, '/feedback?done=sent&kind=bug');
+  const thanks = (await ben.c.get('/feedback?done=sent&kind=bug')).body;
+  assert.match(thanks, /Thank you. We read every one./);
+  assert.match(thanks, /class="gary-msg is-gary"/); // Gary's reply
   const row = db.prepare('SELECT * FROM feedback').get();
   assert.equal(row.kind, 'bug');
   assert.equal(row.page, '/st-pete/parks'); // never the query string (a position)
@@ -119,7 +123,9 @@ test('feedback: send (form and JSON), validation, daily limit, admin inbox and d
   const csrf = [...ben.c.jar].find(([k]) => k.endsWith('pp_csrf'))[1];
   const json = await app.inject({ method: 'POST', url: '/feedback', payload: `_csrf=${csrf}&kind=love&text=yay`,
     headers: { cookie: [...ben.c.jar].map(([k, v]) => `${k}=${v}`).join('; '), 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' } });
-  assert.deepEqual(json.json(), { ok: true });
+  assert.equal(json.json().ok, true);
+  const { REPLIES } = await import('../../src/views/gary-help.js');
+  assert.ok(REPLIES.love.includes(json.json().reply)); // a reply that fits "Love it"
 
   for (let i = 0; i < 17; i++) await ben.c.post('/feedback', { text: `more ${i}` });
   const limited = await ben.c.post('/feedback', { text: 'one too many' });

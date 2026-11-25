@@ -6,6 +6,7 @@ import { motifIcon } from './motif.js';
 import { photosFor } from '../domain/city-photos.js';
 import { cityPath } from './urls.js';
 import { teamMessagesBlock } from './pages/messages.js';
+import { garyTipFor } from './gary-help.js';
 
 /**
  * Page shell. `head` adds per-page tags (e.g. Leaflet CSS); `scripts` are module URLs loaded with defer.
@@ -88,25 +89,30 @@ ${url ? html`<meta property="og:url" content="${url}">
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const aria = (on) => (on ? html` aria-current="page"` : '');
 
-// Phones: members navigate with a bottom tab bar whose center button stamps the nearest park.
-// Founding Members and Early Bird Edition holders (SPEC Flow 16): a little thank-you button in the
-// lower right. Without JS it's a link to /feedback; with JS, public/js/feedback.js opens the dialog.
-function feedbackButton({ csrf, path }) {
+// Gary in the lower right of every page (SPEC Flow 21): tap him for a tip about this screen. A
+// <details> works without JS; public/js/gary.js adds Escape, a tap outside and the talk-back chat.
+// Founding explorers (Flow 16) can talk back: their message is feedback for the team, and Gary
+// replies with a thank-you (from the server, so it works without JS too).
+function garyButton({ csrf, path, canTalk }) {
   const page = String(path || '/').split(/[?#]/)[0];
-  return html`<a class="feedback-fab" href="/feedback?from=${encodeURIComponent(page)}" data-feedback-open>${ICONS.sparkle}<span>Feedback</span></a>
-<dialog class="feedback-dialog" id="feedback-dialog" aria-labelledby="feedback-h">
-  <form method="post" action="/feedback" class="feedback-form">
-    <input type="hidden" name="_csrf" value="${csrf}"><input type="hidden" name="page" value="${page}">
-    <p class="feedback-eyebrow">${ICONS.sparkle} Founding explorer</p>
-    <h2 id="feedback-h">You're one of our first explorers. Tell us anything.</h2>
-    ${feedbackFields()}
-    <p class="feedback-error error-text" role="alert" hidden></p>
-    <div class="feedback-actions"><button type="submit" class="btn btn-primary">Send</button>
-      <button type="button" class="btn btn-quiet" data-feedback-close>Not now</button></div>
-  </form>
-  <div class="feedback-thanks" hidden><p class="feedback-heart" aria-hidden="true">💛</p><h2 tabindex="-1">Thank you. We read every one.</h2>
-    <button type="button" class="btn" data-feedback-close>Close</button></div>
-</dialog>`;
+  const { tip, signOff } = garyTipFor(page);
+  return html`<details class="gary-help" data-gary>
+  <summary class="gary-fab"><img src="/brand/gary.svg" alt="" width="56" height="56" class="gary-fab-art"><span class="visually-hidden">Ask Gary</span></summary>
+  <div class="gary-panel" role="group" aria-label="Gary says">
+    <ol class="gary-chat" data-gary-chat>
+      <li class="gary-msg is-gary"><span class="gary-name">Gary</span><p>${tip} <strong>${signOff}</strong></p></li>
+    </ol>
+    ${canTalk ? html`<button type="button" class="btn btn-small gary-talk-open" data-gary-talk-open hidden>Talk to Gary</button>
+    <form method="post" action="/feedback" class="gary-talk feedback-form" data-gary-talk>
+      <input type="hidden" name="_csrf" value="${csrf}"><input type="hidden" name="page" value="${page}">
+      <p class="gary-talk-note">${ICONS.sparkle} <span>Founding explorer: what you send goes to the Parks Passport team as <strong>feedback</strong>, with the page you’re on.</span></p>
+      ${feedbackFields({ idPrefix: 'gary' })}
+      <p class="feedback-error error-text" role="alert" hidden></p>
+      <button type="submit" class="btn btn-primary btn-small">Send to the team</button>
+    </form>` : ''}
+    <button type="button" class="gary-close" data-gary-close hidden>Close<span class="visually-hidden"> Gary</span></button>
+  </div>
+</details>`;
 }
 
 /** Kind and message fields, shared by the dialog and the /feedback page. */
@@ -118,6 +124,7 @@ export function feedbackFields({ kind = 'idea', text = '', idPrefix = 'fb' } = {
   <textarea id="${idPrefix}-text" name="text" rows="4" maxlength="1000" required placeholder="What would make Parks Passport better?">${text}</textarea>`;
 }
 
+// Phones: members navigate with a bottom tab bar whose center button stamps the nearest park.
 function tabBar(current, base) {
   const tab = (href, label, key, icon) => html`<li><a href="${href}"${aria(key === current)}>${icon}<span>${label}</span></a></li>`;
   return html`<nav class="tabbar" aria-label="Quick">
@@ -185,7 +192,7 @@ ${scripts.map((src) => html`<script type="module" src="${src}"></script>`)}
 <script type="module" src="/js/announce.js"></script>
 ${messages?.length ? html`<script type="module" src="/js/message.js"></script>` : ''}
 ${announcements ? html`<script type="module" src="/js/reveal.js"></script>` : ''}
-${feedback ? html`<script type="module" src="/js/feedback.js"></script>` : ''}
+<script type="module" src="/js/gary.js"></script>
 </head>
 <body${user ? html` class="has-tabbar"` : ''}>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -225,7 +232,7 @@ ${showConsentBanner ? consentBanner(csrf, path) : ''}
     </div>
   </div>
 </footer>
-${feedback && current !== 'feedback' ? feedbackButton({ csrf, path }) : ''}
+${garyButton({ csrf, path, canTalk: feedback && current !== 'feedback' })}
 ${user ? tabBar(current, base) : ''}
 </body>
 </html>`;

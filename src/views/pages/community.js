@@ -13,7 +13,7 @@ const crumb = html`<p class="breadcrumb"><a href="/admin">Admin</a></p>`;
 
 // ---------- Feedback (SPEC Flow 16) ----------
 
-export function feedbackPage({ csrf, page = '', sent = false, error = null, values = {} }) {
+export function feedbackPage({ csrf, page = '', sent = false, reply = null, error = null, values = {} }) {
   return {
     title: 'Feedback',
     current: 'feedback',
@@ -21,6 +21,7 @@ export function feedbackPage({ csrf, page = '', sent = false, error = null, valu
 <p class="feedback-eyebrow">${ICONS.sparkle} Founding explorer</p>
 ${sent
     ? html`<p class="feedback-heart" aria-hidden="true">💛</p><h1>Thank you. We read every one.</h1>
+  ${reply ? html`<div class="gary-chat is-page"><p class="gary-msg is-gary"><span class="gary-name">Gary</span> ${reply}</p></div>` : ''}
   <p><a href="/">Back to Parks Passport</a></p>`
     : html`<h1>You're one of our first explorers. Tell us anything.</h1>
   <p>Ideas, bugs, things you love: it all shapes what we build next.</p>

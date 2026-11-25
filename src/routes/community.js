@@ -1,6 +1,7 @@
 import { requireUser } from '../lib/auth.js';
 import { canSendFeedback } from '../domain/founding.js';
-import { sendFeedback, allFeedback, setFeedbackDone } from '../domain/feedback.js';
+import { sendFeedback, allFeedback, setFeedbackDone, KINDS as FEEDBACK_KINDS } from '../domain/feedback.js';
+import { garyReply } from '../views/gary-help.js';
 import {
   sunshineParks, defaultSunshinePark, sendSunshine, sunshineForAdmin, sunshineCounts, setSunshineStatus, STATUSES as SUNSHINE_STATUSES,
 } from '../domain/sunshine.js';
@@ -28,14 +29,17 @@ export default async function communityRoutes(app) {
 
   app.get('/feedback', feedbackOnly, async (req, reply) => reply.page(feedbackPage({
     csrf: req.csrfToken(), page: typeof req.query.from === 'string' ? req.query.from : '', sent: req.query.done === 'sent',
+    reply: req.query.done === 'sent' ? garyReply(Object.hasOwn(FEEDBACK_KINDS, req.query.kind) ? req.query.kind : 'idea') : null,
   })));
   app.post('/feedback', feedbackOnly, async (req, reply) => {
     const result = sendFeedback(db, req.user.id, req.body, { now: now() });
-    if (wantsJson(req)) return reply.code(result.error ? 422 : 200).send(result.error ? { error: result.error } : { ok: true });
+    // Gary answers (SPEC Flow 21): a thank-you that fits the kind of feedback.
+    const kind = Object.hasOwn(FEEDBACK_KINDS, req.body.kind) ? req.body.kind : 'idea';
+    if (wantsJson(req)) return reply.code(result.error ? 422 : 200).send(result.error ? { error: result.error } : { ok: true, reply: garyReply(kind) });
     if (result.error) {
       return reply.code(422).page(feedbackPage({ csrf: req.csrfToken(), page: req.body.page, error: result.error, values: result.values }));
     }
-    return reply.redirect('/feedback?done=sent', 303);
+    return reply.redirect(`/feedback?done=sent&kind=${kind}`, 303);
   });
 
   // ---------- Drops of Sunshine ----------
