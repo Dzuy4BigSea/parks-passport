@@ -58,7 +58,8 @@ function validate({ name, emoji, description }) {
   if (!n) errors.name = 'Give your group a name.';
   else if (n.length > NAME_MAX) errors.name = `Use ${NAME_MAX} characters or fewer.`;
   const e = clean(emoji) || '🌳';
-  if ([...e].length > 4 || /[<>&"]/.test(e)) errors.emoji = 'Use one emoji.';
+  const graphemes = [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(e)];
+  if (graphemes.length !== 1 || !/\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(e)) errors.emoji = 'Use one emoji.';
   const d = clean(description);
   if (d.length > DESCRIPTION_MAX) errors.description = `Use ${DESCRIPTION_MAX} characters or fewer.`;
   return { errors, values: { name: n, emoji: e, description: d } };
@@ -128,16 +129,17 @@ export function joinWithCode(db, user, group, { now = new Date() } = {}) {
   return { asked: true };
 }
 
-/** Owner answers an "ask to join". Returns true if there was such a request. */
+/** Owner answers an "ask to join". Returns 'approved' | 'declined' | 'full' (kept: they're in too many groups) | null. */
 export function answerRequest(db, group, userId, approve, { now = new Date() } = {}) {
-  if (!db.prepare('SELECT 1 FROM group_requests WHERE group_id = ? AND user_id = ?').get(group.id, userId)) return false;
-  if (approve && roomFor(db, { id: userId })) {
+  if (!db.prepare('SELECT 1 FROM group_requests WHERE group_id = ? AND user_id = ?').get(group.id, userId)) return null;
+  if (approve && !roomFor(db, { id: userId })) return 'full';
+  if (approve) {
     addMember(db, group.id, userId, now);
     notify(db, userId, { kind: 'group_joined', text: `You're in ${group.name}.`, link: `/groups/${group.id}` }, { now });
-  } else {
-    db.prepare('DELETE FROM group_requests WHERE group_id = ? AND user_id = ?').run(group.id, userId);
+    return 'approved';
   }
-  return true;
+  db.prepare('DELETE FROM group_requests WHERE group_id = ? AND user_id = ?').run(group.id, userId);
+  return 'declined';
 }
 
 /** A member invites one of their Park Pals. Returns { ok } | { error: 'not_pal' | 'already' | 'invited' }. */
@@ -166,6 +168,8 @@ export function answerInvite(db, user, groupId, accept, { now = new Date() } = {
   }
   if (!roomFor(db, user)) return { error: 'full' };
   addMember(db, groupId, user.id, now);
+  const group = db.prepare('SELECT id, name, owner_id FROM member_groups WHERE id = ?').get(groupId);
+  if (group?.owner_id && group.owner_id !== user.id) notify(db, group.owner_id, { kind: 'group_joined', text: `{actor} joined ${group.name}.`, link: `/groups/${group.id}`, actorId: user.id }, { now });
   return { joined: true };
 }
 

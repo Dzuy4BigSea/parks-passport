@@ -52,6 +52,8 @@ test('starting a group is unlocked by 10 GPS check-ins (Troop Leader) or an admi
   assert.match(page, /You can start 3 more\./);
   assert.equal((await ana.c.post('/groups', { name: '', emoji: '🏃' })).statusCode, 422);
   assert.equal((await ana.c.post('/groups', { name: 'x'.repeat(41), emoji: '🏃' })).statusCode, 422);
+  assert.equal((await ana.c.post('/groups', { name: 'Text', emoji: 'abcd' })).statusCode, 422);
+  assert.equal((await ana.c.post('/groups', { name: 'Two emoji', emoji: '🏃🏃' })).statusCode, 422);
   const res = await ana.c.post('/groups', { name: 'Run Club', emoji: '🏃', description: 'Saturday mornings.' });
   assert.equal(res.headers.location, `/groups/${groupId('Run Club')}?done=created`);
   assert.deepEqual(members('Run Club'), ['ana']);
@@ -82,6 +84,13 @@ test('joining: the code asks the owner first (or lets you straight in), pals get
   assert.ok(kinds('ana').includes('group_request'));
   assert.match((await ana.c.get(`/groups/${id}`)).body, /Requests to join \(1\)/);
   assert.equal((await cat.c.post(`/groups/${id}/requests/${ben.id}/approve`)).statusCode, 404); // not the owner
+  // No room on Ben's side: the request stays and Ana is told.
+  db.prepare('UPDATE users SET group_join_limit = 0 WHERE id = ?').run(ben.id);
+  const noRoom = await ana.c.post(`/groups/${id}/requests/${ben.id}/approve`);
+  assert.equal(noRoom.statusCode, 422);
+  assert.match(noRoom.body, /still here/);
+  assert.deepEqual(members('Run Club'), ['ana']);
+  db.prepare('UPDATE users SET group_join_limit = NULL WHERE id = ?').run(ben.id);
   await ana.c.post(`/groups/${id}/requests/${ben.id}/approve`);
   assert.deepEqual(members('Run Club'), ['ana', 'ben']);
   assert.ok(kinds('ben').includes('group_joined'));
@@ -111,6 +120,7 @@ test('joining: the code asks the owner first (or lets you straight in), pals get
   assert.match((await dee.c.get('/groups')).body, /ana invited you/);
   await dee.c.post(`/groups/invites/${id}/accept`);
   assert.deepEqual(members('Run Club'), ['ana', 'ben', 'cat', 'dee']);
+  assert.match((await ana.c.get('/notifications')).body, /dee joined Run Club\./);
   assert.equal((await dee.c.post(`/groups/invites/${id}/accept`)).statusCode, 404); // used
 
   // Five groups at first: a sixth is refused.
@@ -173,4 +183,13 @@ test('an owner who deletes their account hands the group on; the last one out en
   assert.deepEqual(members('Class'), ['ben']);
   assert.equal(db.prepare('SELECT owner_id FROM member_groups WHERE id = ?').pluck().get(groupId('Class')), ben.id);
   assert.equal(groupId('Solo'), undefined);
+});
+
+test('wrong codes are limited to 20 an hour per IP, typed or by link; family emoji are fine', async () => {
+  const { app, people, gps } = await world();
+  const from = (method, url, c, payload) => app.inject({ method, url, payload, headers: { 'x-forwarded-for': '203.0.113.50', cookie: c ? [...c.jar].map(([k, v]) => `${k}=${v}`).join('; ') : '', ...(payload ? { 'content-type': 'application/x-www-form-urlencoded' } : {}) } });
+  for (let i = 0; i < 20; i++) assert.equal((await from('GET', '/groups/join/ZZZZZZZZ')).statusCode, 404);
+  assert.equal((await from('GET', '/groups/join/ZZZZZZZZ')).statusCode, 429);
+  gps('ana', 10);
+  assert.equal((await people.ana.c.post('/groups', { name: 'Family', emoji: '👨‍👩‍👧' })).statusCode, 303);
 });

@@ -56,14 +56,15 @@ export default async function groupRoutes(app) {
     if (isMember(db, group.id, user.id)) return 'member';
     return db.prepare('SELECT 1 FROM group_requests WHERE group_id = ? AND user_id = ?').get(group.id, user.id) ? 'asked' : 'open';
   };
+  const wrongCode = (req, reply) => (codeLimit.hit(req.ip) ? reply.callNotFound() : reply.code(429).type('text/plain').send('Too many tries. Try again in an hour.'));
   app.get('/groups/join/:code', async (req, reply) => {
     const group = groupByCode(db, req.params.code);
-    if (!group) return reply.callNotFound();
+    if (!group) return wrongCode(req, reply);
     return reply.page(joinGroupPage({ csrf: req.csrfToken(), group, user: req.user, state: joinState(group, req.user), here: `/groups/join/${group.code}` }));
   });
   app.post('/groups/join/:code', { preHandler: requireUser }, async (req, reply) => {
     const group = groupByCode(db, req.params.code);
-    if (!group) return reply.callNotFound();
+    if (!group) return wrongCode(req, reply);
     const result = joinWithCode(db, req.user, group, { now: now() });
     if (result.error === 'already') return reply.redirect(`/groups/${group.id}`, 303);
     if (result.error) return reply.code(422).page(listPage(req, { joinError: JOIN_ERRORS[result.error] }));
@@ -143,8 +144,10 @@ export default async function groupRoutes(app) {
   for (const action of ['approve', 'decline']) {
     app.post(`/groups/:id/requests/:userId/${action}`, { preHandler: requireUser }, async (req, reply) => {
       const group = ownedGroup(req);
-      if (!group || !answerRequest(db, group, id(req.params.userId), action === 'approve', { now: now() })) return reply.callNotFound();
-      return reply.redirect(`/groups/${group.id}?done=${action === 'approve' ? 'approved' : 'declined'}#requests`, 303);
+      const result = group ? answerRequest(db, group, id(req.params.userId), action === 'approve', { now: now() }) : null;
+      if (!result) return reply.callNotFound();
+      if (result === 'full') return reply.code(422).page(showGroup(req, group, { notice: 'They\u2019re in as many groups as they can be right now, so they can\u2019t join. Their request is still here.' }));
+      return reply.redirect(`/groups/${group.id}?done=${result}#requests`, 303);
     });
   }
   app.post('/groups/:id/members', { preHandler: requireUser }, async (req, reply) => {

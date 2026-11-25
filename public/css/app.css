@@ -1694,3 +1694,4 @@ svg.gary-art { height: auto; }
 .pal-list .pal-group-invite { display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }
 .pal-list .pal-group-invite select { max-width: 11rem; }
 @media (max-width: 520px) { .pal-list li { flex-wrap: wrap; } }
+.group-title, .group-lede { overflow-wrap: anywhere; }

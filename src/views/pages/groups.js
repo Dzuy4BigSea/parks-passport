@@ -90,8 +90,8 @@ export function groupPage({ csrf, group, board, me, requests = [], pals = [], no
     current: 'groups',
     body: html`<div class="narrow">
 <p class="breadcrumb"><a href="/groups">Groups</a></p>
-<h1><span aria-hidden="true">${group.emoji}</span> ${group.name}</h1>
-${group.description ? html`<p class="lede">${group.description}</p>` : ''}
+<h1 class="group-title"><span aria-hidden="true">${group.emoji}</span> ${group.name}</h1>
+${group.description ? html`<p class="lede group-lede">${group.description}</p>` : ''}
 ${notice(note)}
 
 <section aria-labelledby="board-h">
@@ -162,8 +162,8 @@ export function joinGroupPage({ csrf, group, user, state, here }) {
     title: `Join ${group.name}`,
     body: html`<div class="narrow">
 <p class="eyebrow">A Parks Passport group</p>
-<h1><span aria-hidden="true">${group.emoji}</span> ${group.name}</h1>
-${group.description ? html`<p class="lede">${group.description}</p>` : ''}
+<h1 class="group-title"><span aria-hidden="true">${group.emoji}</span> ${group.name}</h1>
+${group.description ? html`<p class="lede group-lede">${group.description}</p>` : ''}
 <p class="muted">${plural(group.members, 'member')}</p>
 ${action}
 </div>`,

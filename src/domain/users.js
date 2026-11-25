@@ -1,4 +1,5 @@
 import { hashPassword, randomToken, sha256 } from '../lib/crypto.js';
+import { handOnGroupsOf } from './groups.js';
 
 export const SESSION_DAYS = 30;
 export const TOKEN_MINUTES = 15;
@@ -188,12 +189,7 @@ export function deleteUser(db, userId) {
   db.prepare('DELETE FROM idea_contributors WHERE email = (SELECT email FROM users WHERE id = ?)').run(userId);
   // Badges they gave stay with the members, without naming them (their id could be reused).
   db.prepare("UPDATE user_badges SET source_id = NULL WHERE source_type = 'grant' AND source_id = ?").run(userId);
-  // Groups they run pass to their longest-standing member; a group with no one else ends.
-  for (const g of db.prepare('SELECT id FROM member_groups WHERE owner_id = ?').pluck().all(userId)) {
-    const next = db.prepare('SELECT user_id FROM group_members WHERE group_id = ? AND user_id != ? ORDER BY joined_at, user_id LIMIT 1').pluck().get(g, userId);
-    if (next) db.prepare('UPDATE member_groups SET owner_id = ? WHERE id = ?').run(next, g);
-    else db.prepare('DELETE FROM member_groups WHERE id = ?').run(g);
-  }
+  handOnGroupsOf(db, userId); // groups they run pass to their longest-standing member, or end
   db.prepare('DELETE FROM users WHERE id = ?').run(userId);
 }
 
