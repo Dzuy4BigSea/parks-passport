@@ -273,3 +273,17 @@ city and travel badges, the IP suggestion with a fake database, the admin city b
 `test/e2e/cities.spec.js` (Westminster pages axe clean at 375 px, GPS stamp at Sigler Park, city
 tabs), and the existing suite on `/st-pete/...` URLs. `npm run lighthouse` and
 `npm run check:memory` still pass.
+
+### M18 — Pals were here, profile photos, Admin › Stats, bot protection (Flows 1, 8, 9)
+- Migration 017 (`users.avatar_key`). `storeAvatar` in `src/lib/images.js`, `/account/avatar`
+  and `/avatars/:id/:key.jpg` in `src/routes/auth.js`, `src/views/avatar.js` (photo or initials).
+- `palsWhoStamped` in `src/domain/pals.js`, `src/views/pals-here.js`, the park card and park page,
+  the "Stamped by a pal" filter.
+- `src/domain/stats.js`, `/admin/stats`.
+- `src/lib/rate-limit.js` (in-memory, per connection), the sign-up trap field.
+
+Checks: `test/unit/social.test.js` (trap field, sign-up and email limits, photo re-encoding and
+EXIF strip, photo visibility for owner / pal / stranger / signed-out with 404, files removed on
+replace, remove and deletion, pal faces only for sharing pals, the filter, stats counts and 404s),
+`test/e2e/cities.spec.js` (upload and pal faces at 375 px, axe clean), `/admin/stats` in the
+`pages.spec.js` sweep, and the existing suite.

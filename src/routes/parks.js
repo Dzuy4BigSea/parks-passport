@@ -1,6 +1,7 @@
 import { listParks, countActiveParks, categoriesInUse, cleanCategories, parkCardExtras } from '../domain/parks.js';
 import { parseLatLng } from '../domain/geo.js';
 import { stampedParkIds } from '../domain/visits.js';
+import { palsWhoStamped } from '../domain/pals.js';
 import { parksPage } from '../views/pages/parks.js';
 import { cityPath } from '../views/urls.js';
 import { renderParkPage } from './park-view.js';
@@ -24,9 +25,14 @@ export default async function parkRoutes(app) {
     const near = parseLatLng(req.query.lat, req.query.lng);
     const stamped = req.user ? stampedParkIds(db, req.user.id) : null;
     const unvisited = Boolean(req.user) && req.query.unvisited === '1';
+    const palsOnly = Boolean(req.user) && req.query.pals === '1';
     let parks = listParks(db, { cityId: city.id, q, categories: selected, near });
+    // Pals who stamped each park (only pals who share their passport).
+    const palsHere = req.user ? palsWhoStamped(db, req.user.id, parks.map((p) => p.id)) : null;
+    const hasPals = Boolean(req.user) && Boolean(db.prepare('SELECT 1 FROM pal_links WHERE user_a = ? OR user_b = ? LIMIT 1').get(req.user.id, req.user.id));
     if (unvisited) parks = parks.filter((p) => !stamped.has(p.id));
-    const filterCount = selected.length + (unvisited ? 1 : 0);
+    if (palsOnly) parks = parks.filter((p) => palsHere.has(p.id));
+    const filterCount = selected.length + (unvisited ? 1 : 0) + (palsOnly ? 1 : 0);
     const events = q || filterCount ? [['park_search', { has_query: Boolean(q), filter_count: filterCount }]] : [];
     // First-visit dates for the postmarks on stamped cards (the member's own data).
     const stampDates = req.user ? new Map(db.prepare('SELECT park_id, MIN(visited_on) FROM visits WHERE user_id = ? GROUP BY park_id')
@@ -34,7 +40,7 @@ export default async function parkRoutes(app) {
     return reply.page({ events, ...parksPage({
       parks, total: countActiveParks(db, city.id), q, selected, near, unvisited, stamped, stampDates,
       extras: parkCardExtras(db, parks.map((p) => p.id)),
-      categories: categoriesInUse(db, city.id), signedIn: Boolean(req.user), theme: city,
+      categories: categoriesInUse(db, city.id), signedIn: Boolean(req.user), theme: city, palsHere, palsOnly, hasPals,
     }) });
   });
 

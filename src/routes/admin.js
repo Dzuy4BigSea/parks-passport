@@ -21,8 +21,9 @@ import { isSuperAdmin, ideaById, badgePrefill, markBuilt } from '../domain/ideas
 import { EMAIL_KINDS, COPY_FIELDS, emailCopy, saveEmailCopy, resetEmailCopy, isCustomized } from '../domain/email-copy.js';
 import {
   adminCity, adminEmail, adminEmailMessage, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
-  adminActivities,
+  adminActivities, adminStats,
 } from '../views/pages/admin.js';
+import { adminStats as computeStats } from '../domain/stats.js';
 
 const MAX_CSV_BYTES = 1024 * 1024;
 
@@ -142,8 +143,10 @@ export default async function adminRoutes(app) {
         users: one('SELECT COUNT(*) FROM users'),
         admins: one('SELECT COUNT(*) FROM users WHERE is_admin = 1'),
         newIdeas: one("SELECT COUNT(*) FROM badge_ideas WHERE status = 'new'"),
+        checkins7: db.prepare('SELECT COUNT(*) FROM visits WHERE created_at >= ?').pluck().get(new Date(now().getTime() - 7 * 86400000).toISOString()),
       } }));
     });
+    r.get('/stats', async (req, reply) => reply.page(adminStats({ stats: computeStats(db, { now: now() }) })));
 
     // Parks
     r.get('/parks', async (req, reply) => {

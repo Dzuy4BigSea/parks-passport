@@ -75,6 +75,48 @@ export async function removePhotoFiles(uploadsDir, fileKey) {
   await Promise.all(['full', 'thumb'].map((s) => fs.rm(photoPath(uploadsDir, fileKey, s), { force: true })));
 }
 
+// Profile photos: a 256 px square JPEG (center crop), re-encoded so no metadata survives.
+// Same checks and the same one-at-a-time queue as park photos. Returns { key } or { error }.
+export const AVATAR_EDGE = 256;
+export const avatarPath = (uploadsDir, key) => path.join(uploadsDir, 'avatars', `${key}.jpg`);
+export const AVATAR_KEY_RE = /^[a-f0-9]{32}$/;
+
+export function storeAvatar(buffer, uploadsDir) {
+  const run = queue.then(() => storeAvatarNow(buffer, uploadsDir));
+  queue = run.catch(() => {});
+  return run;
+}
+
+async function storeAvatarNow(buffer, uploadsDir) {
+  if (!buffer?.length) return { error: 'Choose a photo to upload.' };
+  if (buffer.length > MAX_UPLOAD_BYTES) return { error: 'That photo is over 10 MB. Try a smaller one.' };
+  let meta;
+  try {
+    meta = await sharp(buffer, { failOn: 'error', limitInputPixels: false }).metadata();
+  } catch {
+    if (isHeic(buffer)) return { error: "HEIC photos can't be read here. Upload it from your phone's browser (it converts to JPEG) or export it as JPEG." };
+    return { error: NOT_A_PHOTO };
+  }
+  if (!ACCEPTED.has(meta.format)) return { error: 'Use a JPEG, PNG or WebP image.' };
+  if ((meta.width || 0) * (meta.height || 0) > MAX_INPUT_PIXELS) return { error: 'That photo is too large (over 50 megapixels).' };
+  const key = crypto.randomBytes(16).toString('hex');
+  const file = avatarPath(uploadsDir, key);
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  try {
+    await sharp(buffer, SHARP_OPTS).rotate().flatten({ background: '#ffffff' })
+      .resize({ width: AVATAR_EDGE, height: AVATAR_EDGE, fit: 'cover', position: 'attention' })
+      .jpeg({ quality: 80, mozjpeg: true }).toFile(file);
+    return { key };
+  } catch {
+    await fs.rm(file, { force: true });
+    return { error: NOT_A_PHOTO };
+  }
+}
+
+export async function removeAvatar(uploadsDir, key) {
+  if (AVATAR_KEY_RE.test(String(key || ''))) await fs.rm(avatarPath(uploadsDir, key), { force: true });
+}
+
 // ISO-BMFF "ftyp" box with a HEIC/HEIF brand.
 function isHeic(buf) {
   if (buf.length < 12 || buf.toString('ascii', 4, 8) !== 'ftyp') return false;

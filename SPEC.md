@@ -51,6 +51,17 @@ Done when:
       public passport URL returns 404.
 - [ ] Session cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` in production. Every
       state-changing form rejects a request without a valid CSRF token (HTTP 403).
+- [ ] **Bot protection:** the sign-up form has a hidden trap field (off-screen, out of the tab
+      order, hidden from screen readers); a sign-up that fills it creates no account and lands on
+      the home page. One connection can make at most 5 sign-ups and 5 sign-in or reset emails an
+      hour (HTTP 429 after that). The limits live in memory only; local and private addresses
+      aren't limited. No CAPTCHA.
+- [ ] **Profile photo:** on Account I can upload, replace or remove one photo (JPEG, PNG or WebP,
+      up to 10 MB, checked by content). It's stored as a 256 px square JPEG with no metadata, and
+      the old file is deleted on replace, remove and account deletion. It's seen by whoever can
+      see my passport (Flow 8 rules; 404 otherwise) and shows on Account, my passport cover, the
+      Pals list, feed and leaderboard, and "your pals were here". Without one, my initials show.
+      With the Kids edition on, the form reminds me to use a photo of myself.
 
 ### Flow 2: Browse and search parks
 As anyone, I can find a park and see what it offers so that I can choose where to go.
@@ -191,6 +202,10 @@ Done when:
       returns 404 (not 403), so whether the account exists isn't revealed.
 - [ ] A permissions test checks, for each content type (passport, visit, photo, review
       comment, badge), owner / pal / stranger / signed-out against each visibility level.
+- [ ] **Your pals were here:** signed in, park cards (list and home) show up to three faces and
+      "Ana and Ben stamped this" for pals who stamped the park, and a park page lists them with
+      their latest date and a link to their passport. Only pals whose passport is shared (pals or
+      public) count, as in the feed. With at least one pal, "Stamped by a pal" filters the list.
 
 ### Flow 9: Admin
 As an admin, I can keep the park list and badges right and remove bad content.
@@ -215,7 +230,12 @@ Done when:
       addresses invited in the last 24 hours are refused. The list shows each invite as Pending or
       Joined. Only the token's hash is stored, and the join page loads no analytics.
 - [ ] I can change the wording of every member email (subject, preview text, heading, message,
-      button, small print, with {name} and {inviter}) and preview or reset it.
+      button, small print, with {name}, {inviter} and {city}) and preview or reset it.
+- [ ] **Admin › Stats** shows counts only (no names, emails or locations): check-ins in 7 and 30
+      days and in all, members who stamped in 7 and 30 days, new members, pal links, photos,
+      ratings, activities and badges; check-ins per day (14 days) and per week (12 weeks, with
+      new members); by city, by method, and the top 10 parks of the last 30 days. Check-ins count
+      when they were made. Members and signed-out visitors get 404.
 
 ### Flow 10: Analytics and consent
 As the owner, I can see how the app is used without tracking anyone who hasn't agreed, and

@@ -5,9 +5,10 @@ import { csrfField } from '../forms.js';
 import { METHOD_LABELS } from '../../domain/visits.js';
 import { formatDate, localDate } from '../../domain/time.js';
 import { VISIBILITY_LABELS } from '../../domain/visibility.js';
+import { avatar, sharesWithPals } from '../avatar.js';
 
 function feedItem(item) {
-  const who = html`<a href="/u/${item.user.handle}">${item.user.display_name}</a>`;
+  const who = html`${avatar(item.user, { size: 28, visible: sharesWithPals(item.user) })} <a href="/u/${item.user.handle}">${item.user.display_name}</a>`;
   const when = formatDate(localDate(new Date(item.at)));
   if (item.type === 'stamp') {
     return html`<li class="feed-item"><span class="feed-icon" aria-hidden="true">✓</span>
@@ -100,7 +101,7 @@ ${codeSection({ csrf, friendCode, codeError, codeValue })}
   <ol class="leaderboard">
     ${board.map((r, i) => html`<li${r.id === user.id ? html` class="me"` : ''}>
       <span class="rank">${i + 1}</span>
-      <span class="who">${r.id === user.id ? 'You' : html`<a href="/u/${r.handle}">${r.display_name}</a>`}</span>
+      <span class="who">${avatar(r, { size: 32 })} ${r.id === user.id ? 'You' : html`<a href="/u/${r.handle}">${r.display_name}</a>`}</span>
       <span class="score">${r.parks} ${r.parks === 1 ? 'park' : 'parks'} · ${r.points} pts</span>
     </li>`)}
   </ol>
@@ -120,7 +121,7 @@ ${codeSection({ csrf, friendCode, codeError, codeValue })}
   <h2 id="list-h">Your pals (${pals.length})</h2>
   ${pals.length ? html`<ul class="pal-list">
     ${pals.map((p) => html`<li>
-      <span>${p.visible ? html`<a href="/u/${p.handle}">${p.display_name}</a>` : p.display_name} <span class="muted">@${p.handle}</span></span>
+      <span class="pal-who">${avatar(p, { size: 36, visible: p.visible })} ${p.visible ? html`<a href="/u/${p.handle}">${p.display_name}</a>` : p.display_name} <span class="muted">@${p.handle}</span></span>
       <form method="post" action="/pals/${p.handle}/remove">
         ${csrfField(csrf)}
         <button type="submit" class="btn btn-quiet btn-small" aria-label="Remove ${p.display_name} as a pal">Remove</button>

@@ -42,3 +42,38 @@ test.describe('at Sigler Park', () => {
     await expectNoAxeViolations(page);
   });
 });
+
+test('profile photo upload and pal faces: axe clean at 375 px', async ({ page, browser }, testInfo) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  const sharp = (await import('sharp')).default;
+  const photo = await sharp({ create: { width: 400, height: 300, channels: 3, background: '#e4572e' } }).jpeg().toBuffer();
+  await signUp(page, { name: 'Ana Pal' });
+  await page.goto('/account');
+  await page.getByLabel('Choose a profile photo').setInputFiles({ name: 'me.jpg', mimeType: 'image/jpeg', buffer: photo });
+  await page.getByRole('button', { name: 'Upload photo' }).click();
+  await expect(page.getByRole('status')).toHaveText('Profile photo saved.');
+  await expect(page.locator('#photo img.avatar')).toBeVisible();
+  await expectNoAxeViolations(page);
+  // Share with pals, invite a friend who stamps a park: Ana sees their face on the card.
+  await page.getByLabel('My Park Pals').check();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.goto('/pals');
+  const link = await page.locator('#invite-link').inputValue();
+  const friend = await browser.newPage({ baseURL: testInfo.project.use.baseURL, viewport: { width: 375, height: 800 } });
+  await signUp(friend, { name: 'Ben Pal' });
+  await friend.goto(link);
+  await friend.getByRole('button', { name: 'Accept and become Park Pals' }).click();
+  await friend.goto('/account');
+  await friend.getByLabel('My Park Pals').check();
+  await friend.getByRole('button', { name: 'Save', exact: true }).click();
+  await friend.goto('/westminster/parks/liberty-park');
+  await friend.getByText('No GPS? Stamp on the honor system').click();
+  await friend.getByRole('button', { name: 'Stamp it' }).click();
+  await page.goto('/westminster/parks?pals=1');
+  await expect(page.locator('.pal-faces')).toContainText('Ben Pal stamped this');
+  await expectNoAxeViolations(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.goto('/westminster/parks/liberty-park');
+  await expect(page.locator('.pals-here')).toContainText('Ben Pal stamped this.');
+  await expectNoAxeViolations(page);
+});

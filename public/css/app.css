@@ -1201,3 +1201,37 @@ html:not(.js) .js-only { display: none !important; }
 .footer-cities p { margin: 0.25rem 0; }
 .city-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0 0 1rem; }
 .city-bar label { font-weight: 700; }
+
+/* Sign-up trap field for bots: off-screen, out of the tab order and hidden from screen readers. */
+.hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+
+/* Profile photos and initials (SPEC Flow 8). */
+.avatar { display: inline-block; flex: none; border-radius: 50%; object-fit: cover; vertical-align: middle; background: var(--sand-2); }
+.avatar-initials { display: inline-grid; place-items: center; font-weight: 800; line-height: 1; color: #fff;
+  background: hsl(var(--hue, 200) 45% 32%); font-family: var(--display, inherit); }
+.avatar-lg { box-shadow: 0 0 0 3px var(--surface, #fff), 0 0 0 5px var(--sun, #ffc83d); }
+.profile-photo { display: flex; gap: 1rem; align-items: center; margin: 0 0 1.25rem; flex-wrap: wrap; }
+.profile-photo h2 { margin: 0 0 0.25rem; font-size: 1.15rem; }
+.photo-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.5rem 0 0.25rem; }
+.photo-form input[type=file] { max-width: 100%; }
+.cover-name { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.pal-who, .leaderboard .who { display: inline-flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+
+/* "Your pals were here" (SPEC Flow 8). */
+.pal-faces { display: flex; align-items: center; gap: 0.45rem; margin: 0.35rem 0; font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+.pal-faces .faces { display: inline-flex; }
+.pal-faces .faces .avatar { box-shadow: 0 0 0 2px var(--surface, #fff); }
+.pal-faces .faces .avatar + .avatar { margin-left: -8px; }
+.pals-here { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.pals-here ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; }
+.pals-here li { display: inline-flex; align-items: center; gap: 0.4rem; }
+
+/* Admin › Stats */
+.stat-tiles { list-style: none; padding: 0; margin: 1rem 0 1.5rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
+.stat-tiles li { background: var(--surface, #fff); border-radius: 12px; padding: 0.8rem 0.9rem; box-shadow: var(--shadow); display: grid; gap: 0.2rem; }
+.stat-tiles strong { font-family: var(--display, inherit); font-size: 1.6rem; line-height: 1; }
+.stat-tiles span { font-size: 0.85rem; color: var(--muted, #4a5f66); }
+.stats-table caption { text-align: left; font-weight: 700; padding: 0.5rem 0; }
+.stats-table td { white-space: nowrap; }
+.stat-bar { display: inline-block; vertical-align: middle; height: 0.6rem; width: calc(var(--w) * 0.6); max-width: 60%; min-width: 2px; margin-right: 0.5rem;
+  background: var(--aqua-ink, #00756c); border-radius: 4px; }

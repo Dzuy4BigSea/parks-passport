@@ -4,7 +4,7 @@ import fastifyStatic from '@fastify/static';
 import formbody from '@fastify/formbody';
 import cookie from '@fastify/cookie';
 import compress from '@fastify/compress';
-import { removePhotoFiles } from './lib/images.js';
+import { removePhotoFiles, removeAvatar } from './lib/images.js';
 import { fileKeysForUser } from './domain/photos.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -70,6 +70,7 @@ export function buildApp({
   app.decorate('emailSettings', () => emailSettings(db, { envFrom: config.mailFrom || '' }));
   // Removes a user's photo files before their rows are deleted (rows cascade).
   app.decorate('beforeUserDelete', async (userId) => {
+    await removeAvatar(config.uploadsDir, db.prepare('SELECT avatar_key FROM users WHERE id = ?').pluck().get(userId));
     for (const key of fileKeysForUser(db, userId)) await removePhotoFiles(config.uploadsDir, key);
   });
 

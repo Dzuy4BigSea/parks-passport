@@ -6,6 +6,7 @@ import { parkPage } from '../views/pages/park.js';
 import { areaForPark, motifForPark, cityById, defaultCity } from '../domain/city.js';
 import { nextParks, closestBadge } from '../domain/engagement.js';
 import { badgeBoard } from '../domain/badges/index.js';
+import { palsWhoStamped } from '../domain/pals.js';
 import { activitiesForPark, visitToday, logsForVisit } from '../domain/activities.js';
 
 /**
@@ -40,6 +41,7 @@ export function renderParkPage(app, req, reply, park, { problem = null, stamped 
     theme, area: areaForPark(theme, park), celebrate,
     park, user, csrf: req.csrfToken(), today, problem, stamped, flash,
     myVisits: user ? visitsAtPark(db, user.id, park.id) : [],
+    palsHere: user ? palsWhoStamped(db, user.id, [park.id]).get(park.id) || [] : [],
     photos: photosForPark(db, user, park.id),
     summary: ratingSummary(db, park.id),
     reviews: visibleReviews(db, user, park.id),
