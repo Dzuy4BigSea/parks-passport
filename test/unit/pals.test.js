@@ -256,3 +256,145 @@ test('the pals list links only to passports you can see', async () => {
   assert.ok(!list.includes('href="/u/cat"'));
   assert.match(list, /cat <span class="muted">@cat<\/span>/);
 });
+
+// ---------- Friend codes and pal requests ----------
+
+const codeOf = async (who, people) => (await people[who].c.get('/pals')).body.match(/id="my-code"[^>]*value="([A-Z0-9]{4}-[A-Z0-9]{4})"/)[1];
+
+test('friend code: 8 characters with no look-alikes; typing it sends a request; accepting makes pals both ways', async () => {
+  const { db, people } = await world();
+  const code = await codeOf('ana', people);
+  assert.match(code, /^[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{4}-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{4}$/);
+  assert.equal(await codeOf('ana', people), code); // stable until renewed
+
+  // Any case, spaces or no dash.
+  const res = await people.ben.c.post('/pals/code', { code: ` ${code.replace('-', ' ').toLowerCase()} ` });
+  assert.equal(res.statusCode, 303);
+  assert.equal(res.headers.location, '/pals?done=requested');
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_links').pluck().get(), 0); // not pals yet
+  assert.match((await people.ben.c.get('/pals')).body, /Waiting for an answer[\s\S]*@ana/);
+  const anaPage = (await people.ana.c.get('/pals')).body;
+  assert.match(anaPage, /<strong>ben<\/strong> <span class="muted">@ben<\/span> wants to be Park Pals/);
+
+  const id = db.prepare('SELECT id FROM pal_requests').pluck().get();
+  assert.equal((await people.cat.c.post(`/pals/requests/${id}/accept`)).statusCode, 404); // not cat's to answer
+  assert.equal((await people.ben.c.post(`/pals/requests/${id}/accept`)).statusCode, 404); // the sender can't accept
+  assert.equal((await people.ana.c.post(`/pals/requests/${id}/accept`)).headers.location, '/pals?done=accepted');
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_links').pluck().get(), 1);
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_requests').pluck().get(), 0);
+  assert.match((await people.ben.c.get('/pals')).body, /@ana</);
+
+  const again = await people.ben.c.post('/pals/code', { code });
+  assert.equal(again.statusCode, 422);
+  assert.match(again.body, /already Park Pals with ana/);
+});
+
+test('pal requests: decline and cancel; self, repeat, mutual request; a new code kills the old one', async () => {
+  const { db, people } = await world();
+  const ana = await codeOf('ana', people);
+  const ben = await codeOf('ben', people);
+  assert.match((await people.ana.c.post('/pals/code', { code: ana })).body, /your own code/);
+
+  await people.cat.c.post('/pals/code', { code: ana });
+  assert.match((await people.cat.c.post('/pals/code', { code: ana })).body, /You already asked ana/);
+  const id = db.prepare('SELECT id FROM pal_requests').pluck().get();
+  assert.equal((await people.ana.c.post(`/pals/requests/${id}/decline`)).headers.location, '/pals?done=declined');
+  assert.doesNotMatch((await people.cat.c.get('/pals')).body, /Waiting for an answer/); // just gone
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_links').pluck().get(), 0);
+
+  await people.cat.c.post('/pals/code', { code: ben });
+  const rid = db.prepare('SELECT id FROM pal_requests').pluck().get();
+  assert.equal((await people.ben.c.post(`/pals/requests/${rid}/cancel`)).statusCode, 404); // only the sender cancels
+  assert.equal((await people.cat.c.post(`/pals/requests/${rid}/cancel`)).headers.location, '/pals?done=cancelled');
+
+  // Mutual: ben asked ana; ana typing ben's code makes them pals right away.
+  await people.ben.c.post('/pals/code', { code: ana });
+  assert.equal((await people.ana.c.post('/pals/code', { code: ben })).headers.location, '/pals?done=accepted');
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_links').pluck().get(), 1);
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_requests').pluck().get(), 0);
+
+  // A request that's also covered by an invite link is cleared when they become pals.
+  await people.cat.c.post('/pals/code', { code: ana });
+  const link = (await people.ana.c.get('/pals')).body.match(/\/pals\/invite\/[A-Za-z0-9_-]+/)[0];
+  await people.cat.c.post(`${link}/accept`);
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_requests').pluck().get(), 0);
+
+  await people.ana.c.post('/pals/code/regenerate');
+  assert.notEqual(await codeOf('ana', people), ana);
+  assert.match((await people.cat.c.post('/pals/code', { code: ana })).body, /doesn(&#39;|')t match anyone/);
+});
+
+test("pal codes can't be guessed: 10 wrong codes an hour, 20 requests a day", async () => {
+  const { app, db, people, now } = await world();
+  const ana = await codeOf('ana', people);
+  for (let i = 0; i < 10; i++) assert.equal((await people.cat.c.post('/pals/code', { code: 'ZZZZZZZZ' })).statusCode, 422);
+  const locked = await people.cat.c.post('/pals/code', { code: ana });
+  assert.equal(locked.statusCode, 429);
+  assert.match(locked.body, /Try again in an hour/);
+  now.advanceMinutes(61);
+  assert.equal((await people.cat.c.post('/pals/code', { code: ana })).statusCode, 303);
+
+  // Daily cap on requests sent.
+  const more = [];
+  for (let i = 0; i < 20; i++) {
+    const c = client(app);
+    await c.post('/signup', { display_name: `p${i}`, email: `p${i}@example.com`, password: PW });
+    more.push(await (async () => (await c.get('/pals')).body.match(/id="my-code"[^>]*value="([A-Z0-9-]{9})"/)[1])());
+  }
+  for (let i = 0; i < 19; i++) assert.equal((await people.cat.c.post('/pals/code', { code: more[i] })).statusCode, 303);
+  const capped = await people.cat.c.post('/pals/code', { code: more[19] });
+  assert.equal(capped.statusCode, 429);
+  assert.match(capped.body, /20 requests today/);
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_requests WHERE from_user = ?').pluck().get(people.cat.id), 20);
+});
+
+test("a dead invite link explains itself (still a 404) and doesn't say whose it was", async () => {
+  const { app, people, inviteLink } = await world();
+  const link = await inviteLink('ana');
+  await people.ana.c.post('/pals/invite/regenerate');
+  for (const res of [await people.ben.c.get(link), await people.ben.c.get(`${link.slice(0, -1)}`), await client(app).get(link)]) {
+    assert.equal(res.statusCode, 404);
+    assert.match(res.body, /This invite link doesn(&#39;|')t work anymore/);
+    assert.doesNotMatch(res.body, /\bana\b/);
+  }
+  assert.match((await people.ben.c.get(link)).body, /href="\/pals#add"/);
+  assert.match((await client(app).get(link)).body, /href="\/signup\?next=\/pals"/);
+});
+
+test('deleting an account removes its friend code and pal requests', async () => {
+  const { db, people } = await world();
+  const ana = await codeOf('ana', people);
+  await people.ben.c.post('/pals/code', { code: ana });
+  await people.ana.c.post('/pals/code', { code: await codeOf('cat', people) });
+  await people.ana.c.post('/account/delete', { delete_password: PW });
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_requests').pluck().get(), 0);
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_codes WHERE user_id = ?').pluck().get(people.ana.id), 0);
+});
+
+test("QA: cancelling doesn't give a daily request back; a non-code isn't a guess; accepting a request checks badges", async () => {
+  const { db, people } = await world();
+  const ana = await codeOf('ana', people);
+  for (let i = 0; i < 20; i++) {
+    assert.equal((await people.cat.c.post('/pals/code', { code: ana })).statusCode, 303);
+    const id = db.prepare('SELECT id FROM pal_requests').pluck().get();
+    await people.cat.c.post(`/pals/requests/${id}/cancel`);
+  }
+  assert.equal((await people.cat.c.post('/pals/code', { code: ana })).statusCode, 429);
+
+  for (let i = 0; i < 12; i++) {
+    const res = await people.ben.c.post('/pals/code', { code: i % 2 ? '' : 'hello' });
+    assert.equal(res.statusCode, 422);
+    assert.match(res.body, /Type the 8-character code/);
+  }
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_code_failures').pluck().get(), 0);
+
+  // Ana and Ben stamp the same park the same day, then become pals by request: Better Together.
+  for (const who of ['ana', 'ben']) await people[who].c.post('/parks/a-park/stamp', {});
+  await people.ben.c.post('/pals/code', { code: ana });
+  const rid = db.prepare('SELECT id FROM pal_requests').pluck().get();
+  await people.ana.c.post('/account/visibility', { default_visibility: 'pals' });
+  await people.ben.c.post('/account/visibility', { default_visibility: 'pals' });
+  await people.ana.c.post(`/pals/requests/${rid}/accept`);
+  const together = db.prepare(`SELECT COUNT(*) FROM user_badges ub JOIN badges b ON b.id = ub.badge_id WHERE b.slug = 'together'`).pluck().get();
+  assert.equal(together, 2);
+});

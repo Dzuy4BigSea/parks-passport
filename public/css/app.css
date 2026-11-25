@@ -1177,3 +1177,11 @@ html:not(.js) .js-only { display: none !important; }
 .home > *, .home-cards > *, .home-pair > * { min-width: 0; } /* the postcard strip scrolls inside its column */
 .home .btn svg, .spread-right > p a svg { width: 18px; height: 18px; flex: none; vertical-align: -0.2em; }
 .spread-right > p a { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 700; }
+
+/* Friend codes and pal requests (Flow 8) */
+.friend-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.08em; text-transform: uppercase; }
+.request-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.request-actions form { margin: 0; }
+.add-code { margin-top: 0.75rem; }
+.copy-row label:not(.visually-hidden) { flex-basis: 100%; font-weight: 700; }
+#requests { margin-bottom: 1.25rem; }
