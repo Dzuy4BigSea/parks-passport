@@ -4,6 +4,7 @@
 //   node scripts/seed-civicplus.js marple
 // The directory's search lists the "Parks" facility type with addresses and features; each
 // facility's own page carries its map pin. Never run in production.
+import { pathToFileURL } from 'node:url';
 import { UA, get, sleep, decode, slugify, fixed, writeParksCsv } from './lib/seed-fetch.js';
 
 const SITES = {
@@ -101,6 +102,6 @@ async function main() {
   writeParksCsv(key, rows);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((err) => { console.error(err.message); process.exit(1); });
 }

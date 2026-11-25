@@ -74,13 +74,13 @@
     {
       "slug": "roller-hockey",
       "name": "Roller hockey",
-      "blurb": "Marple's outdoor roller hockey rink is one of the few in the area. Lace up and bring a stick.",
+      "blurb": "Marple has its own outdoor roller hockey rink on Highland Avenue. Lace up and bring a stick.",
       "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M10 4l14 28h10v5H21z\"/><path d=\"M38 4L24 32\"/><path d=\"M14 32h-4l-2 5h7\"/><path d=\"M18 43a6 2 0 0 0 12 0a6 2 0 0 0-12 0z\"/></svg>"
     },
     {
       "slug": "one-room-school",
       "name": "Old Marple School",
-      "blurb": "Old Marple School Park keeps the name of the township school that once stood on North Malin Road.",
+      "blurb": "Old Marple School Park, on North Malin Road, carries the name of an old Marple school.",
       "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M6 42h36\"/><path d=\"M10 42V20h28v22\"/><path d=\"M8 21l16-11 16 11\"/><path d=\"M24 10V4h6v4h-6\"/><path d=\"M20 42v-10h8v10\"/><rect x=\"13\" y=\"25\" width=\"5\" height=\"6\"/><rect x=\"30\" y=\"25\" width=\"5\" height=\"6\"/></svg>"
     }
   ]

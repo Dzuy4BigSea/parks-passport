@@ -3,6 +3,7 @@
 //   node scripts/seed-bend.js
 // The locator page holds every park as a map marker with its pin, address and amenity classes,
 // so one request is enough. Never run in production.
+import { pathToFileURL } from 'node:url';
 import { get, decode, slugify, fixed, writeParksCsv } from './lib/seed-fetch.js';
 
 const LOCATOR_URL = 'https://www.bendparksandrec.org/parks-trails/park-locator/';
@@ -18,7 +19,7 @@ const FEATURES = {
   'playgrounds': ['playground'], 'large-picnic-shelter': ['picnic-shelter'], 'trails': ['trails'], 'paths-unpaved': ['trails'],
   'deschutes-river-trail': ['trails'], 'ball-field': ['ball-fields'], 'sports-field': ['ball-fields'], 'basketball': ['basketball'],
   'restrooms': ['restrooms'], 'seasonal-restrooms': ['restrooms'], 'tennis': ['tennis'], 'pickleball': ['pickleball'],
-  'historical-markers': ['history-nature'], 'natural-areas': ['history-nature'], 'river-access': ['water-access'],
+  'historical-markers': ['history-nature'], 'river-access': ['water-access'],
   'fitness-loop': ['fitness'], 'dog-off-leash-areas': ['dog-park'], 'water-play-feature': ['pool'], 'skateboarding': ['skatepark'],
 };
 
@@ -43,6 +44,6 @@ async function main() {
   writeParksCsv('bend', rows);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((err) => { console.error(err.message); process.exit(1); });
 }

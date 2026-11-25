@@ -4,6 +4,7 @@
 // The directory gives names, descriptions and addresses (some are cross streets) but no pins, so
 // pins come from OpenStreetMap (the park by name, via Nominatim), else the US Census geocoder.
 // A park neither knows is written with needs_pin=1 for an admin to place. Never run in production.
+import { pathToFileURL } from 'node:url';
 import { get, decode, slugify, fixed, osmPark, censusPoint, writeParksCsv } from './lib/seed-fetch.js';
 
 const DIRECTORY_URL = 'https://www.trinidad.co.gov/services/parks___recreation/parks___recreation.php';
@@ -64,6 +65,6 @@ async function main() {
   writeParksCsv('trinidad', rows);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((err) => { console.error(err.message); process.exit(1); });
 }

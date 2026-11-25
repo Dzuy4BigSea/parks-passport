@@ -1,17 +1,23 @@
 // Dev-only: builds seed/cities/indianapolis/parks.csv from Indy Parks and Recreation's website:
 //   node scripts/seed-indy.js
 // The site's WordPress API lists every park with its amenities and township; each park's page
-// gives its street address, phone and a Google Maps "Directions" link with the pin. If a page has
-// no pin, the park is looked up in OpenStreetMap by name, then its address is geocoded (US Census).
+// gives its street address, phone and a Google Maps "Directions" link with the place's pin. If a
+// page has no place pin, its address is geocoded (US Census), then the park is looked up in
+// OpenStreetMap by name (a trail's OSM match is the whole trail, so the address comes first).
 // Never run in production.
+import { pathToFileURL } from 'node:url';
 import { get, sleep, decode, slugify, fixed, osmPark, censusPoint, writeParksCsv } from './lib/seed-fetch.js';
 
 const API = 'https://parks.indy.gov/wp-json/wp/v2/parks?per_page=100&_fields=id,slug,title,link,parent,class_list';
 export const BOUNDS = { minLat: 39.60, maxLat: 39.95, minLng: -86.35, maxLng: -85.90 }; // Marion County
 const TRAIL_RADIUS_M = 300; // a trail's pin is one point on a long path
 // Eagle Creek's page lists two entrances instead of an address, and the park is about 3,900 acres.
-const ADDRESSES = { 'eagle-creek-park': '5700 N Eagle Creek Pkwy, Indianapolis, IN 46254' };
+// Robey Park's page says S Bridgeport Rd, but 46234 and the park are on N Bridgeport Rd.
+const ADDRESSES = { 'eagle-creek-park': '5700 N Eagle Creek Pkwy, Indianapolis, IN 46254',
+  'robey-park': '2800 N Bridgeport Rd, Indianapolis, IN 46234' };
 const RADIUS_M = { 'eagle-creek-park': 2000 };
+// Pages whose Directions link points at another park (Centennial & 20th's goes to Municipal Gardens).
+const IGNORE_PAGE_PIN = new Set(['centennial-and-20th-park']);
 
 // Golf courses, a school pool and a highway parcel aren't parks to stamp (as in the other packs).
 const skip = (name) => /Golf (?:Course|Academy)$|School Pool$|^Highway Parcel/.test(name);
@@ -35,8 +41,8 @@ const FEATURES = {
 export function parsePark(page) {
   const loc = (page.match(/<h2 class="h4">Location<\/h2>\s*<p>([\s\S]*?)<\/p>/) || [])[1];
   const directions = (page.match(/href="(https:\/\/www\.google\.com\/maps[^"]*)"[^>]*>Directions</) || [])[1] || '';
-  const exact = directions.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || directions.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
-    || directions.match(/[?&](?:q|query)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+  // !3d…!4d is the place itself; an @lat,lng is only where the map was centered, so it isn't used.
+  const exact = directions.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || directions.match(/[?&](?:q|query)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
   const phone = (page.match(/<h2 class="h4">Contact<\/h2>\s*<p>\(?(\d{3})\)?[.\s-]?(\d{3})[.\s-](\d{4})<\/p>/) || []).slice(1);
   return {
     address: loc ? decode(loc.replace(/<br\s*\/?>/g, ', ').replace(/<[^>]+>/g, '')) : '',
@@ -48,9 +54,9 @@ export function parsePark(page) {
 async function main() {
   const parks = [];
   for (let page = 1; ; page++) {
-    const batch = await get(`${API}&page=${page}`, { json: true }).catch(() => []);
+    const batch = await get(`${API}&page=${page}`, { json: true });
     parks.push(...batch);
-    if (batch.length < 100) break;
+    if (batch.length < 100) break; // (an exact multiple of 100 would end on an HTTP 400 and stop)
   }
   // Child pages ("Plan Your Visit", a family center inside Riverside Park) belong to their park.
   const top = parks.filter((p) => !p.parent && !skip(decode(p.title.rendered)));
@@ -62,11 +68,12 @@ async function main() {
     const slug = slugify(name);
     const info = parsePark(await get(p.link));
     info.address = ADDRESSES[slug] || info.address;
-    let pin = info.pin && info.pin.lat >= BOUNDS.minLat && info.pin.lat <= BOUNDS.maxLat
+    let pin = !IGNORE_PAGE_PIN.has(slug) && info.pin && info.pin.lat >= BOUNDS.minLat && info.pin.lat <= BOUNDS.maxLat
       && info.pin.lng >= BOUNDS.minLng && info.pin.lng <= BOUNDS.maxLng ? info.pin : null;
-    if (!pin) pin = await osmPark(name, 'Indianapolis, Indiana', BOUNDS);
+    let via = pin ? 'page' : 'census';
     if (!pin && info.address) pin = await censusPoint(info.address, BOUNDS);
-    if (!pin) console.warn(`  ! ${name}: no pin`);
+    if (!pin) [pin, via] = [await osmPark(name, 'Indianapolis, Indiana', BOUNDS), 'osm'];
+    console.log(`${slug.padEnd(44)} ${pin ? via : 'NONE'}`);
     rows.push({
       slug, name, address: info.address, phone: info.phone, lat: fixed(pin?.lat), lng: fixed(pin?.lng),
       checkin_radius_m: RADIUS_M[slug] ? String(RADIUS_M[slug]) : / Trail$/.test(name) ? String(TRAIL_RADIUS_M) : '',
@@ -76,6 +83,6 @@ async function main() {
   writeParksCsv('indianapolis', rows);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((err) => { console.error(err.message); process.exit(1); });
 }
