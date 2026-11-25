@@ -9,6 +9,10 @@ import { raw } from '../html.js';
 import { sanitizeSvg } from '../../lib/svg-sanitize.js';
 import { parkPath } from '../urls.js';
 
+// "Early Bird Edition (limited: 93 of 100 left)" in the badge pickers.
+const badgeOption = (b) => `${b.name}${b.limited_count ? ` (limited: ${Math.max(0, b.limited_count - b.serials_given)} of ${b.limited_count} left)` : b.rule_type === 'manual' ? ' (given only)' : ''}${b.enabled ? '' : ' (disabled)'}`;
+const serialText = (b) => (b.serial ? ` · #${b.serial}${b.limited_count ? ` of ${b.limited_count}` : ''}` : '');
+
 const page = (title, body, extra = {}) => ({ title: `Admin · ${title}`, current: 'admin', ...extra, body });
 const crumb = html`<p class="breadcrumb"><a href="/admin">Admin</a></p>`;
 const dateOf = (iso) => formatDate(localDate(new Date(iso)));
@@ -141,7 +145,7 @@ export function adminBadges({ badges }) {
   <caption class="visually-hidden">Badges</caption>
   <thead><tr><th scope="col">Badge</th><th scope="col">Rule</th><th scope="col">Shows as</th><th scope="col">Earned</th></tr></thead>
   <tbody>${badges.map((b) => html`<tr${b.enabled ? '' : html` class="disabled"`}>
-    <td data-label="Badge">${badgeArt(b.art, 'table-art')} <a href="/admin/badges/${b.id}">${b.name}</a>${b.enabled ? '' : html` <span class="flag">Disabled</span>`}</td>
+    <td data-label="Badge">${badgeArt(b.art, 'table-art')} <a href="/admin/badges/${b.id}">${b.name}</a>${b.enabled ? '' : html` <span class="flag">Disabled</span>`}${b.limited_count ? html` <span class="flag flag-holo">Limited: ${b.serials_given} of ${b.limited_count} given</span>` : ''}</td>
     <td data-label="Rule">${RULES[b.rule_type]?.label || b.rule_type}<br><span class="muted">${b.rule_params}</span></td>
     <td data-label="Shows as">${b.kind}</td>
     <td data-label="Earned">${b.earned_count}</td>
@@ -220,6 +224,9 @@ ${errorSummary(errors)}
     ${errors.kind ? html`<p class="error-text">${errors.kind}</p>` : ''}
     ${[['known', 'Known: name and progress shown'], ['hidden', 'Hidden: "?" with the hint until earned'], ['lucky', 'Lucky: awarded at random (random or lucky drop rule)']].map(([k, label]) => html`<label class="check"><input type="radio" name="kind" value="${k}"${b.kind === k ? html` checked` : ''}> ${label}</label>`)}
   </fieldset>
+  ${input('limited_count', 'Limited edition: number of copies (optional)', b.limited_count ?? '', { type: 'number', error: errors.limited_count,
+    hint: 'Leave empty for an ordinary badge. A limited edition is numbered (#1 of 100, #2 of 100…) as you give it out, and shines like a holographic card. Use the "Given by an admin only" rule.',
+    attrs: html`step="1" min="1" max="1000"` })}
   <label class="check"><input type="checkbox" name="enabled" value="1"${enabled ? html` checked` : ''}> Enabled. Disabling stops new awards; members keep badges they earned.</label>
   <button type="submit" class="btn btn-primary">${isNew ? 'Add badge' : 'Save badge'}</button>
 </form>`, { scripts: ['/js/badge-form.js'] });
@@ -266,7 +273,8 @@ ${queue.reviews.length ? html`<ul class="mod-list">${queue.reviews.map((r) => ht
 </li>`)}</ul>` : html`<p>No shared reviews with comments.</p>`}`);
 }
 
-export function adminUsers({ users, csrf, me, error, notice, invites = [], inviteError = null, inviteValues = {} }) {
+export function adminUsers({ users, csrf, me, error, notice, invites = [], inviteError = null, inviteValues = {}, badges = [], giveError = null, giveValues = {} }) {
+  const picked = new Set([].concat(giveValues.user_id || []).map(String));
   return page('Members', html`${crumb}<h1>Members</h1>
 ${error ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${error}</p>` : ''}
 ${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${notice}</p>` : ''}
@@ -295,11 +303,22 @@ ${invites.length ? html`<div class="table-wrap"><table class="admin-table">
 </table></div>` : ''}
 </section>
 
-<h2>All members</h2>
+<h2 id="members">All members</h2>
+<form method="post" action="/admin/users/give" id="bulk-give" class="card-form admin-form give-bar">
+  ${csrfField(csrf)}
+  <h3>Give a badge to the members you tick</h3>
+  ${giveError ? html`<p class="error-text" role="alert">${giveError}</p>` : ''}
+  <div class="field"><label for="give_badge">Badge</label>
+    <select id="give_badge" name="badge_id" required><option value="">Choose…</option>${badges.map((b) => html`<option value="${b.id}"${String(giveValues.badge_id) === String(b.id) ? html` selected` : ''}>${badgeOption(b)}</option>`)}</select></div>
+  ${input('note', 'Note (optional)', giveValues.note, { hint: 'Shown with the badge. Up to 140 characters.', attrs: html`maxlength="140"` })}
+  <p class="hint">It pops up the next time each of them opens the app. Limited editions are numbered in the order the members joined. Anyone who already has the badge is skipped.</p>
+  <button type="submit" class="btn btn-pop">Give to ticked members</button>
+</form>
 <div class="table-wrap"><table class="admin-table">
   <caption class="visually-hidden">Members</caption>
-  <thead><tr><th scope="col">Member</th><th scope="col">Parks</th><th scope="col">Joined</th><th scope="col">Badges</th><th scope="col">Admin</th></tr></thead>
+  <thead><tr><th scope="col"><span class="visually-hidden">Tick to give a badge</span></th><th scope="col">Member</th><th scope="col">Parks</th><th scope="col">Joined</th><th scope="col">Badges</th><th scope="col">Admin</th></tr></thead>
   <tbody>${users.map((u) => html`<tr>
+    <td data-label="Give"><input type="checkbox" name="user_id" value="${u.id}" form="bulk-give" class="give-tick" aria-label="Give the badge to ${u.display_name}"${picked.has(String(u.id)) ? html` checked` : ''}></td>
     <td data-label="Member">${u.display_name} <span class="muted">@${u.handle}</span><br><span class="muted">${u.email}</span></td>
     <td data-label="Parks">${u.parks}</td>
     <td data-label="Joined">${dateOf(u.created_at)}</td>
@@ -542,12 +561,12 @@ ${error ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${erro
 ${available.length ? html`<form method="post" action="/admin/users/${member.id}/badges" class="card-form admin-form">
   ${csrfField(csrf)}
   <div class="field"><label for="badge_id">Badge</label>
-    <select id="badge_id" name="badge_id" required><option value="">Choose…</option>${available.map((b) => html`<option value="${b.id}"${String(values.badge_id) === String(b.id) ? html` selected` : ''}>${b.name}${b.rule_type === 'manual' ? ' (given only)' : ''}${b.enabled ? '' : ' (disabled)'}</option>`)}</select></div>
+    <select id="badge_id" name="badge_id" required><option value="">Choose…</option>${available.map((b) => html`<option value="${b.id}"${String(values.badge_id) === String(b.id) ? html` selected` : ''}>${badgeOption(b)}</option>`)}</select></div>
   ${input('note', 'Note (optional)', values.note, { hint: 'Shown with the badge, e.g. "Thanks for helping at the park cleanup!" Up to 140 characters.', attrs: html`maxlength="140"` })}
   <p class="hint">${member.display_name} sees it pop up the next time they open Parks Passport, and in their notifications. Badges you give are never taken away by the rules.</p>
   <button type="submit" class="btn btn-pop">Give badge</button>
 </form>` : html`<p>${member.display_name} already has every badge.</p>`}
 <h2>Their badges (${earned.length})</h2>
-${earned.length ? html`<ul class="given-list">${earned.map((b) => html`<li>${badgeArt(b.art, 'table-art')} ${b.name} <span class="muted">· ${dateOf(b.awarded_at)}${b.source_type === 'grant' ? ` · given by ${b.given_by || 'an admin'}` : ''}</span>
+${earned.length ? html`<ul class="given-list">${earned.map((b) => html`<li>${badgeArt(b.art, 'table-art')} ${b.name}${serialText(b)} <span class="muted">· ${dateOf(b.awarded_at)}${b.source_type === 'grant' ? ` · given by ${b.given_by || 'an admin'}` : ''}</span>
   ${b.source_type === 'grant' ? html`<form method="post" action="/admin/users/${member.id}/badges/${b.id}/delete" class="inline-form">${csrfField(csrf)}<button type="submit" class="btn btn-quiet btn-small">Take back<span class="visually-hidden"> ${b.name}</span></button></form>` : ''}</li>`)}</ul>` : html`<p>None yet.</p>`}`);
 }

@@ -263,6 +263,19 @@ Done when:
       rules never award), with an optional note of up to 140 characters. It pops up on their next
       page as "A gift for you!" with "From <my name>: “note”", and goes in their notifications.
       The rules never take a given badge back; I can take it back on the same page.
+- [ ] **Give to several at once:** in Admin › Members I tick members, choose a badge (the list
+      shows how many copies of a limited edition are left), add an optional note and give it to all
+      of them. Anyone who already has it is skipped; the result says how many got it, already had
+      it, or missed out because the copies ran out.
+- [ ] **Limited editions:** a badge can have a number of copies (1 to 1000) and the "Given by an
+      admin only" rule. Each copy given gets the lowest free number (#1 of 100, #2 of 100…), so
+      numbers are unique; a taken-back number is given again, and nothing is given past the last
+      copy. Giving to several at once numbers them by join date. The edition can't be made smaller
+      than the copies already given. The member's copy shows its number in the announcement, the
+      notification, the passport and the close-up, with a holographic foil that shimmers and
+      follows the pointer or the phone's tilt (still with reduced motion). **Early Bird Edition**
+      (🐦, 100 copies) ships in `seed/limited-badges.json`. (The 🌅 Early Bird badge for checking
+      in before 7:30 am is a different badge.)
 
 ### Flow 10: Analytics and consent
 As the owner, I can see how the app is used without tracking anyone who hasn't agreed, and

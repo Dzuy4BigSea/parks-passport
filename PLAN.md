@@ -324,3 +324,17 @@ Checks: `test/unit/notifications.test.js` (admin only, note limit, already has i
 note, bell count and marked read, never taken back by the rules, take back, earned badge and pal
 notifications, private, signed out, deleted with the other member), `test/e2e/notifications.spec.js`
 (give in admin, gift reveal with the note, bell, list, axe at 375 px), and the existing suite.
+
+### M22 — Limited editions, Early Bird Edition, give to several at once (Flow 9)
+- Migration 020 (`badges.limited_count`, `user_badges.serial` unique per badge),
+  `seed/limited-badges.json` (Early Bird Edition, 100 copies) loaded by `seedCities`.
+- `grantBadge` numbers limited copies (lowest free number; `sold_out` past the last one),
+  `grantBadgeToMany` (by join date), the board carries the member's number.
+- Admin › Badges: "Limited edition: number of copies" (given-only rule; can't shrink below copies
+  given). Admin › Members: ticks and "Give to ticked members".
+- Holographic foil (`.holo-foil`, `holoTilt` in `public/js/fx.js`) on the reveal, the passport
+  tile and the close-up.
+
+Checks: `test/unit/limited.test.js` (seeded, numbering, reuse, sold out, display, give to several
+by join date, members get 404, form rules), `test/e2e/limited.spec.js` (tick and give, holographic
+reveal with the number and note, passport tile, close-up, axe at 375 px), and the existing suite.

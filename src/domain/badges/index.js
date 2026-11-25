@@ -15,6 +15,8 @@ export { seedBadgesIfEmpty } from '../../gamification/index.js';
 export function addMissingBadges(db, list, { now = new Date(), cityId = null } = {}) {
   const had = new Set(db.prepare('SELECT slug FROM badges').pluck().all());
   const added = addMissing(db, list, { now });
+  const limit = db.prepare('UPDATE badges SET limited_count = ? WHERE slug = ?');
+  for (const b of list) if (!had.has(b.slug) && b.limited_count) limit.run(b.limited_count, b.slug);
   if (cityId != null) {
     const set = db.prepare('UPDATE badges SET city_id = ? WHERE slug = ?');
     for (const b of list) if (!had.has(b.slug)) set.run(cityId, b.slug);
@@ -101,7 +103,7 @@ export function awardBadges(db, userId, trigger, opts = {}) {
 
 /** Badges awarded but not yet announced, with a gift's note and giver; marks them announced. */
 export function takeUnseenBadges(db, userId, { now = new Date() } = {}) {
-  const rows = db.prepare(`SELECT b.*, ub.note AS award_note, CASE WHEN ub.source_type = 'grant' THEN g.display_name END AS given_by
+  const rows = db.prepare(`SELECT b.*, ub.serial, ub.note AS award_note, CASE WHEN ub.source_type = 'grant' THEN g.display_name END AS given_by
     FROM user_badges ub JOIN badges b ON b.id = ub.badge_id LEFT JOIN users g ON g.id = ub.source_id
     WHERE ub.user_id = ? AND ub.seen_at IS NULL ORDER BY ub.awarded_at, b.sort`).all(userId);
   if (rows.length) db.prepare('UPDATE user_badges SET seen_at = ? WHERE user_id = ? AND seen_at IS NULL').run(now.toISOString(), userId);
@@ -121,11 +123,53 @@ export function grantBadge(db, { admin, userId, badgeId, note = '' }, { now = ne
   if (!member || !badge) return { error: 'not_found' };
   const text = String(note || '').replace(/\s+/g, ' ').trim();
   if (text.length > NOTE_MAX) return { error: 'note' };
-  const { changes } = db.prepare(`INSERT OR IGNORE INTO user_badges (user_id, badge_id, awarded_at, source_type, source_id, note)
-    VALUES (?, ?, ?, 'grant', ?, ?)`).run(userId, badgeId, now.toISOString(), admin.id, text || null);
-  if (!changes) return { error: 'already' };
-  notify(db, userId, { kind: 'gift', text: `${admin.display_name} gave you the ${badge.name} badge${text ? `: “${text}”` : '.'}`, link: '/passport#badges', actorId: admin.id }, { now });
-  return { ok: true, badge };
+  return db.transaction(() => {
+    if (db.prepare('SELECT 1 FROM user_badges WHERE user_id = ? AND badge_id = ?').get(userId, badgeId)) return { error: 'already' };
+    // A limited edition gets the lowest free number (a taken-back number is given again).
+    let serial = null;
+    if (badge.limited_count) {
+      serial = nextSerial(db, badgeId);
+      if (serial > badge.limited_count) return { error: 'sold_out' };
+    }
+    db.prepare(`INSERT INTO user_badges (user_id, badge_id, awarded_at, source_type, source_id, note, serial)
+      VALUES (?, ?, ?, 'grant', ?, ?, ?)`).run(userId, badgeId, now.toISOString(), admin.id, text || null, serial);
+    const what = serial ? `${badge.name} badge, #${serial} of ${badge.limited_count}` : `${badge.name} badge`;
+    notify(db, userId, { kind: 'gift', text: `${admin.display_name} gave you the ${what}${text ? `: “${text}”` : '.'}`, link: '/passport#badges', actorId: admin.id }, { now });
+    return { ok: true, badge, serial };
+  })();
+}
+
+/** The lowest number not yet given for a limited edition (1 if none). */
+export function nextSerial(db, badgeId) {
+  let n = 1;
+  for (const s of db.prepare('SELECT serial FROM user_badges WHERE badge_id = ? AND serial IS NOT NULL ORDER BY serial').pluck().all(badgeId)) {
+    if (s !== n) break;
+    n += 1;
+  }
+  return n;
+}
+
+/** How many copies of a limited edition are given. */
+export const serialsGiven = (db, badgeId) => db.prepare('SELECT COUNT(*) FROM user_badges WHERE badge_id = ? AND serial IS NOT NULL').pluck().get(badgeId);
+
+/**
+ * Gives one badge to several members at once (Admin › Members). Limited editions are numbered in
+ * the order the members joined. Returns { given, already, soldOut } counts, or { error }.
+ */
+export function grantBadgeToMany(db, { admin, userIds, badgeId, note = '' }, { now = new Date() } = {}) {
+  if (!db.prepare('SELECT 1 FROM badges WHERE id = ?').get(badgeId)) return { error: 'not_found' };
+  if (String(note || '').replace(/\s+/g, ' ').trim().length > NOTE_MAX) return { error: 'note' };
+  const ids = [...new Set(userIds)];
+  if (!ids.length) return { error: 'none' };
+  const members = db.prepare(`SELECT id FROM users WHERE id IN (${ids.map(() => '?').join(',')}) ORDER BY created_at, id`).pluck().all(...ids);
+  const counts = { given: 0, already: 0, soldOut: 0 };
+  for (const userId of members) {
+    const r = grantBadge(db, { admin, userId, badgeId, note }, { now });
+    if (r.ok) counts.given += 1;
+    else if (r.error === 'already') counts.already += 1;
+    else if (r.error === 'sold_out') counts.soldOut += 1;
+  }
+  return counts;
 }
 
 /** Takes back a badge an admin gave (only given ones). */
@@ -133,5 +177,11 @@ export const takeBackGrant = (db, userId, badgeId) => db.prepare(`DELETE FROM us
   AND source_type = 'grant'`).run(userId, badgeId).changes > 0;
 /** After a deletion: takes back badges no longer met (by the rule as awarded). Lucky drops stay. */
 export const { revokeUnmetBadges } = engine;
-/** Earned, then known (with progress), hidden and lucky; edition badges only when the edition is on. */
-export const { badgeBoard } = engine;
+/**
+ * Earned, then known (with progress), hidden and lucky; edition badges only when the edition is on.
+ * A limited edition carries the number (serial) of the member's copy.
+ */
+export function badgeBoard(db, userId, options = {}) {
+  const serials = new Map(db.prepare('SELECT badge_id, serial FROM user_badges WHERE user_id = ? AND serial IS NOT NULL').raw().all(userId));
+  return engine.badgeBoard(db, userId, options).map((b) => (serials.has(b.id) ? { ...b, serial: serials.get(b.id) } : b));
+}

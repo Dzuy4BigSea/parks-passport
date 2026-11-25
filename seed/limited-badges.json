@@ -1,0 +1,13 @@
+[
+  {
+    "slug": "early-bird-100",
+    "name": "Early Bird Edition",
+    "art": "🐦",
+    "kind": "hidden",
+    "hint": "Only 100 exist. Given to the first explorers.",
+    "description": "One of the first 100 explorers to carry a Parks Passport.",
+    "rule_type": "manual",
+    "rule_params": {},
+    "limited_count": 100
+  }
+]

@@ -1,23 +1,25 @@
 // Badge reveal (SPEC Flow 11, "Game feel"): new badges and level-ups from the server-rendered
 // announcements (layout.js) become face-down cards to tap open, one after another: a flip, a shine,
 // confetti and a short buzz. The announcement stays in the page for screen readers and without JS.
-import { celebrationsOn, reducedMotion, burst, buzz, openDialog, el } from './fx.js';
+import { celebrationsOn, reducedMotion, burst, buzz, openDialog, el, holoTilt } from './fx.js';
 
 const box = document.querySelector('.announcements');
-const KICKERS = { known: 'Badge unlocked!', hidden: 'Surprise badge!', lucky: 'Lucky find!', level: 'Level up!', gift: 'A gift for you!' };
+const KICKERS = { known: 'Badge unlocked!', hidden: 'Surprise badge!', lucky: 'Lucky find!', level: 'Level up!', gift: 'A gift for you!', limited: 'Limited edition!' };
 
 if (box && celebrationsOn()) {
   const items = [...box.querySelectorAll('.announce')].map((a) => {
     const strong = a.querySelector('strong');
     const title = (strong?.textContent || '').replace(/^New badge:\s*/, '').trim();
-    const note = (a.querySelector('.gift-note')?.textContent || '').trim();
-    const full = (a.querySelector('p')?.textContent || '').trim();
+    const text = (sel) => (a.querySelector(sel)?.textContent || '').trim();
+    const holo = a.classList.contains('is-holo');
     return {
-      note,
-      kind: a.dataset.kind || 'known',
+      note: text('.gift-note'),
+      serial: text('.limited-no').replace(/^Limited edition\s*/, ''),
+      holo,
+      kind: holo ? 'limited' : a.dataset.kind || 'known',
       art: a.querySelector('.announce-art')?.cloneNode(true) || null,
       title,
-      desc: full.slice((strong?.textContent || '').length, note ? full.length - note.length : undefined).trim(),
+      desc: text('.announce-desc'),
     };
   }).filter((i) => i.title);
   if (!items.length) {
@@ -38,7 +40,9 @@ function show(items) {
   const frontName = el('span', { class: 'reveal-name' });
   const frontDesc = el('span', { class: 'reveal-desc' });
   const frontNote = el('span', { class: 'reveal-note' });
-  const front = el('span', { class: 'reveal-face reveal-front' }, frontArt, frontName, frontDesc, frontNote);
+  const frontSerial = el('span', { class: 'reveal-serial' });
+  const foil = el('span', { class: 'holo-foil', 'aria-hidden': 'true' });
+  const front = el('span', { class: 'reveal-face reveal-front' }, foil, frontSerial, frontArt, frontName, frontDesc, frontNote);
   const card = el('button', { type: 'button', class: 'reveal-card' }, el('span', { class: 'reveal-flip' }, back, front), el('span', { class: 'reveal-shine', 'aria-hidden': 'true' }));
   const hint = el('p', { class: 'reveal-hint' }, 'Tap the card to reveal it');
   const live = el('p', { class: 'visually-hidden', 'aria-live': 'polite' });
@@ -60,6 +64,9 @@ function show(items) {
     frontDesc.textContent = item.desc;
     frontNote.textContent = item.note;
     frontNote.hidden = !item.note;
+    frontSerial.textContent = item.serial;
+    frontSerial.hidden = !item.serial;
+    dialog.classList.toggle('is-holo', item.holo);
     card.setAttribute('aria-label', `${KICKERS[item.kind] || KICKERS.known} Tap to reveal`);
     card.disabled = false;
     hint.hidden = false;
@@ -74,7 +81,7 @@ function show(items) {
     dialog.classList.add('is-revealed');
     card.removeAttribute('aria-label'); // now named by what it shows
     hint.hidden = true;
-    live.textContent = `${item.kind === 'level' ? '' : 'New badge: '}${item.title}. ${item.desc} ${item.note}`.trim();
+    live.textContent = `${item.kind === 'level' ? '' : 'New badge: '}${item.title}${item.serial ? `, limited edition ${item.serial}` : ''}. ${item.desc} ${item.note}`.trim();
     buzz(item.kind === 'lucky' || item.kind === 'level' ? [30, 60, 30, 60, 60] : [20, 50, 35]);
     setTimeout(() => {
       const r = card.getBoundingClientRect();
@@ -86,6 +93,7 @@ function show(items) {
   }
 
   card.addEventListener('click', reveal);
+  holoTilt(card, dialog);
   next.addEventListener('click', () => {
     if (index < items.length - 1) { index += 1; load(); } else close();
   });
