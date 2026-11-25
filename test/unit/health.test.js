@@ -41,3 +41,25 @@ test('html escapes interpolated values but not nested html', () => {
   const out = String(html`<p>${'<script>'}${html`<b>${'&'}</b>`}${raw('<i>x</i>')}</p>`);
   assert.equal(out, '<p>&lt;script&gt;<b>&amp;</b><i>x</i></p>');
 });
+
+test('pages carry a description and absolute share-preview tags; query strings stay out of og:url', async () => {
+  const { app } = makeApp();
+  const res = await app.inject('/privacy?lat=27.7&lng=-82.6');
+  assert.match(res.body, /<meta name="description" content="Check in at every St. Petersburg park/);
+  assert.match(res.body, /<meta property="og:image" content="http:\/\/test\.local\/og\/parks-passport\.jpg">/);
+  assert.match(res.body, /<meta name="twitter:card" content="summary_large_image">/);
+  assert.match(res.body, /<meta property="og:url" content="http:\/\/test\.local\/privacy">/);
+  assert.match(res.body, /<link rel="canonical" href="http:\/\/test\.local\/privacy">/);
+  assert.doesNotMatch(res.body, /og:url[^>]*lat=/);
+  const img = await app.inject('/og/parks-passport.jpg');
+  assert.equal(img.statusCode, 200);
+  assert.equal(img.headers['content-type'], 'image/jpeg');
+  await app.close();
+});
+
+test('pages whose URL carries a secret get no og:url or canonical', async () => {
+  const { app } = makeApp();
+  const res = await app.inject('/join/SECRET123');
+  assert.doesNotMatch(res.body, /og:url|rel="canonical"/);
+  await app.close();
+});

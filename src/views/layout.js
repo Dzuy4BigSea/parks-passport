@@ -58,6 +58,26 @@ function consentBanner(csrf, back) {
 </section></div>`;
 }
 
+export const DEFAULT_DESCRIPTION = 'Check in at every St. Petersburg park you visit, collect stamps and badges, rate your favorites and explore with your Park Pals.';
+
+// Link previews (Open Graph / Twitter). Image and URLs must be absolute; canonicalPath is the
+// pathname only (never the query string) and is null on pages whose URL carries a secret.
+function shareMeta({ title, description, baseUrl, canonicalPath }) {
+  const url = canonicalPath ? baseUrl + canonicalPath : null;
+  const image = baseUrl + '/og/parks-passport.jpg';
+  return html`<meta property="og:type" content="website">
+<meta property="og:site_name" content="Parks Passport">
+<meta property="og:title" content="${title}">
+<meta property="og:description" content="${description}">
+${url ? html`<meta property="og:url" content="${url}">
+<link rel="canonical" href="${url}">` : ''}
+<meta property="og:image" content="${image}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Parks Passport: stamp every St. Pete park you visit. Gary the park guide waves in front of the St. Pete Pier at sunrise.">
+<meta name="twitter:card" content="summary_large_image">`;
+}
+
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const aria = (on) => (on ? html` aria-current="page"` : '');
 
@@ -85,7 +105,7 @@ export function statusPills(status) {
 
 export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null, nudge = null,
   analytics = null, consent = { chosen: true, analytics: false, ads: false }, events = [], showConsentBanner = false, path = '/',
-  theme = null, status = null }) {
+  theme = null, status = null, description = DEFAULT_DESCRIPTION, baseUrl = '', canonicalPath = null }) {
   const nav = user
     ? [['/parks', 'Parks', 'parks'], ['/passport', 'Passport', 'passport'], ['/pals', 'Pals', 'pals'], ['/account', 'Account', 'account'],
       ...(user.is_admin ? [['/admin', 'Admin', 'admin']] : [])]
@@ -96,13 +116,15 @@ export function layout({ title, body, head = null, scripts = [], current = '', u
   const photoVars = photos ? Object.entries(photos).map(([role, p]) => `--photo-${role}:url(${p.file});`).join('') : '';
   const accents = theme && HEX.test(theme.accent) && HEX.test(theme.accent_2)
     ? html`<style>:root{--city-accent:${theme.accent};--city-accent-2:${theme.accent_2};${raw(photoVars)}}</style>` : '';
+  const fullTitle = title ? `${title} · Parks Passport` : 'Parks Passport · St. Pete parks';
   return html`<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>${title ? `${title} · Parks Passport` : 'Parks Passport · St. Pete parks'}</title>
-<meta name="description" content="Stamp every St. Petersburg park you visit, earn badges, and explore with your Park Pals.">
+<title>${fullTitle}</title>
+<meta name="description" content="${description}">
+${shareMeta({ title: fullTitle, description, baseUrl, canonicalPath })}
 <meta name="theme-color" content="#f6f1e7">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
