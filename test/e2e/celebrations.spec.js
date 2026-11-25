@@ -20,10 +20,28 @@ async function signUpCelebrating(page, name = 'Cel Ebrate', email = uniqueEmail(
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
+  await page.waitForURL(/\/passport/);
+  // Whether sign-up gave an Early Bird number (only while copies last, and this suite signs up many).
+  const db = new Database(path.join(process.env.PP_E2E_DATA_DIR, 'app.db'));
+  const bird = db.prepare(`SELECT 1 FROM user_badges ub JOIN badges b ON b.id = ub.badge_id JOIN users u ON u.id = ub.user_id
+    WHERE b.slug = 'early-bird-100' AND u.email = ?`).get(email);
+  db.close();
+  return { bird: Boolean(bird) };
+}
+
+// After the passport opening: the Early Bird reveal, when sign-up gave one.
+async function dismissEarlyBird(page, { bird }) {
+  if (!bird) return;
+  const reveal = page.getByRole('dialog', { name: 'Limited edition!' });
+  await expect(reveal).toBeVisible();
+  await reveal.getByRole('button', { name: /Tap to reveal/ }).click();
+  await expect(reveal.locator('.reveal-name')).toHaveText('Early Bird Edition');
+  await reveal.getByRole('button', { name: 'Awesome!' }).click();
+  await expect(reveal).toBeHidden();
 }
 
 test('the passport opens, a surprise badge is revealed, a badge can be inspected; axe clean, no sideways scroll', async ({ page }) => {
-  await signUpCelebrating(page);
+  const signedUp = await signUpCelebrating(page);
   const welcome = page.getByRole('dialog', { name: 'Welcome, Cel!' });
   await expect(welcome).toBeVisible();
   await expect(page).toHaveURL(/\/st-pete\/passport$/); // the ?welcome flag is dropped
@@ -31,6 +49,7 @@ test('the passport opens, a surprise badge is revealed, a badge can be inspected
   await expectNoAxeViolations(page);
   await welcome.getByRole('button', { name: 'Start exploring' }).click();
   await expect(welcome).toBeHidden();
+  await dismissEarlyBird(page, signedUp);
   await expect(page.locator('html')).not.toHaveClass(/fx-locked/);
   await expect(page.locator('#main')).toBeFocused();
 

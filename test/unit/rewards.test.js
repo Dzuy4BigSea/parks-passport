@@ -20,7 +20,7 @@ async function world({ now = testClock('2026-06-06T16:00:00Z'), random = () => 0
     return { c, id: made.db.prepare('SELECT id FROM users WHERE email = ?').pluck().get(`${name}@example.com`) };
   };
   const earned = (id) => made.db.prepare(`SELECT b.slug FROM user_badges ub JOIN badges b ON b.id = ub.badge_id
-    WHERE ub.user_id = ? AND b.slug != 'founding-member' ORDER BY b.slug`).pluck().all(id); // Founding Member: test/unit/founding.test.js
+    WHERE ub.user_id = ? AND b.slug NOT IN ('founding-member', 'early-bird-100') ORDER BY b.slug`).pluck().all(id); // sign-up badges: test/unit/founding.test.js
   return { ...made, join, earned };
 }
 

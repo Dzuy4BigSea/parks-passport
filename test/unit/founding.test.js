@@ -5,7 +5,8 @@ import fs from 'node:fs';
 import { makeApp, client, testClock } from './helpers.js';
 import { addMissingBadges, grantBadge, revokeUnmetBadges } from '../../src/domain/badges/index.js';
 import { SEED_LIMITED_BADGES_JSON } from '../../src/db/seed.js';
-import { awardFounding, backfillFounding, FOUNDING_LIMIT } from '../../src/domain/founding.js';
+import { awardFounding, awardEarlyBird, backfillFounding, FOUNDING_LIMIT } from '../../src/domain/founding.js';
+import { takeUnseenBadges } from '../../src/domain/badges/index.js';
 import { deleteUser } from '../../src/domain/users.js';
 
 const PW = 'correct horse battery';
@@ -80,7 +81,8 @@ test('feedback: the button and /feedback only for Founding Members and Early Bir
   const { db, app, signup } = await world();
   addUsers(db, 75, 100); // use up the founding numbers
   backfillFounding(db);
-  const mia = await signup('mia'); // no founding badge left
+  for (const id of addUsers(db, 100, 300)) awardEarlyBird(db, id); // and every Early Bird copy
+  const mia = await signup('mia'); // no founding or Early Bird badge left
   const plain = (await mia.c.get('/st-pete/parks')).body;
   assert.match(plain, /class="gary-fab"/); // Gary is there for everyone (Flow 21)
   assert.doesNotMatch(plain, /data-gary-talk|action="\/feedback"/); // but only founding explorers talk back
@@ -90,7 +92,8 @@ test('feedback: the button and /feedback only for Founding Members and Early Bir
 
   // Early Bird Edition also unlocks it.
   const eb = db.prepare("SELECT id FROM badges WHERE slug = 'early-bird-100'").pluck().get();
-  grantBadge(db, { admin: { id: mia.id, display_name: 'Boss' }, userId: mia.id, badgeId: eb });
+  db.prepare('DELETE FROM user_badges WHERE badge_id = ? AND serial = 100').run(eb); // free one copy
+  assert.ok(grantBadge(db, { admin: { id: mia.id, display_name: 'Boss' }, userId: mia.id, badgeId: eb }).ok);
   const page = (await mia.c.get('/st-pete/parks')).body;
   assert.match(page, /<form method="post" action="\/feedback" class="gary-talk feedback-form" data-gary-talk>/);
   assert.match(page, /goes to the Parks Passport team as <strong>feedback<\/strong>/);
@@ -167,4 +170,39 @@ test('QA: a taken-back Founding Member stays taken back (the backfill runs once)
     sendFeedback(db, ids[0], { text: 'x', page });
     assert.equal(db.prepare('SELECT page FROM feedback ORDER BY id DESC').pluck().get(), '', page);
   }
+});
+
+test('sign-up gives the next Early Bird number until all 100 are given; a gap left by an admin is filled', async () => {
+  const { db, signup } = await world();
+  const bird = db.prepare("SELECT id FROM badges WHERE slug = 'early-bird-100'").pluck().get();
+  const birdOf = (id) => db.prepare('SELECT serial FROM user_badges WHERE user_id = ? AND badge_id = ?').pluck().get(id, bird);
+  const ana = await signup('ana');
+  assert.equal(birdOf(ana.id), 1);
+  assert.match(db.prepare("SELECT text FROM notifications WHERE user_id = ? AND text LIKE '%Early Bird%'").pluck().get(ana.id), /Early Bird #1 of 100/);
+  // An auto-given badge says nothing about who gave it.
+  assert.equal(takeUnseenBadges(db, ana.id).find((b) => b.slug === 'early-bird-100').given_by, null);
+  const ids = addUsers(db, 99);
+  for (const id of ids) awardEarlyBird(db, id);
+  assert.equal(birdOf(ids[98]), 100);
+  const late = await signup('late');
+  assert.equal(birdOf(late.id), undefined); // all 100 given
+  assert.equal(awardEarlyBird(db, ana.id), null); // never twice
+});
+
+test('a given badge says it is from Parks Passport, or the name the admin typed, never the admin', async () => {
+  const { db, signup } = await world();
+  const admin = { id: (await signup('dzuy')).id, display_name: 'dzuy' };
+  const ana = await signup('ana');
+  takeUnseenBadges(db, ana.id); // clear the sign-up badges
+  addMissingBadges(db, ['g1', 'g2', 'g3'].map((slug) => ({ slug, name: slug.toUpperCase(), art: '⭐', kind: 'hidden', rule_type: 'manual', rule_params: {} })));
+  const [b1, b2, b3] = ['g1', 'g2', 'g3'].map((slug) => db.prepare('SELECT id FROM badges WHERE slug = ?').pluck().get(slug));
+  assert.ok(grantBadge(db, { admin, userId: ana.id, badgeId: b1, note: 'Nice!' }).ok);
+  assert.ok(grantBadge(db, { admin, userId: ana.id, badgeId: b2, fromName: '  The Parks  Crew ' }).ok);
+  assert.equal(grantBadge(db, { admin, userId: ana.id, badgeId: b3, fromName: 'x'.repeat(41) }).error, 'from');
+  const seen = takeUnseenBadges(db, ana.id);
+  assert.deepEqual(seen.map((b) => b.given_by), ['Parks Passport', 'The Parks Crew']);
+  const gifts = db.prepare("SELECT text FROM notifications WHERE user_id = ? AND kind = 'gift' AND text LIKE '%gave you%' ORDER BY id").pluck().all(ana.id);
+  assert.match(gifts[0], /^Parks Passport gave you the .*: “Nice!”/);
+  assert.match(gifts[1], /^The Parks Crew gave you/);
+  assert.ok(gifts.every((t) => !t.includes('dzuy')));
 });

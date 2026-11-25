@@ -103,7 +103,7 @@ export function awardBadges(db, userId, trigger, opts = {}) {
 
 /** Badges awarded but not yet announced, with a gift's note and giver; marks them announced. */
 export function takeUnseenBadges(db, userId, { now = new Date() } = {}) {
-  const rows = db.prepare(`SELECT b.*, ub.serial, ub.note AS award_note, CASE WHEN ub.source_type = 'grant' THEN g.display_name END AS given_by
+  const rows = db.prepare(`SELECT b.*, ub.serial, ub.note AS award_note, CASE WHEN ub.source_type = 'grant' THEN COALESCE(ub.from_name, g.display_name) END AS given_by
     FROM user_badges ub JOIN badges b ON b.id = ub.badge_id LEFT JOIN users g ON g.id = ub.source_id
     WHERE ub.user_id = ? AND ub.seen_at IS NULL ORDER BY ub.awarded_at, b.sort`).all(userId);
   if (rows.length) db.prepare('UPDATE user_badges SET seen_at = ? WHERE user_id = ? AND seen_at IS NULL').run(now.toISOString(), userId);
@@ -111,18 +111,25 @@ export function takeUnseenBadges(db, userId, { now = new Date() } = {}) {
 }
 
 export const NOTE_MAX = 140;
+export const FROM_MAX = 40;
+export const DEFAULT_FROM = 'Parks Passport';
+const cleanFrom = (v) => String(v || '').replace(/\s+/g, ' ').trim();
 
 /**
  * An admin gives a member a badge (any badge, even one the rules would never award). It shows on
  * their next page as a new badge, with the note, and in their notifications. Never taken back by
- * the rules. Returns { ok } or { error: 'not_found' | 'already' | 'note' }.
+ * the rules. It says it's from fromName ("Parks Passport" when blank), not the admin's own name;
+ * the admin is still recorded (source_id). Returns { ok } or { error: 'not_found' | 'already' |
+ * 'note' | 'from' | 'sold_out' }.
  */
-export function grantBadge(db, { admin, userId, badgeId, note = '' }, { now = new Date() } = {}) {
+export function grantBadge(db, { admin, userId, badgeId, note = '', fromName = '' }, { now = new Date() } = {}) {
   const member = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
   const badge = db.prepare('SELECT * FROM badges WHERE id = ?').get(badgeId);
   if (!member || !badge) return { error: 'not_found' };
   const text = String(note || '').replace(/\s+/g, ' ').trim();
   if (text.length > NOTE_MAX) return { error: 'note' };
+  const from = cleanFrom(fromName) || DEFAULT_FROM;
+  if (from.length > FROM_MAX) return { error: 'from' };
   return db.transaction(() => {
     if (db.prepare('SELECT 1 FROM user_badges WHERE user_id = ? AND badge_id = ?').get(userId, badgeId)) return { error: 'already' };
     // A limited edition gets the lowest free number (a taken-back number is given again).
@@ -131,10 +138,10 @@ export function grantBadge(db, { admin, userId, badgeId, note = '' }, { now = ne
       serial = nextSerial(db, badgeId);
       if (serial > badge.limited_count) return { error: 'sold_out' };
     }
-    db.prepare(`INSERT INTO user_badges (user_id, badge_id, awarded_at, source_type, source_id, note, serial)
-      VALUES (?, ?, ?, 'grant', ?, ?, ?)`).run(userId, badgeId, now.toISOString(), admin.id, text || null, serial);
+    db.prepare(`INSERT INTO user_badges (user_id, badge_id, awarded_at, source_type, source_id, note, serial, from_name)
+      VALUES (?, ?, ?, 'grant', ?, ?, ?, ?)`).run(userId, badgeId, now.toISOString(), admin.id, text || null, serial, from);
     const what = serial ? `${badge.name} badge, #${serial} of ${badge.limited_count}` : `${badge.name} badge`;
-    notify(db, userId, { kind: 'gift', text: `{actor} gave you the ${what}${text ? `: “${text}”` : '.'}`, link: '/passport#badges', actorId: admin.id }, { now });
+    notify(db, userId, { kind: 'gift', text: `${from} gave you the ${what}${text ? `: “${text}”` : '.'}`, link: '/passport#badges' }, { now });
     return { ok: true, badge, serial };
   })();
 }
@@ -156,15 +163,16 @@ export const serialsGiven = (db, badgeId) => db.prepare('SELECT COUNT(*) FROM us
  * Gives one badge to several members at once (Admin › Members). Limited editions are numbered in
  * the order the members joined. Returns { given, already, soldOut } counts, or { error }.
  */
-export function grantBadgeToMany(db, { admin, userIds, badgeId, note = '' }, { now = new Date() } = {}) {
+export function grantBadgeToMany(db, { admin, userIds, badgeId, note = '', fromName = '' }, { now = new Date() } = {}) {
   if (!db.prepare('SELECT 1 FROM badges WHERE id = ?').get(badgeId)) return { error: 'not_found' };
   if (String(note || '').replace(/\s+/g, ' ').trim().length > NOTE_MAX) return { error: 'note' };
+  if (cleanFrom(fromName).length > FROM_MAX) return { error: 'from' };
   const ids = [...new Set(userIds)];
   if (!ids.length) return { error: 'none' };
   const members = db.prepare(`SELECT id FROM users WHERE id IN (${ids.map(() => '?').join(',')}) ORDER BY created_at, id`).pluck().all(...ids);
   const counts = { given: 0, already: 0, soldOut: 0 };
   for (const userId of members) {
-    const r = grantBadge(db, { admin, userId, badgeId, note }, { now });
+    const r = grantBadge(db, { admin, userId, badgeId, note, fromName }, { now });
     if (r.ok) counts.given += 1;
     else if (r.error === 'already') counts.already += 1;
     else if (r.error === 'sold_out') counts.soldOut += 1;

@@ -84,7 +84,8 @@ test('the banner does not cover the main action at 375px', async ({ page }) => {
 test('dataLayer gets the spec events with exact keys and no personal data', async ({ page }) => {
   const events = async () => {
     await page.waitForFunction(() => Array.isArray(window.dataLayer));
-    return page.evaluate(() => window.dataLayer.filter((e) => e && e.event && !e.event.startsWith('gtm.')));
+    // Sign-up's Early Bird gift (while copies last) is left out, so the test doesn't depend on how many remain.
+    return page.evaluate(() => window.dataLayer.filter((e) => e && e.event && !e.event.startsWith('gtm.') && e.badge_slug !== 'early-bird-100'));
   };
   await page.goto('/st-pete/parks?q=lake&cat=dog-park');
   expect(await events()).toEqual([{ event: 'park_search', has_query: true, filter_count: 1 }]);

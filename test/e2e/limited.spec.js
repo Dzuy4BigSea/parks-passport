@@ -24,6 +24,9 @@ test('Early Bird Edition: given from the members list, revealed as a numbered ho
   const admin = await signUp(page, { name: 'Ed Admin' });
   const db = new Database(path.join(process.env.PP_E2E_DATA_DIR, 'app.db'));
   db.prepare('UPDATE users SET is_admin = 1 WHERE email = ?').run(admin.email);
+  // Sign-up already gave Holo Fan an Early Bird (while copies last): take it back so this tests the admin's gift.
+  db.prepare(`DELETE FROM user_badges WHERE badge_id = (SELECT id FROM badges WHERE slug = 'early-bird-100')
+    AND user_id = (SELECT id FROM users WHERE display_name = 'Holo Fan' ORDER BY id DESC LIMIT 1)`).run();
   db.close();
 
   await page.goto('/admin/users');
@@ -42,7 +45,7 @@ test('Early Bird Edition: given from the members list, revealed as a numbered ho
   await reveal.getByRole('button', { name: /Tap to reveal/ }).click();
   await expect(reveal.locator('.reveal-name')).toHaveText('Early Bird Edition');
   await expect(reveal.locator('.reveal-serial')).toHaveText(/^#\d+ of 100$/);
-  await expect(reveal.locator('.reveal-note')).toHaveText('From Ed Admin: “Thanks for being here early!”');
+  await expect(reveal.locator('.reveal-note')).toHaveText('From Parks Passport: “Thanks for being here early!”');
   await expect(reveal.locator('.reveal-front .holo-foil')).toBeVisible();
   await expectNoAxeViolations(member);
   await member.waitForTimeout(700); // let the flip finish

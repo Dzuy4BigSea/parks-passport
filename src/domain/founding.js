@@ -1,4 +1,5 @@
 import { notify } from './notifications.js';
+import { nextSerial } from './badges/index.js';
 
 // Founding Members (SPEC Flow 16): the first 75 accounts get the badge automatically, numbered in
 // sign-up order. A counter in settings (not a count of current holders) decides who's next, so a
@@ -11,7 +12,8 @@ export const FOUNDING_LIMIT = 75;
 const KEY = 'founding_awarded';
 const BACKFILLED = 'founding_backfilled'; // the start-up backfill runs once, so a taken-back badge stays taken back
 // Holding either of these unlocks the feedback button.
-export const FEEDBACK_BADGES = [FOUNDING_SLUG, 'early-bird-100'];
+export const EARLY_BIRD_SLUG = 'early-bird-100';
+export const FEEDBACK_BADGES = [FOUNDING_SLUG, EARLY_BIRD_SLUG];
 
 const awardedSoFar = (db) => Number(db.prepare('SELECT value FROM settings WHERE key = ?').pluck().get(KEY) || 0);
 
@@ -55,4 +57,22 @@ export function canSendFeedback(db, userId) {
   if (!userId) return false;
   return Boolean(db.prepare(`SELECT 1 FROM user_badges ub JOIN badges b ON b.id = ub.badge_id
     WHERE ub.user_id = ? AND b.slug IN (${FEEDBACK_BADGES.map(() => '?').join(', ')}) LIMIT 1`).get(userId, ...FEEDBACK_BADGES));
+}
+
+/**
+ * Early Bird Edition: every new member gets the next number (lowest free, like an admin's gift)
+ * until all of its limited copies are given. Returns the number or null.
+ */
+export function awardEarlyBird(db, userId, { now = new Date() } = {}) {
+  const badge = db.prepare('SELECT id, name, limited_count FROM badges WHERE slug = ?').get(EARLY_BIRD_SLUG);
+  if (!badge?.limited_count) return null;
+  return db.transaction(() => {
+    if (db.prepare('SELECT 1 FROM user_badges WHERE user_id = ? AND badge_id = ?').get(userId, badge.id)) return null;
+    const serial = nextSerial(db, badge.id);
+    if (serial > badge.limited_count) return null;
+    db.prepare(`INSERT INTO user_badges (user_id, badge_id, awarded_at, source_type, source_id, serial)
+      VALUES (?, ?, ?, 'grant', NULL, ?)`).run(userId, badge.id, now.toISOString(), serial);
+    notify(db, userId, { kind: 'gift', text: `You're Early Bird #${serial} of ${badge.limited_count}. Welcome to Parks Passport!`, link: '/passport#badges' }, { now });
+    return serial;
+  })();
 }
