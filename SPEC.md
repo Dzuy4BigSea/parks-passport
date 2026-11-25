@@ -534,7 +534,7 @@ Done when:
       done"; done ones are hidden behind a filter. Deleting an account deletes its feedback.
 
 ### Flow 17: Drops of Sunshine
-As a member, I can send a quick thank-you to the people who look after my parks, so that park
+As a member, I can send a quick thank-you to the people who look after our parks, so that park
 staff hear how much their work matters.
 Done when:
 - [ ] A **Drops of Sunshine** button sits on every park page ("Say thanks"), with links on my

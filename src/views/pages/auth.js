@@ -175,7 +175,7 @@ ${errors.display_name ? errorSummary({ display_name: errors.display_name }, { di
   <dt>Email</dt><dd>${user.email}</dd>
   <dt>Handle</dt><dd>@${user.handle}</dd>
 </dl>
-<p><a href="/sunshine"><span aria-hidden="true">☀️</span> Send a drop of sunshine</a> to the people who look after your parks.</p>
+<p><a href="/sunshine"><span aria-hidden="true">☀️</span> Send a drop of sunshine</a> to the people who look after our parks.</p>
 ${ideas ? html`<p><a href="/ideas">Share a badge idea</a></p>` : ''}
 <p><a href="/account/gary"><span aria-hidden="true">🧢</span> Gary’s wardrobe</a>: choose what your guide wears.</p>
 <form method="post" action="/logout" class="inline-form">

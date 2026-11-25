@@ -75,7 +75,7 @@ ${sent ? html`${SUN}
 <p>Thank you for thanking ${sentTo || `the people who look after ${city.copy?.short || city.name}'s parks`}. Notes like yours remind park crews why the work matters.</p>
 <p class="sunshine-again"><a class="btn" href="/sunshine">Send another</a> <a class="btn btn-quiet" href="/">Done</a></p>`
     : html`<p class="sunshine-eyebrow"><span aria-hidden="true">☀️</span> Drops of Sunshine</p>
-<h1>Thank the people who look after your parks</h1>
+<h1>Thank the people who look after our parks</h1>
 <form method="post" action="/sunshine" class="card-form sunshine-form" novalidate data-pins="${JSON.stringify(pins)}"${values.park ? html` data-chosen` : ''}>
   ${csrfField(csrf)}<input type="hidden" name="city" value="${city.key}">
   ${error ? html`<p class="error-text" role="alert" tabindex="-1" data-announce>${error}</p>` : ''}
