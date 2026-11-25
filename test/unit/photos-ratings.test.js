@@ -5,7 +5,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { makeApp, client, testClock } from './helpers.js';
 import { importParksCsv, PARK_CSV_COLUMNS } from '../../src/domain/csv-import.js';
-import { storePhoto, photoPath } from '../../src/lib/images.js';
+import { storePhoto, photoPath, storeAvatar, avatarPath } from '../../src/lib/images.js';
 import { totalPoints } from '../../src/domain/points.js';
 
 const PW = 'correct horse battery';
@@ -44,9 +44,9 @@ test('uploads are validated by content: wrong types, HEIC and oversize files are
   const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || '/tmp', 'pp-img-'));
   assert.match((await storePhoto(Buffer.from('not an image at all'), dir)).error, /not a photo we can read/);
   const gif = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#000' } }).gif().toBuffer();
-  assert.match((await storePhoto(gif, dir)).error, /Use a JPEG, PNG or WebP/);
-  const fakeHeic = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypheic'), Buffer.alloc(64)]);
-  assert.match((await storePhoto(fakeHeic, dir)).error, /HEIC/);
+  assert.match((await storePhoto(gif, dir)).error, /Use a JPEG, PNG, WebP or HEIC/);
+  const brokenHeic = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypheic'), Buffer.alloc(64)]);
+  assert.match((await storePhoto(brokenHeic, dir)).error, /not a photo we can read/);
   assert.match((await storePhoto(Buffer.alloc(10 * 1024 * 1024 + 1), dir)).error, /over 10 MB/);
   const png = await sharp({ create: { width: 50, height: 40, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).png().toBuffer();
   assert.ok((await storePhoto(png, dir)).fileKey);
@@ -299,4 +299,23 @@ test('admins can open a private photo; captions are cut to 200 characters', asyn
   assert.equal((await people.cat.c.get(`/photos/${photo.id}/full`)).statusCode, 404);
   db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(people.cat.id);
   assert.equal((await people.cat.c.get(`/photos/${photo.id}/full`)).statusCode, 200);
+});
+
+test('HEIC photos (iPhone) are decoded and saved as JPEG, for park photos and profile photos', async () => {
+  const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || '/tmp', 'pp-heic-'));
+  // 320x240 green with a pink dot in the middle, encoded with libheif's heif-enc.
+  const heic = fs.readFileSync(new URL('../fixtures/pink-dot.heic', import.meta.url));
+  const stored = await storePhoto(heic, dir);
+  assert.ok(stored.fileKey, stored.error);
+  assert.deepEqual([stored.width, stored.height], [320, 240]);
+  const full = sharp(photoPath(dir, stored.fileKey, 'full'));
+  assert.equal((await full.metadata()).format, 'jpeg');
+  const px = async (img, left, top) => [...(await img.clone().extract({ left, top, width: 1, height: 1 }).raw().toBuffer())];
+  const near = (got, want) => got.every((v, i) => Math.abs(v - want[i]) < 24);
+  assert.ok(near(await px(full, 160, 120), [0xff, 0x4d, 0x88]), 'pink in the middle');
+  assert.ok(near(await px(full, 5, 5), [0x2f, 0x6f, 0x4e]), 'green in the corner');
+  const avatar = await storeAvatar(heic, dir);
+  assert.ok(avatar.key, avatar.error);
+  const am = await sharp(avatarPath(dir, avatar.key)).metadata();
+  assert.deepEqual([am.format, am.width, am.height], ['jpeg', 256, 256]);
 });

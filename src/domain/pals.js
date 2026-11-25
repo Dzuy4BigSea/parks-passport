@@ -154,7 +154,7 @@ const areLinked = (db, x, y) => {
 
 /** Requests to me and from me, newest first, with the other person's name and handle. */
 export function palRequests(db, userId) {
-  const q = (col, other) => db.prepare(`SELECT r.id, r.created_at, u.display_name, u.handle FROM pal_requests r
+  const q = (col, other) => db.prepare(`SELECT r.id, r.created_at, u.id AS user_id, u.display_name, u.handle, u.avatar_key, u.default_visibility FROM pal_requests r
     JOIN users u ON u.id = r.${other} WHERE r.${col} = ? ORDER BY r.created_at DESC, r.id DESC`).all(userId);
   return { incoming: q('to_user', 'from_user'), outgoing: q('from_user', 'to_user') };
 }

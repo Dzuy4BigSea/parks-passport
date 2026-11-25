@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeApp, client, testClock } from './helpers.js';
+import sharp from 'sharp';
 import { importParksCsv, PARK_CSV_COLUMNS } from '../../src/domain/csv-import.js';
 import { seedBadgesIfEmpty } from '../../src/domain/badges/index.js';
 import { canSee, areFriends } from '../../src/domain/visibility.js';
@@ -450,4 +451,36 @@ test("passport Up next has a Park Pals card: invite, then pal count, then a shar
   assert.match(await card(), /1 Park Pal</, "a private pal's stamp stays hidden");
   await setVis('ben', 'pals');
   assert.match(await card(), /ben stamped A Park/);
+});
+
+test('profile photos show on pal requests, invite pages, reviews and photo credits, only to people allowed to see them', async () => {
+  const { app, people, setVis, inviteLink } = await world();
+  const photo = await sharp({ create: { width: 300, height: 300, channels: 3, background: '#2f6f4e' } }).jpeg().toBuffer();
+  for (const who of ['ben', 'cat']) {
+    await people[who].c.postMultipart('/account/avatar', {}, { photo: { buffer: photo, filename: 'me.jpg', type: 'image/jpeg' } });
+  }
+  await setVis('ben', 'public'); // cat stays private
+  const face = (who) => new RegExp(`src="/avatars/${people[who].id}/[a-f0-9]{32}\\.jpg"`);
+
+  // Pal requests: ben's (public) photo shows to ana; cat's (private) doesn't.
+  for (const who of ['ben', 'cat']) await people[who].c.post('/pals/code', { code: await codeOf('ana', people) });
+  const requests = (await people.ana.c.get('/pals')).body;
+  assert.match(requests, face('ben'));
+  assert.doesNotMatch(requests, face('cat'));
+
+  // Invite pages, even signed out: only a public inviter's face.
+  const anon = client(app);
+  assert.match((await anon.get(await inviteLink('ben'))).body, face('ben'));
+  assert.doesNotMatch((await anon.get(await inviteLink('cat'))).body, face('cat'));
+
+  // Reviews and photo credits on a park page.
+  for (const who of ['ben', 'cat']) {
+    await people[who].c.post('/st-pete/parks/a-park/rating', { stars: '5', comment: `${who} loved it`, visibility: 'public' });
+    await people[who].c.postMultipart('/st-pete/parks/a-park/photos', { visibility: 'public' }, { photo: { buffer: photo, filename: 'p.jpg', type: 'image/jpeg' } });
+  }
+  const park = (await people.ana.c.get('/st-pete/parks/a-park')).body;
+  assert.match(park, /ben loved it/);
+  assert.match(park, /cat loved it/);
+  assert.match(park, face('ben'));
+  assert.doesNotMatch(park, face('cat'));
 });

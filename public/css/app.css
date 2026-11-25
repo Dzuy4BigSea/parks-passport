@@ -192,12 +192,17 @@ input[type="number"], input[type="url"], input[type="time"], input[type="date"],
   border: 2px solid #8a9a9f; border-radius: var(--radius-sm); background: #fff; color: var(--ink);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
+/* iOS Safari gives date and time inputs a native minimum width that ignores width: 100%, so
+   they spill out of narrow cards, and it centers the value. Drop the native look to fix both. */
+input[type="date"], input[type="time"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; }
+input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; }
 input:focus-visible, textarea:focus-visible, select:focus-visible { border-color: var(--violet); box-shadow: 0 0 0 4px var(--violet-tint); outline: none; }
 input[type="file"] { font: inherit; min-height: 44px; width: 100%; max-width: 100%; }
 input[type="file"]::file-selector-button {
   font: 700 0.9rem var(--sans); border: 2px solid var(--ink); background: #fff; color: var(--ink);
   border-radius: 999px; padding: 0.45rem 0.9rem; margin-right: 0.75rem; cursor: pointer;
 }
+.camera-btn { justify-self: start; margin-top: 0.35rem; }
 .field { display: grid; gap: 0.3rem; margin-bottom: 0.9rem; }
 .field > * { min-width: 0; }
 .check { display: flex; align-items: center; gap: 0.6rem; font-weight: 500; min-height: 44px; }
@@ -398,6 +403,8 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; 
   background: var(--aqua-tint); color: var(--aqua-ink); font-size: 1.5rem;
 }
 .nextup .icon svg { width: 26px; height: 26px; }
+.nextup .icon:has(.avatar) { overflow: hidden; padding: 0; }
+.nextup .icon .avatar { width: 100% !important; height: 100% !important; font-size: 1.1rem !important; } /* beats the initials inline size */
 .nextup li:nth-child(2) .icon { background: var(--sun-tint); color: #a34d00; }
 .nextup li:nth-child(3) .icon { background: var(--pink-tint); color: var(--pink-ink); }
 .nextup .label { display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
@@ -591,6 +598,9 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; 
   .park-main { grid-column: 1; grid-row: 1; }
 }
 .park-map { height: 240px; border-radius: var(--radius); border: 1px solid var(--line); background: #e3ecea; overflow: hidden; }
+/* Leaflet stacks its panes at z-index 400+. Keep those inside the map so Gary, the tab bar
+   and the header stay on top. */
+.leaflet-container { isolation: isolate; }
 @media (min-width: 768px) { .park-map { height: 320px; } }
 
 /* Stamping. */
@@ -690,6 +700,7 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; 
 }
 .photo a:hover img { transform: scale(1.03) rotate(-1deg); }
 .photo-meta { margin: 0.25rem 0 0; font-size: 0.9rem; overflow-wrap: anywhere; }
+.photo-by { display: inline-flex; align-items: center; gap: 0.3rem; }
 .photo-edit summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; font-size: 0.9rem; }
 .photo-edit form { margin: 0.25rem 0; }
 .feed-photo img { width: 72px; height: 72px; object-fit: cover; border-radius: 12px; display: block; }

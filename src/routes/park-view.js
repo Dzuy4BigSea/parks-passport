@@ -1,5 +1,6 @@
 import { visitsAtPark } from '../domain/visits.js';
 import { photosForPark } from '../domain/photos.js';
+import { withFaces } from '../domain/visibility.js';
 import { ratingSummary, visibleReviews, myRating } from '../domain/ratings.js';
 import { localDate } from '../domain/time.js';
 import { parkPage } from '../views/pages/park.js';
@@ -48,9 +49,9 @@ export function renderParkPage(app, req, reply, park, { problem = null, stamped 
     park, user, csrf: req.csrfToken(), today, problem, stamped, flash,
     myVisits: user ? visitsAtPark(db, user.id, park.id) : [],
     palsHere: user ? palsWhoStamped(db, user.id, [park.id]).get(park.id) || [] : [],
-    photos: photosForPark(db, user, park.id),
+    photos: withFaces(db, user?.id ?? null, photosForPark(db, user, park.id), 'user_id'),
     summary: ratingSummary(db, park.id),
-    reviews: visibleReviews(db, user, park.id),
+    reviews: withFaces(db, user?.id ?? null, visibleReviews(db, user, park.id), 'user_id'),
     mine: user ? myRating(db, user.id, park.id) : null,
     saved: user ? isSaved(db, user.id, park.id) : false,
   }) });

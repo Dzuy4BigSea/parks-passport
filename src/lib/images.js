@@ -2,6 +2,7 @@ import sharp from 'sharp';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { Worker } from 'node:worker_threads';
 
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 export const FULL_EDGE = 2000;
@@ -9,10 +10,51 @@ export const THUMB_EDGE = 400;
 // 50 MP covers 48 MP phone cameras and stops "decompression bombs" (tiny files, huge pixels).
 export const MAX_INPUT_PIXELS = 50_000_000;
 const SHARP_OPTS = { failOn: 'error', limitInputPixels: MAX_INPUT_PIXELS };
-const NOT_A_PHOTO = 'That file is not a photo we can read. Use a JPEG, PNG or WebP image.';
+const NOT_A_PHOTO = 'That file is not a photo we can read. Use a JPEG, PNG, WebP or HEIC image.';
+const WRONG_TYPE = 'Use a JPEG, PNG, WebP or HEIC image.';
+const TOO_BIG_PIXELS = 'That photo is too large (over 50 megapixels).';
 
 // Formats accepted, judged by the file's content (sharp's decoder), not its name or MIME type.
+// HEIC (iPhone photos) is decoded separately: sharp's prebuilt binary has no HEVC decoder.
 const ACCEPTED = new Set(['jpeg', 'png', 'webp']);
+
+/**
+ * Checks an upload and returns { open } (a function giving a fresh sharp pipeline, upright) or
+ * { error }. Size and pixel count are checked before any full decode.
+ */
+async function openImage(buffer) {
+  if (!buffer?.length) return { error: 'Choose a photo to upload.' };
+  if (buffer.length > MAX_UPLOAD_BYTES) return { error: 'That photo is over 10 MB. Try a smaller one.' };
+  if (isHeic(buffer)) return openHeic(buffer);
+  let meta;
+  try {
+    // Header only (no pixel decode), so no limit is needed here; the size check follows.
+    meta = await sharp(buffer, { failOn: 'error', limitInputPixels: false }).metadata();
+  } catch {
+    return { error: NOT_A_PHOTO };
+  }
+  if (!ACCEPTED.has(meta.format)) return { error: WRONG_TYPE };
+  if ((meta.width || 0) * (meta.height || 0) > MAX_INPUT_PIXELS) return { error: TOO_BIG_PIXELS };
+  // .rotate() applies the EXIF orientation before the metadata is dropped.
+  return { open: () => sharp(buffer, SHARP_OPTS).rotate() };
+}
+
+// HEIC (iPhone photos): a worker decodes it and hands back an upright JPEG at most FULL_EDGE px
+// (see heic-worker.js). That JPEG then goes through the usual path, which drops all metadata.
+async function openHeic(buffer) {
+  const result = await new Promise((resolve) => {
+    const worker = new Worker(new URL('./heic-worker.js', import.meta.url), {
+      workerData: { buffer, maxPixels: MAX_INPUT_PIXELS, edge: FULL_EDGE },
+    });
+    worker.once('message', (msg) => { resolve(msg); worker.terminate(); });
+    worker.once('error', () => resolve({ failed: true }));
+    worker.once('exit', () => resolve({ failed: true })); // no-op once resolved
+  });
+  if (result.tooBig) return { error: TOO_BIG_PIXELS };
+  if (result.failed || !result.jpeg) return { error: NOT_A_PHOTO };
+  const jpeg = Buffer.from(result.jpeg.buffer, result.jpeg.byteOffset, result.jpeg.byteLength);
+  return { open: () => sharp(jpeg, SHARP_OPTS) };
+}
 
 sharp.cache(false); // keep memory low in the 512 MB container
 sharp.concurrency(1);
@@ -31,28 +73,17 @@ export function storePhoto(buffer, uploadsDir) {
  * Returns { fileKey, width, height } or { error }.
  */
 async function storePhotoNow(buffer, uploadsDir) {
-  if (!buffer?.length) return { error: 'Choose a photo to upload.' };
-  if (buffer.length > MAX_UPLOAD_BYTES) return { error: 'That photo is over 10 MB. Try a smaller one.' };
-  let meta;
-  try {
-    // Header only (no pixel decode), so no limit is needed here; the size check follows.
-    meta = await sharp(buffer, { failOn: 'error', limitInputPixels: false }).metadata();
-  } catch {
-    if (isHeic(buffer)) return { error: "HEIC photos can't be read here. Upload it from your phone's browser (it converts to JPEG) or export it as JPEG." };
-    return { error: NOT_A_PHOTO };
-  }
-  if (!ACCEPTED.has(meta.format)) return { error: 'Use a JPEG, PNG or WebP image.' };
-  if ((meta.width || 0) * (meta.height || 0) > MAX_INPUT_PIXELS) return { error: 'That photo is too large (over 50 megapixels).' };
+  const img = await openImage(buffer);
+  if (img.error) return img;
 
   const fileKey = `${new Date().toISOString().slice(0, 7)}/${crypto.randomBytes(16).toString('hex')}`;
   const full = path.join(uploadsDir, `${fileKey}.jpg`);
   const thumb = path.join(uploadsDir, `${fileKey}.thumb.jpg`);
   await fs.mkdir(path.dirname(full), { recursive: true });
 
-  // .rotate() applies the EXIF orientation before the metadata is dropped.
   // A truncated or corrupt file only fails here, at decode: clean up and report it inline.
   try {
-    const base = sharp(buffer, SHARP_OPTS).rotate().flatten({ background: '#ffffff' });
+    const base = img.open().flatten({ background: '#ffffff' });
     const info = await base.clone()
       .resize({ width: FULL_EDGE, height: FULL_EDGE, fit: 'inside', withoutEnlargement: true })
       .jpeg({ quality: 82, mozjpeg: true })
@@ -88,22 +119,13 @@ export function storeAvatar(buffer, uploadsDir) {
 }
 
 async function storeAvatarNow(buffer, uploadsDir) {
-  if (!buffer?.length) return { error: 'Choose a photo to upload.' };
-  if (buffer.length > MAX_UPLOAD_BYTES) return { error: 'That photo is over 10 MB. Try a smaller one.' };
-  let meta;
-  try {
-    meta = await sharp(buffer, { failOn: 'error', limitInputPixels: false }).metadata();
-  } catch {
-    if (isHeic(buffer)) return { error: "HEIC photos can't be read here. Upload it from your phone's browser (it converts to JPEG) or export it as JPEG." };
-    return { error: NOT_A_PHOTO };
-  }
-  if (!ACCEPTED.has(meta.format)) return { error: 'Use a JPEG, PNG or WebP image.' };
-  if ((meta.width || 0) * (meta.height || 0) > MAX_INPUT_PIXELS) return { error: 'That photo is too large (over 50 megapixels).' };
+  const img = await openImage(buffer);
+  if (img.error) return img;
   const key = crypto.randomBytes(16).toString('hex');
   const file = avatarPath(uploadsDir, key);
   await fs.mkdir(path.dirname(file), { recursive: true });
   try {
-    await sharp(buffer, SHARP_OPTS).rotate().flatten({ background: '#ffffff' })
+    await img.open().flatten({ background: '#ffffff' })
       .resize({ width: AVATAR_EDGE, height: AVATAR_EDGE, fit: 'cover', position: 'attention' })
       .jpeg({ quality: 80, mozjpeg: true }).toFile(file);
     return { key };

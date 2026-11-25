@@ -1,7 +1,7 @@
 import { html } from '../html.js';
 import { avatar } from '../avatar.js';
 import { palsSentence } from '../pals-here.js';
-import { csrfField } from '../forms.js';
+import { csrfField, PHOTO_ACCEPT } from '../forms.js';
 import { categoryLabel } from '../../domain/categories.js';
 import { motifForPark } from '../../domain/city.js';
 import { METHOD_LABELS } from '../../domain/visits.js';
@@ -18,7 +18,7 @@ import { saveButton } from '../save-button.js';
 const BURST = [[0, 95], [30, 70], [60, 105], [95, 80], [125, 100], [160, 75], [195, 95], [225, 70], [260, 105], [290, 85], [320, 100], [345, 72]];
 const burst = () => html`<span class="burst" aria-hidden="true">${BURST.map(([a, r], i) => html`<i style="--a:${a};--r:${r};--d:${(i % 4) * 40}ms"></i>`)}</span>`;
 
-const ACCEPT = 'image/jpeg,image/png,image/webp';
+const ACCEPT = PHOTO_ACCEPT;
 
 const visibilitySelect = (id, current) => html`<select id="${id}" name="visibility">
   ${VISIBILITY.map((v) => html`<option value="${v}"${v === current ? html` selected` : ''}>${VISIBILITY_LABELS[v]}</option>`)}
@@ -80,7 +80,7 @@ function stampPanel({ park, user, csrf, today, myVisits, problem: allProblems })
       </div>
       <div class="field">
         <label for="stamp_photo">Add a photo (optional, +3 points)</label>
-        <input type="file" id="stamp_photo" name="photo" accept="${ACCEPT}">
+        <input type="file" id="stamp_photo" name="photo" accept="${ACCEPT}" data-camera="environment">
       </div>
       <button type="submit" class="btn">${problem?.offerHonor ? 'Stamp anyway (honor system)' : 'Stamp it'}</button>
     </form>
@@ -221,7 +221,7 @@ function ratingsSection({ park, user, csrf, summary, reviews, mine, problem }) {
   ${mine ? html`<form method="post" action="${parkPath(park, '/rating/delete')}" class="inline-form">${csrfField(csrf)}
     <button type="submit" class="btn btn-quiet btn-small">Delete my rating</button></form>` : ''}` : ''}
   ${reviews.length ? html`<ul class="reviews">${reviews.map((r) => html`<li>
-    <p><span class="stars" aria-label="${r.stars} out of 5">${stars(r.stars)}</span> <strong>${r.display_name}</strong>
+    <p><span class="stars" aria-label="${r.stars} out of 5">${stars(r.stars)}</span> ${avatar({ id: r.user_id, display_name: r.display_name, avatar_key: r.avatar_key }, { size: 28, visible: r.face })} <strong>${r.display_name}</strong>
       <span class="muted">${formatDate(localDate(new Date(r.updated_at)))}</span></p>
     ${r.comment_hidden ? html`<p class="moderated">Hidden by moderator</p>` : ''}
     <p class="review-text">${r.comment}</p>
@@ -235,7 +235,7 @@ function photosSection({ park, user, csrf, photos, problem }) {
   <h2 id="photos-h">Photos</h2>
   ${photos.length ? html`<ul class="photo-grid">${photos.map((ph) => html`<li class="photo">
     <a href="/photos/${ph.id}/full"><img src="/photos/${ph.id}/thumb" alt="${ph.caption || `Photo of ${park.name} by ${ph.display_name}`}" width="400" height="400" loading="lazy"></a>
-    <p class="photo-meta">${ph.caption ? html`${ph.caption}<br>` : ''}<span class="muted">by ${ph.display_name}</span></p>
+    <p class="photo-meta">${ph.caption ? html`${ph.caption}<br>` : ''}<span class="muted photo-by">${avatar({ id: ph.user_id, display_name: ph.display_name, avatar_key: ph.avatar_key }, { size: 20, visible: ph.face })} by ${ph.display_name}</span></p>
     ${ph.hidden ? html`<p class="moderated">Hidden by moderator</p>` : ''}
     ${user && user.id === ph.user_id ? html`<details class="photo-edit"><summary>Edit</summary>
       <form method="post" action="/photos/${ph.id}">${csrfField(csrf)}<input type="hidden" name="back" value="${back}">
@@ -253,8 +253,8 @@ function photosSection({ park, user, csrf, photos, problem }) {
     ${areaProblem(problem, 'photo')}
     <div class="field">
       <label for="photo">Add a photo</label>
-      <p class="hint" id="photo-hint">JPEG, PNG or WebP, up to 10 MB. Location data in the file is removed.</p>
-      <input type="file" id="photo" name="photo" accept="${ACCEPT}" required aria-describedby="photo-hint">
+      <p class="hint" id="photo-hint">JPEG, PNG, WebP or HEIC, up to 10 MB. Location data in the file is removed.</p>
+      <input type="file" id="photo" name="photo" accept="${ACCEPT}" required aria-describedby="photo-hint" data-camera="environment">
     </div>
     <div class="field">
       <label for="caption">Caption (optional)</label>

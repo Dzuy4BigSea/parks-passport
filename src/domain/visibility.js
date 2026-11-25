@@ -27,3 +27,11 @@ export function canSee({ viewerId, ownerId, visibility, isPal }) {
 // Convenience: canSee with the pal check done against the DB.
 export const canViewOwner = (db, viewerId, ownerId, visibility) =>
   canSee({ viewerId, ownerId, visibility, isPal: visibility === 'pals' && areFriends(db, viewerId, ownerId) });
+
+/**
+ * Adds face: whether the viewer may see each person's profile photo (the same rule as their
+ * passport, which /avatars/ enforces too). Rows need default_visibility and the person's id
+ * under idKey.
+ */
+export const withFaces = (db, viewerId, rows, idKey = 'id') =>
+  rows.map((r) => ({ ...r, face: canViewOwner(db, viewerId, r[idKey], r.default_visibility) }));
