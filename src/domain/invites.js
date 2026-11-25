@@ -39,10 +39,16 @@ export function inviteForToken(db, token, { now = new Date() } = {}) {
   return row;
 }
 
-/** Marks every open invite to this address as accepted by the new account. */
+/**
+ * Marks every open invite to this address as accepted by the new account. Returns the ids of the
+ * members who sent them (still members), so the new account can be made their Park Pal.
+ */
 export function acceptInvites(db, email, userId, { now = new Date() } = {}) {
-  return db.prepare('UPDATE invites SET accepted_at = ?, accepted_user_id = ? WHERE email = ? AND accepted_at IS NULL')
-    .run(now.toISOString(), userId, normalizeEmail(email)).changes;
+  const inviters = db.prepare(`SELECT DISTINCT i.invited_by FROM invites i JOIN users u ON u.id = i.invited_by
+    WHERE i.email = ? AND i.accepted_at IS NULL`).pluck().all(normalizeEmail(email));
+  db.prepare('UPDATE invites SET accepted_at = ?, accepted_user_id = ? WHERE email = ? AND accepted_at IS NULL')
+    .run(now.toISOString(), userId, normalizeEmail(email));
+  return inviters;
 }
 
 /** Recent invites for the admin list, newest first. */

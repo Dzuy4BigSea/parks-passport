@@ -136,7 +136,8 @@ export function invitePage({ inviter, user, csrf, token, state }) {
   const here = `/pals/invite/${token}`;
   let action;
   if (!user) {
-    action = html`<p><a class="btn btn-primary" href="/signup?next=${encodeURIComponent(here)}">Create your passport</a>
+    action = html`<p>Create your passport and you're Park Pals with ${inviter.display_name} right away. Already have one? Log in to accept.</p>
+      <p><a class="btn btn-primary" href="/signup?next=${encodeURIComponent(here)}">Create your passport</a>
       <a class="btn" href="/login?next=${encodeURIComponent(here)}">Log in</a></p>`;
   } else if (state === 'self') {
     action = html`<p>This is your own invite link. Send it to a friend.</p><p><a href="/pals">Back to Park Pals</a></p>`;

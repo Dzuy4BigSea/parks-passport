@@ -364,3 +364,13 @@ notifications, private, signed out, deleted with the other member), `test/e2e/no
 Checks: `test/unit/limited.test.js` (seeded, numbering, reuse, sold out, display, give to several
 by join date, members get 404, form rules), `test/e2e/limited.spec.js` (tick and give, holographic
 reveal with the number and note, passport tile, close-up, axe at 375 px), and the existing suite.
+
+### M25 — Join from an invite and you're Park Pals (Flows 8 and 9)
+- Signing up from a pal's invite link (`/signup?next=/pals/invite/<token>`) makes the two Park Pals
+  straight away and lands on the passport; the sign-up page says so. A dead token in `next` just
+  signs up. Existing members still log in and tap Accept.
+- Signing up after an admin's email invite (Admin › Members) makes the new member and that admin
+  Park Pals (`acceptInvites` returns the inviters).
+
+Checks: `test/unit/pals.test.js` (pal link sign-up pals both ways, dead link, admin invite pals),
+`test/e2e/pals.spec.js` (sign up from the link, see the inviter's feed), and the existing suite.

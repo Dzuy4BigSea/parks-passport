@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { makeApp, client, testClock } from './helpers.js';
 import { importParksCsv, PARK_CSV_COLUMNS } from '../../src/domain/csv-import.js';
 import { seedBadgesIfEmpty } from '../../src/domain/badges/index.js';
-import { canSee } from '../../src/domain/visibility.js';
+import { canSee, areFriends } from '../../src/domain/visibility.js';
 import { palsFeed, FEED_PAGE_SIZE } from '../../src/domain/pals.js';
 
 const PW = 'correct horse battery';
@@ -97,14 +97,34 @@ test('invite link: accept makes pals both ways; self and repeat are handled; reg
   assert.equal((await people.cat.c.post(`${fresh}/accept`)).statusCode, 303);
 });
 
-test('signed-out invitees are sent to sign up and come back to the invite', async () => {
-  const { app, inviteLink } = await world();
+test('joining from a pal\'s invite link makes you Park Pals right away, both ways', async () => {
+  const { app, db, people, inviteLink } = await world();
   const link = await inviteLink('ana');
   const page = await client(app).get(link);
   assert.ok(page.body.includes(`/signup?next=${encodeURIComponent(link)}`));
   const c = client(app);
+  assert.match((await c.get(`/signup?next=${encodeURIComponent(link)}`)).body, /you and ana are Park Pals straight away/);
   const res = await c.post('/signup', { display_name: 'Dee', email: 'dee@example.com', password: PW, next: link });
-  assert.equal(res.headers.location, link);
+  assert.equal(res.headers.location, '/passport?welcome=1');
+  const dee = db.prepare("SELECT id FROM users WHERE email = 'dee@example.com'").pluck().get();
+  assert.ok(areFriends(db, people.ana.id, dee) && areFriends(db, dee, people.ana.id));
+  assert.match((await c.get('/pals')).body, /ana/);
+  // A dead or made-up link in "next" just signs you up.
+  const e = client(app);
+  const res2 = await e.post('/signup', { display_name: 'Eve', email: 'eve@example.com', password: PW, next: '/pals/invite/nope' });
+  assert.equal(res2.headers.location, '/pals/invite/nope');
+  const eve = db.prepare("SELECT id FROM users WHERE email = 'eve@example.com'").pluck().get();
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_links WHERE user_a = ? OR user_b = ?').pluck().get(eve, eve), 0);
+});
+
+test('joining from an admin\'s email invite makes you Park Pals with that admin', async () => {
+  const { app, db, people } = await world();
+  db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(people.ana.id);
+  await people.ana.c.post('/admin/invites', { invite_email: 'fay@example.com', invite_name: 'Fay' });
+  const c = client(app);
+  await c.post('/signup', { display_name: 'Fay', email: 'fay@example.com', password: PW });
+  const fay = db.prepare("SELECT id FROM users WHERE email = 'fay@example.com'").pluck().get();
+  assert.ok(areFriends(db, fay, people.ana.id) && areFriends(db, people.ana.id, fay));
 });
 
 test('removing a pal unlinks both and revokes Better Together', async () => {

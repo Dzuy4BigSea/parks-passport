@@ -3,6 +3,7 @@ import { recordMilestone } from '../domain/milestones.js';
 import { magicLinkEmail, passwordResetEmail, deleteAccountEmail } from '../views/email.js';
 import { emailCopy } from '../domain/email-copy.js';
 import { inviteForToken, acceptInvites } from '../domain/invites.js';
+import { inviterForNext, palUpOnSignup } from '../domain/pals.js';
 import { canUseIdeas } from '../domain/ideas.js';
 import { verifyPassword, burnPasswordCheck } from '../lib/crypto.js';
 import {
@@ -72,7 +73,8 @@ export default async function authRoutes(app) {
   // Sign up
   app.get('/signup', async (req, reply) => {
     if (req.user) return reply.redirect('/passport');
-    return reply.page(signupPage({ csrf: req.csrfToken(), next: str(req.query.next) }));
+    const next = str(req.query.next);
+    return reply.page(signupPage({ csrf: req.csrfToken(), next, palInviter: inviterForNext(db, next) }));
   });
 
   // Invite links from Admin › Members: the sign-up form, filled in from the invite. Sign-up is open
@@ -95,13 +97,18 @@ export default async function authRoutes(app) {
     const { user, errors } = await createUser(db, { ...values, password: str(req.body.password) }, { now: now() });
     if (errors) {
       reply.code(422);
-      return reply.page(signupPage({ csrf: req.csrfToken(), values, errors, next: str(req.body.next) }));
+      return reply.page(signupPage({ csrf: req.csrfToken(), values, errors, next: str(req.body.next), palInviter: inviterForNext(db, str(req.body.next)) }));
     }
-    acceptInvites(db, user.email, user.id, { now: now() });
+    // Joining from an invite (a pal's link, or an admin's email invite) makes you Park Pals with the
+    // person who sent it, both ways, so there's nothing left to accept.
+    const palInviter = inviterForNext(db, str(req.body.next));
+    const inviterIds = [...acceptInvites(db, user.email, user.id, { now: now() }), ...(palInviter ? [palInviter.id] : [])];
+    for (const id of new Set(inviterIds)) palUpOnSignup(db, id, user.id, { now: now(), random: app.random });
+    if (palInviter) app.track(user.id, 'pal_accepted');
     startSession(req, reply, user.id);
     app.track(user.id, 'sign_up', { method: 'password' });
     // Straight to the passport: open it with a little ceremony (public/js/welcome.js).
-    const to = safeNext(req.body.next);
+    const to = palInviter ? '/passport' : safeNext(req.body.next);
     return reply.redirect(to === '/passport' ? '/passport?welcome=1' : to, 303);
   });
 

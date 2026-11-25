@@ -29,6 +29,18 @@ export const inviterForToken = (db, token) => (typeof token === 'string' && toke
   ? db.prepare(`SELECT u.* FROM pal_invites i JOIN users u ON u.id = i.user_id WHERE i.token = ?`).get(token) || null
   : null);
 
+/** The inviter behind a "next" path that is a pal invite link (/pals/invite/<token>), if any. */
+export function inviterForNext(db, next) {
+  const m = /^\/pals\/invite\/([A-Za-z0-9_-]{1,64})$/.exec(String(next || ''));
+  return m ? inviterForToken(db, m[1]) : null;
+}
+
+/** Makes a new member and the member who invited them Park Pals (both directions). */
+export function palUpOnSignup(db, inviterId, newUserId, { now = new Date(), random = Math.random } = {}) {
+  if (!inviterId || inviterId === newUserId) return false;
+  return makePals(db, inviterId, newUserId, { now, random });
+}
+
 /**
  * Accepts an invite: makes the two users pals (both directions) and checks badges for both.
  * Returns { ok } or { error: 'self' | 'already' }.

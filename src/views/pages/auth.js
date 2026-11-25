@@ -6,13 +6,14 @@ import { visibilityForm } from './pals.js';
 const nextField = (next) => (next ? html`<input type="hidden" name="next" value="${next}">` : '');
 const withNext = (path, next) => (next ? `${path}?next=${encodeURIComponent(next)}` : path);
 
-export function signupPage({ csrf, values = {}, errors = {}, next, invite = null, inviteNotice = null, cityName = 'St. Pete' }) {
+export function signupPage({ csrf, values = {}, errors = {}, next, invite = null, inviteNotice = null, cityName = 'St. Pete', palInviter = null }) {
   return {
     title: 'Create your passport',
     body: html`<div class="narrow">
-${invite ? html`<p class="eyebrow">You're invited</p>` : ''}
+${invite || palInviter ? html`<p class="eyebrow">You're invited</p>` : ''}
 <h1>Create your passport</h1>
-${invite?.inviter_name ? html`<p class="lede">${invite.inviter_name} invited you. Stamp every ${cityName} park you visit, earn badges and explore with friends.</p>` : ''}
+${invite?.inviter_name ? html`<p class="lede">${invite.inviter_name} invited you. Stamp every ${cityName} park you visit, earn badges and explore with friends. You'll be Park Pals with ${invite.inviter_name} as soon as you join.</p>` : ''}
+${palInviter ? html`<p class="lede">Join and you and ${palInviter.display_name} are Park Pals straight away: you'll see each other's stamps and badges.</p>` : ''}
 ${inviteNotice ? html`<p class="notice" role="status">${inviteNotice}</p>` : ''}
 ${errorSummary(errors, { display_name: 'Display name', email: 'Email', password: 'Password' })}
 <form method="post" action="/signup" class="card-form" novalidate>
