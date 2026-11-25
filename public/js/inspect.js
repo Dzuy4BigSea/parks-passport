@@ -1,7 +1,7 @@
 // Inspect a badge (SPEC Flow 11, "Game feel"): tap any badge on a passport for a big card that tilts
 // with your finger or mouse and flips over to its story (or its hint, or your progress). The grid
 // itself already shows everything, so without JS nothing is missing.
-import { celebrationsOn, reducedMotion, buzz, openDialog, el } from './fx.js';
+import { celebrationsOn, reducedMotion, buzz, openDialog, el, holoTilt } from './fx.js';
 
 const STATE = { earned: 'Earned', known: 'In progress', mystery: 'Still a mystery' };
 
@@ -20,7 +20,9 @@ function inspect(badge, name) {
   const desc = badge.querySelector('.badge-desc')?.textContent.trim() || '';
   const bar = badge.querySelector('.bar')?.cloneNode(true);
 
+  const holo = badge.classList.contains('is-holo');
   const front = el('div', { class: 'inspect-face inspect-front' },
+    ...(holo ? [el('span', { class: 'holo-foil', 'aria-hidden': 'true' })] : []),
     el('span', { class: 'inspect-art', 'aria-hidden': 'true' }, art || '?'),
     el('h2', { id: 'inspect-name', class: 'inspect-name' }, name),
     el('p', { class: 'inspect-state' }, meta || STATE[state]),
@@ -29,7 +31,7 @@ function inspect(badge, name) {
     el('p', { class: 'inspect-label' }, state === 'earned' ? 'The story' : state === 'known' ? 'How to earn it' : 'A clue'),
     el('p', { class: 'inspect-desc' }, desc || 'Keep exploring. Some badges only show themselves once you find them.'));
   const flipper = el('div', { class: 'inspect-flip' }, front, back);
-  const card = el('div', { class: `inspect-card is-${state}` }, flipper, el('span', { class: 'inspect-glare', 'aria-hidden': 'true' }));
+  const card = el('div', { class: `inspect-card is-${state}${holo ? ' is-holo' : ''}` }, flipper, el('span', { class: 'inspect-glare', 'aria-hidden': 'true' }));
   const flip = el('button', { type: 'button', class: 'btn' }, 'Flip it over');
   const done = el('button', { type: 'button', class: 'btn btn-primary' }, 'Close');
   const dialog = el('div', { class: 'fx-inspect', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'inspect-name' },
@@ -47,7 +49,8 @@ function inspect(badge, name) {
   });
   if (state === 'earned' && !still) buzz([15, 40, 15]);
 
-  // Tilt toward the pointer, with a glare that follows it.
+  // Tilt toward the pointer, with a glare that follows it (and the foil, on a limited edition).
+  if (!still && holo) holoTilt(card);
   if (!still) {
     const tilt = (x, y) => {
       const r = card.getBoundingClientRect();

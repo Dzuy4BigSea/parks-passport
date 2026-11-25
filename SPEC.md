@@ -222,6 +222,12 @@ Done when:
       "Ana and Ben stamped this" for pals who stamped the park, and a park page lists them with
       their latest date and a link to their passport. Only pals whose passport is shared (pals or
       public) count, as in the feed. With at least one pal, "Stamped by a pal" filters the list.
+- [ ] **Notification center:** signed in, a bell in the header shows how many notifications I
+      haven't read ("Notifications, 2 unread"). `/notifications` lists mine, newest first, 30 per
+      page, unread ones marked New; opening the page marks them read. Notifications are made for a
+      badge earned, a badge given to me, a new level, a pal request and a new pal; each links to
+      the place it's about. Only I can see mine; signed out, the page sends me to log in. Those
+      naming another member are deleted with that member's account. Up to 200 are kept per person.
 
 ### Flow 9: Admin
 As an admin, I can keep the park list and badges right and remove bad content.
@@ -252,6 +258,24 @@ Done when:
       ratings, activities and badges; check-ins per day (14 days) and per week (12 weeks, with
       new members); by city, by method, and the top 10 parks of the last 30 days. Check-ins count
       when they were made. Members and signed-out visitors get 404.
+- [ ] **Give a badge:** from Admin › Members › Give a badge, I can give a member any badge they
+      don't have (including disabled ones and "given only" badges, rule type `manual`, which the
+      rules never award), with an optional note of up to 140 characters. It pops up on their next
+      page as "A gift for you!" with "From <my name>: “note”", and goes in their notifications.
+      The rules never take a given badge back; I can take it back on the same page.
+- [ ] **Give to several at once:** in Admin › Members I tick members, choose a badge (the list
+      shows how many copies of a limited edition are left), add an optional note and give it to all
+      of them. Anyone who already has it is skipped; the result says how many got it, already had
+      it, or missed out because the copies ran out.
+- [ ] **Limited editions:** a badge can have a number of copies (1 to 1000) and the "Given by an
+      admin only" rule. Each copy given gets the lowest free number (#1 of 100, #2 of 100…), so
+      numbers are unique; a taken-back number is given again, and nothing is given past the last
+      copy. Giving to several at once numbers them by join date. The edition can't be made smaller
+      than the copies already given. The member's copy shows its number in the announcement, the
+      notification, the passport and the close-up, with a holographic foil that shimmers and
+      follows the pointer or the phone's tilt (still with reduced motion). **Early Bird Edition**
+      (🐦, 100 copies) ships in `seed/limited-badges.json`. (The 🌅 Early Bird badge for checking
+      in before 7:30 am is a different badge.)
 
 ### Flow 10: Analytics and consent
 As the owner, I can see how the app is used without tracking anyone who hasn't agreed, and

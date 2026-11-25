@@ -15,8 +15,8 @@ function announcementsBlock(a, base) {
   return html`<div class="announcements" role="status" tabindex="-1" data-announce>
   ${a.levelUp ? html`<div class="announce announce-level" data-kind="level"><span class="announce-art" aria-hidden="true">🚀</span>
     <p><strong>Level up! You're now ${/^[AEIOU]/.test(a.levelUp.name) ? 'an' : 'a'} ${a.levelUp.name}.</strong></p></div>` : ''}
-  ${a.badges.map((b) => html`<div class="announce" data-kind="${b.kind}">${badgeArt(b.art, 'announce-art')}
-    <p><strong>New badge: ${b.name}</strong>${b.description ? html`<br>${b.description}` : ''}</p></div>`)}
+  ${a.badges.map((b) => html`<div class="announce${b.serial ? ' is-holo' : ''}" data-kind="${b.given_by ? 'gift' : b.kind}">${badgeArt(b.art, 'announce-art')}
+    <p><strong>New badge: ${b.name}</strong>${b.serial ? html`<br><span class="limited-no">Limited edition #${b.serial}${b.limited_count ? ` of ${b.limited_count}` : ''}</span>` : ''}${b.description ? html`<br><span class="announce-desc">${b.description}</span>` : ''}${b.given_by ? html`<br><span class="gift-note">From ${b.given_by}${b.award_note ? `: “${b.award_note}”` : ''}</span>` : ''}</p></div>`)}
   <p class="announce-more"><a href="${base}/passport#badges">See your badges</a></p>
 </div>`;
 }
@@ -102,6 +102,12 @@ function tabBar(current, base) {
 }
 
 // Small "you're on a roll" pills in the phone header (streak, points).
+// The notification center's bell, with how many are unread.
+function bell(unread, here) {
+  const label = unread ? `Notifications, ${unread} unread` : 'Notifications';
+  return html`<a class="pill pill-bell${unread ? ' has-unread' : ''}" href="/notifications" aria-label="${label}"${here ? html` aria-current="page"` : ''}>${ICONS.bell}${unread ? html`<span class="bell-count" aria-hidden="true">${unread > 99 ? '99+' : unread}</span>` : ''}</a>`;
+}
+
 export function statusPills(status) {
   if (!status) return '';
   const { streak, points } = status;
@@ -154,12 +160,13 @@ ${announcements ? html`<script type="module" src="/js/reveal.js"></script>` : ''
 <header class="site-header">
   <div class="wrap header-row">
     <a class="brand" href="/">${BRAND_MARK}<span class="brand-text">Parks Passport${city ? html` <span class="brand-city">${city}</span>` : ''}</span></a>
-    ${user ? html`<div class="header-chips">${statusPills(status)}${user.is_admin ? html`<a class="pill" href="/admin">Admin</a>` : ''}</div>` : ''}
+    ${user ? html`<div class="header-chips${user.is_admin ? ' has-admin' : ''}">${statusPills(status)}${bell(status?.unread || 0, current === 'notifications')}${user.is_admin ? html`<a class="pill" href="/admin">Admin</a>` : ''}</div>` : ''}
     <nav aria-label="Main" class="site-nav">
       <ul class="nav-list">
         ${nav.map(([href, label, key]) => html`<li><a href="${href}"${aria(key === current)}>${label}</a></li>`)}
         ${user
-          ? html`<li><a href="/stamp" class="nav-cta"${aria(current === 'stamp')}>${ICONS.stamp}Stamp</a></li>
+          ? html`<li class="nav-bell">${bell(status?.unread || 0, current === 'notifications')}</li>
+        <li><a href="/stamp" class="nav-cta"${aria(current === 'stamp')}>${ICONS.stamp}Stamp</a></li>
         <li class="nav-logout"><form method="post" action="/logout"><input type="hidden" name="_csrf" value="${csrf}"><button type="submit" class="nav-button">Log out</button></form></li>`
           : html`<li class="nav-signup"><a href="/signup" class="nav-cta">Get started</a></li>`}
       </ul>

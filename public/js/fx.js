@@ -103,3 +103,30 @@ export function el(tag, attrs = {}, ...children) {
   for (const c of children) if (c != null) node.append(c);
   return node;
 }
+
+/**
+ * Holographic foil (limited editions): the rainbow shine and the card's tilt follow the pointer, or
+ * the phone's tilt where the browser reports it without asking. Only while `scope` has .is-holo,
+ * and never with reduced motion (the CSS keeps a still foil).
+ */
+export function holoTilt(card, scope = card) {
+  if (reducedMotion()) return;
+  const set = (px, py) => {
+    if (!scope.classList.contains('is-holo')) return;
+    card.style.setProperty('--hx', `${Math.round(px * 100)}%`);
+    card.style.setProperty('--hy', `${Math.round(py * 100)}%`);
+    card.style.setProperty('--tilt-y', `${((px - 0.5) * 16).toFixed(1)}deg`);
+    card.style.setProperty('--tilt-x', `${((0.5 - py) * 12).toFixed(1)}deg`);
+  };
+  card.addEventListener('pointermove', (e) => {
+    const r = card.getBoundingClientRect();
+    set(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)));
+  });
+  card.addEventListener('pointerleave', () => { card.style.removeProperty('--tilt-x'); card.style.removeProperty('--tilt-y'); });
+  const orient = (e) => {
+    if (e.gamma == null || e.beta == null) return;
+    set(Math.min(1, Math.max(0, (e.gamma + 30) / 60)), Math.min(1, Math.max(0, (e.beta - 20) / 60)));
+  };
+  window.addEventListener('deviceorientation', orient);
+  document.addEventListener('fx:closed', () => window.removeEventListener('deviceorientation', orient), { once: true });
+}

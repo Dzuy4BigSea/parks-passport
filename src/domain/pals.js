@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { notify } from './notifications.js';
 import { markMilestone } from './milestones.js';
 import { awardBadges, revokeUnmetBadges } from './badges/index.js';
 
@@ -48,6 +49,10 @@ function makePals(db, userId, otherId, { now = new Date(), random = Math.random 
     return changes > 0;
   })();
   if (!linked) return false;
+  const names = new Map(db.prepare('SELECT id, display_name FROM users WHERE id IN (?, ?)').raw().all(a, b));
+  for (const [me, other] of [[a, b], [b, a]]) {
+    notify(db, me, { kind: 'pal_new', text: `You and ${names.get(other)} are now Park Pals.`, link: '/pals', actorId: other }, { now });
+  }
   for (const id of [a, b]) markMilestone(db, id, 'pal', { now });
   for (const id of [a, b]) awardBadges(db, id, { type: 'pal', id: id === a ? b : a }, { now, random });
   return true;
@@ -126,6 +131,7 @@ export function requestByCode(db, user, input, { now = new Date(), random = Math
   db.transaction(() => {
     db.prepare('INSERT INTO pal_requests (from_user, to_user, created_at) VALUES (?, ?, ?)').run(user.id, to.id, now.toISOString());
     db.prepare('INSERT INTO pal_request_sends (user_id, at) VALUES (?, ?)').run(user.id, now.toISOString());
+    notify(db, to.id, { kind: 'pal_request', text: `${user.display_name} wants to be Park Pals.`, link: '/pals#requests', actorId: user.id }, { now });
   })();
   return { sent: true, to };
 }

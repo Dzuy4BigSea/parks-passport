@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { notify, unreadCount } from './domain/notifications.js';
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import formbody from '@fastify/formbody';
@@ -36,6 +37,7 @@ import photoRoutes from './routes/photos.js';
 import adminRoutes from './routes/admin.js';
 import ideaRoutes from './routes/ideas.js';
 import activityRoutes from './routes/activities.js';
+import notificationRoutes from './routes/notifications.js';
 import { shareNudge } from './views/pages/pals.js';
 
 // Paths with tokens or handles in the URL: no analytics scripts there (see reply.page).
@@ -120,6 +122,7 @@ export function buildApp({
     if (level.index > user.level_seen) {
       db.prepare('UPDATE users SET level_seen = ? WHERE id = ?').run(level.index, user.id);
       levelUp = level;
+      notify(db, user.id, { kind: 'level', text: `You reached ${level.name}.`, link: '/passport' }, { now: now() });
     }
     return badges.length || levelUp ? { badges, levelUp } : null;
   }
@@ -154,7 +157,7 @@ export function buildApp({
         baseUrl: config.baseUrl, shareImages,
         canonicalPath: private_ ? null : pathname,
         // Streak and points for the phone header (members only).
-        status: req.user ? { streak: weeklyStreak(visitDates(db, req.user.id), localDate(now(), req.city.time_zone)), points: totalPoints(db, req.user.id) } : null,
+        status: req.user ? { streak: weeklyStreak(visitDates(db, req.user.id), localDate(now(), req.city.time_zone)), points: totalPoints(db, req.user.id), unread: unreadCount(db, req.user.id) } : null,
         analytics: private_ ? null : config.analytics || null,
         // The banner asks only when there is something to consent to (GTM) and no choice yet.
         showConsentBanner: !private_ && Boolean(config.analytics?.gtmId) && !consent.chosen && !path.startsWith('/consent'),
@@ -213,6 +216,7 @@ export function buildApp({
   app.register(adminRoutes);
   app.register(ideaRoutes);
   app.register(activityRoutes);
+  app.register(notificationRoutes);
   app.register(consentRoutes);
 
   // Friendly HTML errors instead of Fastify's JSON (e.g. an upload over the size limit).

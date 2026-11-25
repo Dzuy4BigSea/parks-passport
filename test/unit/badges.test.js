@@ -30,7 +30,7 @@ const run = (type, params, c) => RULES[type].evaluate(params, c);
 
 test('every spec rule type exists', () => {
   assert.deepEqual(RULE_TYPES.sort(), ['all_parks', 'category_count', 'lucky', 'pal_same_day', 'parks_count',
-    'same_park_count', 'time_of_day', 'weekend_parks', 'weekly_streak', 'cities_count', 'milestone', 'lucky_drop',
+    'same_park_count', 'time_of_day', 'weekend_parks', 'weekly_streak', 'cities_count', 'milestone', 'lucky_drop', 'manual',
     // Healthy activities (docs/healthy-activities.md)
     'activity_count', 'activity_parks', 'activity_sum', 'weekly_sum', 'weekly_days', 'pillar_variety', 'activity_categories'].sort());
 });

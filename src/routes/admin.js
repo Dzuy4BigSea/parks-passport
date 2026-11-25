@@ -21,8 +21,9 @@ import { isSuperAdmin, ideaById, badgePrefill, markBuilt } from '../domain/ideas
 import { EMAIL_KINDS, COPY_FIELDS, emailCopy, saveEmailCopy, resetEmailCopy, isCustomized } from '../domain/email-copy.js';
 import {
   adminCity, adminEmail, adminEmailMessage, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
-  adminActivities, adminStats,
+  adminActivities, adminStats, adminGiveBadge,
 } from '../views/pages/admin.js';
+import { grantBadge, grantBadgeToMany, takeBackGrant } from '../domain/badges/index.js';
 import { adminStats as computeStats } from '../domain/stats.js';
 
 const MAX_CSV_BYTES = 1024 * 1024;
@@ -311,12 +312,66 @@ export default async function adminRoutes(app) {
     });
 
     // Members
+    const givable = () => db.prepare(`SELECT b.id, b.name, b.rule_type, b.enabled, b.limited_count,
+      (SELECT COUNT(*) FROM user_badges ub WHERE ub.badge_id = b.id AND ub.serial IS NOT NULL) AS serials_given
+      FROM badges b ORDER BY b.limited_count IS NULL, b.name COLLATE NOCASE`).all();
     const usersPage = (req, extra = {}) => adminUsers({
-      users: allUsersForAdmin(db), csrf: req.csrfToken(), me: req.user, invites: recentInvites(db), ...extra,
+      users: allUsersForAdmin(db), csrf: req.csrfToken(), me: req.user, invites: recentInvites(db), badges: givable(), ...extra,
     });
+    const count = (v) => Math.max(0, Number.parseInt(v, 10) || 0);
+    const gaveNotice = (q) => {
+      const parts = [`Gave the badge to ${count(q.n)} ${count(q.n) === 1 ? 'member' : 'members'}.`];
+      if (count(q.had)) parts.push(`${count(q.had)} already had it.`);
+      if (count(q.out)) parts.push(`${count(q.out)} didn't get one: all the numbered copies are given.`);
+      return parts.join(' ');
+    };
     r.get('/users', async (req, reply) => reply.page(usersPage(req, {
-      notice: { invited: 'Invite sent.' }[req.query.done] || (req.query.done ? 'Saved.' : null),
+      notice: req.query.done === 'gave' ? gaveNotice(req.query) : { invited: 'Invite sent.' }[req.query.done] || (req.query.done ? 'Saved.' : null),
     })));
+    // Give one badge to every member ticked in the list (limited editions numbered by join date).
+    r.post('/users/give', async (req, reply) => {
+      const userIds = [].concat(req.body.user_id || []).filter((v) => /^\d+$/.test(String(v))).map(Number);
+      const badgeId = /^\d+$/.test(String(req.body.badge_id || '')) ? Number(req.body.badge_id) : 0;
+      const result = grantBadgeToMany(db, { admin: req.user, userIds, badgeId, note: req.body.note }, { now: now() });
+      if (result.error) {
+        const message = { not_found: 'Choose a badge to give.', none: 'Tick at least one member.', note: 'Keep the note to 140 characters.' }[result.error];
+        return reply.code(422).page(usersPage(req, { giveError: message, giveValues: { ...req.body, user_id: userIds } }));
+      }
+      return reply.redirect(`/admin/users?done=gave&n=${result.given}&had=${result.already}&out=${result.soldOut}#members`, 303);
+    });
+    // Give a member a badge (and take back one that was given).
+    const giveView = (req, member, extra = {}) => adminGiveBadge({
+      member, csrf: req.csrfToken(), ...extra,
+      earned: db.prepare(`SELECT b.*, ub.awarded_at, ub.source_type, ub.serial, g.display_name AS given_by FROM user_badges ub
+        JOIN badges b ON b.id = ub.badge_id LEFT JOIN users g ON g.id = ub.source_id AND ub.source_type = 'grant'
+        WHERE ub.user_id = ? ORDER BY ub.awarded_at DESC`).all(member.id),
+      available: db.prepare(`SELECT id, name, rule_type, enabled, limited_count,
+        (SELECT COUNT(*) FROM user_badges s WHERE s.badge_id = b.id AND s.serial IS NOT NULL) AS serials_given FROM badges b WHERE NOT EXISTS
+        (SELECT 1 FROM user_badges ub WHERE ub.badge_id = b.id AND ub.user_id = ?) ORDER BY b.name COLLATE NOCASE`).all(member.id),
+    });
+    const memberOf = (req) => (/^\d+$/.test(req.params.id) ? db.prepare('SELECT id, display_name FROM users WHERE id = ?').get(Number(req.params.id)) : null);
+    r.get('/users/:id/badges', async (req, reply) => {
+      const member = memberOf(req);
+      if (!member) return reply.callNotFound();
+      return reply.page(giveView(req, member, { notice: { given: 'Badge given. It pops up the next time they open the app.', taken: 'Badge taken back.' }[req.query.done] || null }));
+    });
+    r.post('/users/:id/badges', async (req, reply) => {
+      const member = memberOf(req);
+      if (!member) return reply.callNotFound();
+      const badgeId = /^\d+$/.test(String(req.body.badge_id || '')) ? Number(req.body.badge_id) : 0;
+      const result = grantBadge(db, { admin: req.user, userId: member.id, badgeId, note: req.body.note }, { now: now() });
+      if (result.error) {
+        const message = { not_found: 'Choose a badge.', already: 'They already have that badge.', note: 'Keep the note to 140 characters.', sold_out: 'All the numbered copies of that badge are given.' }[result.error];
+        return reply.code(422).page(giveView(req, member, { error: message, values: req.body }));
+      }
+      return reply.redirect(`/admin/users/${member.id}/badges?done=given`, 303);
+    });
+    r.post('/users/:id/badges/:badgeId/delete', async (req, reply) => {
+      const member = memberOf(req);
+      if (!member || !/^\d+$/.test(req.params.badgeId) || !takeBackGrant(db, member.id, Number(req.params.badgeId))) return reply.callNotFound();
+      return reply.redirect(`/admin/users/${member.id}/badges?done=taken`, 303);
+    });
+
     // Invite by email: records the invite, then sends the branded invitation with a /join link.
     r.post('/invites', async (req, reply) => {
       const result = createInvite(db, { email: req.body.invite_email, name: req.body.invite_name, inviter: req.user }, { now: now() });
@@ -364,6 +419,16 @@ export default async function adminRoutes(app) {
       delete values.art_file;
       const { badge, errors = {} } = validateBadgeForm(values, { isNew, targets: badgeTargets(db).map((t) => t.value) });
       const artFile = Buffer.isBuffer(req.body.art_file) && req.body.art_file.length ? req.body.art_file : null;
+      // A limited edition must cover every copy already out: numbered ones (up to the highest number
+      // held) can't be un-numbered, and a badge members already hold without a number can't become one.
+      const out = existing ? db.prepare(`SELECT COUNT(*) AS total, COUNT(serial) AS numbered, COALESCE(MAX(serial), 0) AS top
+        FROM user_badges WHERE badge_id = ?`).get(existing.id) : { total: 0, numbered: 0, top: 0 };
+      if (badge?.limited_count && out.total > out.numbered) {
+        const n = out.total - out.numbered;
+        errors.limited_count = `${n} ${n === 1 ? 'member already has' : 'members already have'} this badge without a number, so it can't become a limited edition. Add a new badge instead.`;
+      } else if (badge && out.numbered && (badge.limited_count ?? 0) < out.top) {
+        errors.limited_count = `Copy #${out.top} is already given, so keep at least ${out.top} copies.`;
+      }
       if (isNew && badge && db.prepare('SELECT 1 FROM badges WHERE slug = ?').get(badge.slug)) {
         errors.slug = 'Another badge already uses that slug.';
       }
