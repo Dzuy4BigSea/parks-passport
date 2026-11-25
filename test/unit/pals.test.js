@@ -435,3 +435,19 @@ test("QA: cancelling doesn't give a daily request back; a non-code isn't a guess
   const together = db.prepare(`SELECT COUNT(*) FROM user_badges ub JOIN badges b ON b.id = ub.badge_id WHERE b.slug = 'together'`).pluck().get();
   assert.equal(together, 2);
 });
+
+test("passport Up next has a Park Pals card: invite, then pal count, then a sharing pal's newest stamp", async () => {
+  const { people, befriend, setVis } = await world();
+  const card = async () => {
+    const body = (await people.ana.c.get('/st-pete/passport')).body;
+    const ul = body.slice(body.indexOf('class="nextup"'));
+    const from = ul.indexOf("Park Pals</span>");
+    return ul.slice(from, ul.indexOf("</li>", from));
+  };
+  assert.match(await card(), /Invite a Park Pal/);
+  await befriend('ana', 'ben');
+  await people.ben.c.post('/st-pete/parks/a-park/stamp', {});
+  assert.match(await card(), /1 Park Pal</, "a private pal's stamp stays hidden");
+  await setVis('ben', 'pals');
+  assert.match(await card(), /ben stamped A Park/);
+});

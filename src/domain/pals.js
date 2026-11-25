@@ -268,3 +268,12 @@ export function palsWhoStamped(db, userId, parkIds) {
   }
   return out;
 }
+
+/**
+ * The "Park Pals" next-up card: the newest stamp from a pal who shares their passport (same rule
+ * as the feed), else how many pals I have. Returns { latest } or { count }.
+ */
+export function palNudge(db, userId) {
+  const latest = palsFeed(db, userId).items.find((i) => i.type === 'stamp');
+  return latest ? { latest } : { count: palIdsOf(db, userId).length };
+}
