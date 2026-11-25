@@ -17,6 +17,10 @@ and then publicly. It's a personal project, not an official City app. v1 succeed
 - **Admin:** a member with the admin flag. Can edit parks, import the park CSV, manage badges,
   hide photos or reviews, and promote or demote admins. The first admin is set with a CLI
   command (`npm run make-admin -- <email>`).
+- **Super admin:** an admin with the super-admin flag, set only by CLI
+  (`npm run make-super-admin -- <email>`). Sees every badge idea and triages them (Flow 13).
+- **Idea contributor:** a member an admin shared badge ideas with. Can submit badge ideas and
+  see their own; nothing else changes.
 
 ## Core flows and acceptance criteria
 
@@ -311,11 +315,44 @@ Done when:
       rule types with a target picker. The park form has an optional walking-loop length
       (`loop_mi`), shown next to "Walk a mile".
 
+### Flow 13: Badge ideas
+As an admin, I can collect badge ideas from myself and people I trust, so that the super admin
+can keep, kill or combine them and hand the keepers to Claude Code to build.
+Done when:
+- [ ] `/ideas` is open to admins and idea contributors and returns 404 to everyone else
+      (signed out included). It shows a fill-in-the-blank form, "Earn **[badge name]** when you
+      **[do what]**", with an optional emoji, and my own ideas newest first with their status.
+      The name is optional (60 characters); "when you" is required, one line, 160 characters.
+      At most 30 ideas per person per day.
+- [ ] **Share:** Admin › Badge ideas lists contributors and lets any admin add one by email. A
+      member gets the "Badge ideas" email with a link to `/ideas`. Someone without an account
+      gets the same email with a `/join/<token>?next=/ideas` link (an invite, Flow 9) and has
+      access as soon as they sign up with that address. Removing a contributor stops their access;
+      their ideas stay. The email's wording is editable in Admin › Email › Messages.
+- [ ] **Triage (super admin only):** Admin › Badge ideas lists every idea with its author's
+      display name, filtered by New, Kept, Combined, Killed and Built. For each idea I can keep
+      it, kill it, or combine it into another open idea, with an optional note and the rule type
+      it fits (an existing rule type or "needs a new rule"). Plain admins see only the share
+      section, and the triage routes 404 for them.
+- [ ] **Suggest with Claude** (off without `ANTHROPIC_API_KEY`): a background job reads up to
+      100 New ideas plus the existing badges and rule types, and proposes keep/kill/combine, a
+      reason, and a rule type with parameters or a description of the new rule needed. Output is
+      validated (unknown ideas, verdicts and rule types are dropped) and only stored as
+      suggestions; I apply each one with a button. Idea text is treated as data, not instructions.
+- [ ] **Build:** a Kept idea that fits an existing rule type has "Create badge", which opens
+      the badge form filled in from the idea (disabled until I enable it). Saving it links the
+      badge and marks the idea Built.
+- [ ] **Export for Claude Code:** `/admin/ideas/export.md` downloads a Markdown brief of the
+      Kept ideas that aren't built yet, combined ideas folded into their keeper, split into "fits
+      an existing rule" and "needs a new rule", with the file pointers and checks Claude Code
+      needs. It contains no names, emails or other personal details.
+- [ ] Deleting an account deletes its ideas.
+
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.
 - **users**: id, email (unique, lower-cased), password_hash (scrypt, nullable for magic-link-only
   accounts), display_name, handle (unique), default_visibility, is_admin, share_nudge_dismissals,
-  paws, kids (editions), created_at
+  is_super_admin, paws, kids (editions), created_at
 - **sessions**: id (random token hash), user_id, expires_at, created_at
 - **auth_tokens**: id, user_id or email, purpose (magic_link | password_reset), token_hash,
   expires_at, used_at
@@ -344,6 +381,10 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
   active, updated_at. **city_motifs**: id, theme_id, slug, name, blurb, svg (sanitized), status
   (draft|approved), source (seed|ai|admin), sort, created_at. The AI job's state is the
   `theme_ai_job` row in **settings**.
+- **idea_contributors**: id, email (unique), added_by, created_at. **badge_ideas**: id, user_id,
+  name, pitch, art, status (new|keep|kill|combined|built), merged_into, rule_type, note,
+  ai_suggestion (JSON), badge_id, created_at, updated_at. The AI job's state is the
+  `idea_ai_job` row in **settings**.
 
 ## Integrations
 | Service | Direction | Auth | Failure behavior |
@@ -353,7 +394,7 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
 | Google Tag Manager / GA4 | write (client) | `GTM_ID` and `GTM_SCRIPT_ORIGIN` in `.env` | Not loaded when `GTM_ID` is empty. Gated by Consent Mode v2. |
 | Browser Geolocation API | read (client) | user permission | Falls back to the honor system with an explanation. |
 | Map tiles (OpenStreetMap tiles via Leaflet) | read (client) | none (attribution shown) | The map area shows "Map unavailable" and the list still works. |
-| Anthropic Claude API (Admin › City theme) | read (admin-triggered) | `ANTHROPIC_API_KEY` in `.env` | Optional. Without a key the Generate button is off. A failed run shows a fixed message (key rejected, rate limited, try again) and adds nothing. Output is validated and sanitized, and only becomes drafts. |
+| Anthropic Claude API (Admin › City theme, Admin › Badge ideas) | read (admin-triggered) | `ANTHROPIC_API_KEY` in `.env` | Optional. Without a key the Generate button is off. A failed run shows a fixed message (key rejected, rate limited, try again) and adds nothing. Output is validated and sanitized, and only becomes drafts. |
 | Geocoder (US Census Geocoder, falling back to OSM Nominatim at 1 request/s) | one-time read | none | Used only by the seed script. Parks it can't place are flagged `needs_pin` for an admin to place on a map. |
 | St. Pete Parks & Rec website | one-time import | none | Used only by `npm run seed:scrape` to build `seed/parks.csv`, never called at runtime. |
 

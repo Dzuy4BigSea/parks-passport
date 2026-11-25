@@ -186,6 +186,6 @@ export function setAdminFlag(db, actor, targetId, makeAdmin) {
   // can't leave the app with none.
   const changes = makeAdmin
     ? db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(targetId).changes
-    : db.prepare('UPDATE users SET is_admin = 0 WHERE id = ? AND (SELECT COUNT(*) FROM users WHERE is_admin = 1) > 1').run(targetId).changes;
+    : db.prepare('UPDATE users SET is_admin = 0, is_super_admin = 0 WHERE id = ? AND (SELECT COUNT(*) FROM users WHERE is_admin = 1) > 1').run(targetId).changes;
   return changes || makeAdmin ? { ok: true } : { error: "There must always be at least one admin." };
 }

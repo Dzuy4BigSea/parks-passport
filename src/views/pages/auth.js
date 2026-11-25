@@ -132,7 +132,7 @@ ${errorSummary(errors, { password: 'New password' })}
   };
 }
 
-export function accountPage({ csrf, user, errors = {}, notice }) {
+export function accountPage({ csrf, user, errors = {}, notice, ideas = false }) {
   return {
     title: 'Account',
     current: 'account',
@@ -144,6 +144,7 @@ ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
   <dt>Email</dt><dd>${user.email}</dd>
   <dt>Handle</dt><dd>@${user.handle}</dd>
 </dl>
+${ideas ? html`<p><a href="/ideas">Share a badge idea</a></p>` : ''}
 <form method="post" action="/logout" class="inline-form">
   ${csrfField(csrf)}
   <button type="submit" class="btn">Log out</button>

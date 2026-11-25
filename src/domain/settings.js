@@ -8,6 +8,7 @@ export const EMAIL_DEFAULTS = {
   subject_password_reset: 'Reset your Parks Passport password',
   subject_delete_account: 'Confirm deleting your Parks Passport account',
   subject_invite: "You're invited to Parks Passport",
+  subject_idea_share: 'Help dream up Parks Passport badges',
 };
 
 const getRaw = (db, key) => db.prepare('SELECT value FROM settings WHERE key = ?').pluck().get(key);

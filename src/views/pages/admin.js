@@ -24,6 +24,7 @@ export function adminHome({ counts }) {
   <li><a href="/admin/parks?filter=needs_pin"><strong>Pins to check</strong><span>${counts.needsPin} parks</span></a></li>
   <li><a href="/admin/import"><strong>Import parks</strong><span>CSV upload or seed file</span></a></li>
   <li><a href="/admin/badges"><strong>Badges</strong><span>${counts.badges} badges</span></a></li>
+  <li><a href="/admin/ideas"><strong>Badge ideas</strong><span>${counts.newIdeas ?? 0} new · share with contributors</span></a></li>
   <li><a href="/admin/activities"><strong>Activities</strong><span>Healthy things to do at parks</span></a></li>
   <li><a href="/admin/moderation"><strong>Moderation</strong><span>${counts.shared} shared photos and reviews</span></a></li>
   <li><a href="/admin/users"><strong>Members</strong><span>${counts.users} members · ${counts.admins} admins</span></a></li>
@@ -137,7 +138,7 @@ const paramSelect = (k, options, value, error) => html`<div class="field param" 
   <select id="param_${k}" name="param_${k}"><option value="">Choose…</option>${options.map(([v, label]) => html`<option value="${v}"${String(value) === v ? html` selected` : ''}>${label}</option>`)}</select>
 </div>`;
 
-export function adminBadgeForm({ badge, csrf, isNew, errors = {}, values = null, notice, targets = [] }) {
+export function adminBadgeForm({ badge, csrf, isNew, errors = {}, values = null, notice, targets = [], fromIdea = null }) {
   const b = values || badge || { kind: 'known', enabled: 1, rule_type: 'parks_count', rule_params: '{}', art: '🏅' };
   let params = {};
   try { params = values ? Object.fromEntries(Object.keys(PARAM_LABELS).map((k) => [k, values[`param_${k}`]])) : JSON.parse(b.rule_params || '{}'); } catch { params = {}; }
@@ -150,6 +151,7 @@ ${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${no
 ${errorSummary(errors)}
 <form method="post" action="${action}" class="card-form admin-form" enctype="multipart/form-data" id="badge-form">
   ${csrfField(csrf)}
+  ${fromIdea ? html`<input type="hidden" name="from_idea" value="${fromIdea}"><p class="notice">From <a href="/admin/ideas#idea-${fromIdea}">badge idea #${fromIdea}</a>. Check the rule settings; it stays disabled until you tick Enabled.</p>` : ''}
   ${input('name', 'Name', b.name, { required: true, error: errors.name })}
   ${isNew ? input('slug', 'Slug', b.slug, { required: true, error: errors.slug, hint: 'Permanent id, e.g. sunrise-club.' }) : html`<p><strong>Slug:</strong> ${badge.slug}</p>`}
   ${input('description', 'Description (shown once earned, and for known badges)', b.description, { error: errors.description })}
