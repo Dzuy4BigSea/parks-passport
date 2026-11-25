@@ -76,7 +76,7 @@ export function parksPage({ parks, total, q, selected, categories, near, unvisit
     area: areaForPark(theme, p)?.name || '', travel: near && p.distance_m != null ? travelTime(p.distance_m) : '',
   }));
   return {
-    title: 'Parks',
+    title: theme.copy?.short ? `${theme.copy.short} parks` : 'Parks',
     current: 'parks',
     head: html`<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">`,
     scripts: ['/js/near-me.js', '/js/explore.js'],

@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import formbody from '@fastify/formbody';
@@ -103,6 +104,9 @@ export function buildApp({
     decorateReply: false, maxAge: '30d', immutable: true,
   });
 
+  // Per-city share images that exist (public/og/<key>.jpg), read once.
+  const shareImages = new Set(fs.existsSync(path.join(ROOT, 'public', 'og')) ? fs.readdirSync(path.join(ROOT, 'public', 'og')) : []);
+
   // New badges and level-ups, announced once on the next page the user sees.
   function takeAnnouncements(user) {
     const badges = takeUnseenBadges(db, user.id, { now: now() });
@@ -141,7 +145,7 @@ export function buildApp({
       .send(String(layout({
         ...view, user: req.user, csrf: req.csrfToken(), announcements, nudge, events, consent, path,
         theme: view.city || req.city, cities: listCities(db).filter((c) => c.listed),
-        baseUrl: config.baseUrl,
+        baseUrl: config.baseUrl, shareImages,
         canonicalPath: private_ ? null : pathname,
         // Streak and points for the phone header (members only).
         status: req.user ? { streak: weeklyStreak(visitDates(db, req.user.id), localDate(now(), req.city.time_zone)), points: totalPoints(db, req.user.id) } : null,

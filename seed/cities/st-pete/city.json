@@ -21,7 +21,8 @@
     "official": "the City of St. Petersburg",
     "gary": "I've been wandering St. Pete parks for years and I still find something new on most visits, like a heron fishing off a seawall or a shady bench I'd walked past a hundred times.",
     "description": "Check in at every St. Petersburg park you visit, collect stamps and badges, rate your favorites and explore with your Park Pals.",
-    "search_examples": "Crescent Lake, Vinoy, North Shore…"
+    "search_examples": "Crescent Lake, Vinoy, North Shore…",
+    "og_alt": "Parks Passport: stamp every St. Pete park you visit. Gary the park guide waves in front of the St. Pete Pier at sunrise."
   },
   "accent": "#FF7A59",
   "accent_2": "#7C6CF2",

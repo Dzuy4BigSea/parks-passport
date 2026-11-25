@@ -320,7 +320,8 @@ export default async function adminRoutes(app) {
       if (result.error) return reply.code(422).page(usersPage(req, { inviteError: result.error, inviteValues: result.values }));
       const msg = memberEmail({
         kind: 'invite', copy: copyOf('invite'), baseUrl: app.config.baseUrl, tagline: app.theme().tagline,
-        name: result.invite.name || 'there', inviter: req.user.display_name, url: `${app.config.baseUrl}/join/${result.token}`,
+        name: result.invite.name || 'there', inviter: req.user.display_name, city: req.city.copy.short,
+        url: `${app.config.baseUrl}/join/${result.token}?city=${req.city.key}`, // opens in the admin's current city
       });
       try {
         await app.mailer.send({ to: result.invite.email, ...msg });

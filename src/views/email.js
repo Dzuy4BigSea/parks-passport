@@ -81,8 +81,8 @@ export function emailLayout({ baseUrl, preheader, heading, paragraphs = [], butt
 }
 
 // Member emails: wording from Admin › Email › Messages (domain/email-copy.js), defaults otherwise.
-// {name} and {inviter} placeholders; values are escaped later with everything else.
-const fill = (text, vars) => String(text).replace(/\{(name|inviter)\}/g, (_, k) => vars[k] ?? '');
+// {name}, {inviter} and {city} placeholders; values are escaped later with everything else.
+const fill = (text, vars) => String(text).replace(/\{(name|inviter|city)\}/g, (_, k) => vars[k] ?? '');
 // Blank lines split paragraphs; single line breaks stay as <br>. Everything is escaped.
 const paragraphsOf = (body, vars) => fill(body, vars).split(/\n{2,}/).map((para) => {
   const lines = para.split('\n');
@@ -90,10 +90,10 @@ const paragraphsOf = (body, vars) => fill(body, vars).split(/\n{2,}/).map((para)
 });
 
 /** { subject, text, html } for one member email. copy = { subject, preheader, heading, body, button, note }. */
-export function memberEmail({ kind, copy, baseUrl, tagline, name, url, inviter = '' }) {
+export function memberEmail({ kind, copy, baseUrl, tagline, name, url, inviter = '', city = 'St. Pete' }) {
   const def = EMAIL_KINDS[kind];
   const c = { ...def.defaults, ...copy };
-  const vars = { name, inviter };
+  const vars = { name, inviter, city };
   const note = fill(c.note, vars);
   return {
     subject: fill(c.subject, vars),

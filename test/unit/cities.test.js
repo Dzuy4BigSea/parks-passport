@@ -268,3 +268,31 @@ test('QA: a migration that drops a table must say so and runs with foreign keys 
     assert.equal(db.pragma('foreign_keys', { simple: true }), 1);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('share previews and invites are city-specific: image, alt text and title; ?city= links; {city} in the invitation', async () => {
+  const { app, db, mailer } = citiesApp();
+  const meta = (body, prop) => (body.match(new RegExp(`<meta (?:property|name)="${prop}" content="([^"]*)"`)) || [])[1];
+  const wm = (await client(app).get('/westminster/parks')).body;
+  assert.equal(meta(wm, 'og:image'), 'http://test.local/og/westminster.jpg');
+  assert.match(meta(wm, 'og:image:alt'), /stamp every Westminster park/);
+  assert.equal(meta(wm, 'og:title'), 'Westminster parks · Parks Passport');
+  assert.match(meta(wm, 'description'), /Westminster, California/);
+  const sp = (await client(app).get('/st-pete')).body;
+  assert.equal(meta(sp, 'og:image'), 'http://test.local/og/parks-passport.jpg');
+  assert.match(meta(sp, 'og:image:alt'), /St\. Pete Pier/);
+
+  // A link with ?city= opens (and remembers) that city.
+  const friend = client(app);
+  assert.match((await friend.get('/?city=westminster')).body, /Your passport to Westminster parks/);
+  assert.match((await friend.get('/')).body, /Your passport to Westminster parks/);
+
+  // Park Pals invite link and the admin's email invitation carry the inviter's current city.
+  const sam = await member(app);
+  await sam.get('/asheville');
+  assert.match((await sam.get('/pals')).body, /\/pals\/invite\/[\w-]+\?city=asheville"/);
+  db.prepare("UPDATE users SET is_admin = 1 WHERE email = 'sam@example.com'").run();
+  await sam.post('/admin/invites', { invite_email: 'new@example.com', invite_name: 'Nia' });
+  const mail = mailer.sent.at(-1);
+  assert.match(mail.text, /a free passport for Asheville parks/);
+  assert.match(mail.text, /\/join\/[\w-]+\?city=asheville/);
+});
