@@ -4,6 +4,7 @@ import { magicLinkEmail, passwordResetEmail, deleteAccountEmail } from '../views
 import { emailCopy } from '../domain/email-copy.js';
 import { inviteForToken, acceptInvites } from '../domain/invites.js';
 import { canUseIdeas } from '../domain/ideas.js';
+import { awardFounding } from '../domain/founding.js';
 import { verifyPassword, burnPasswordCheck } from '../lib/crypto.js';
 import {
   createUser, findUserByEmail, findUserById, createSession, deleteSession, deleteAllSessions,
@@ -98,6 +99,7 @@ export default async function authRoutes(app) {
       return reply.page(signupPage({ csrf: req.csrfToken(), values, errors, next: str(req.body.next) }));
     }
     acceptInvites(db, user.email, user.id, { now: now() });
+    awardFounding(db, user.id, { now: now() }); // the first 75 (SPEC Flow 16)
     startSession(req, reply, user.id);
     app.track(user.id, 'sign_up', { method: 'password' });
     // Straight to the passport: open it with a little ceremony (public/js/welcome.js).

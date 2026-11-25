@@ -144,6 +144,7 @@ export default async function adminRoutes(app) {
         users: one('SELECT COUNT(*) FROM users'),
         admins: one('SELECT COUNT(*) FROM users WHERE is_admin = 1'),
         newIdeas: one("SELECT COUNT(*) FROM badge_ideas WHERE status = 'new'"),
+        openFeedback: one('SELECT COUNT(*) FROM feedback WHERE done_at IS NULL'),
         checkins7: db.prepare('SELECT COUNT(*) FROM visits WHERE created_at >= ?').pluck().get(new Date(now().getTime() - 7 * 86400000).toISOString()),
       } }));
     });

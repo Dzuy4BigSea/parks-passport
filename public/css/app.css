@@ -1466,3 +1466,29 @@ html.fx-locked { overflow: hidden; }
 /* Admin › Members: the give bar and ticks. */
 .give-bar h3 { margin-top: 0; }
 .give-tick { width: 1.4rem; height: 1.4rem; }
+
+/* ---------- Feedback for founding explorers (Flow 16) ---------- */
+.feedback-fab {
+  position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: 1.25rem; z-index: 40;
+  display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 1rem; border-radius: 999px;
+  background: #ffd166; color: var(--ink); font-weight: 800; text-decoration: none; /* ink on sun: 12:1 */
+  box-shadow: 0 10px 24px -10px rgba(14, 42, 51, 0.6), 0 0 0 3px #fffaf0, 0 0 0 5px #7c6cf2;
+}
+.feedback-fab svg { width: 18px; height: 18px; }
+.feedback-fab:hover svg { animation: fb-twinkle 0.9s var(--ease-spring); }
+.has-tabbar .feedback-fab { bottom: calc(5.25rem + env(safe-area-inset-bottom)); }
+@media (min-width: 60rem) { .has-tabbar .feedback-fab { bottom: 1.25rem; } }
+@keyframes fb-twinkle { 50% { transform: rotate(45deg) scale(1.25); } }
+.feedback-dialog { width: min(30rem, calc(100vw - 2rem)); border: 0; border-radius: var(--radius); padding: 1.25rem; background: var(--surface); color: var(--ink);
+  box-shadow: 0 30px 60px -20px rgba(14, 42, 51, 0.6), inset 0 0 0 3px #ffd166; }
+.feedback-dialog::backdrop { background: rgba(14, 42, 51, 0.55); }
+.feedback-dialog h2 { margin: 0.2rem 0 0.8rem; font-size: 1.25rem; }
+.feedback-eyebrow { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #9a5b00; }
+.feedback-eyebrow svg { width: 16px; height: 16px; }
+.feedback-kinds { border: 0; padding: 0; margin: 0 0 0.6rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.feedback-form textarea { width: 100%; font: inherit; padding: 0.6rem; border: 2px solid var(--line); border-radius: var(--radius-sm); }
+.feedback-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+.feedback-heart { font-size: 2.5rem; margin: 0; animation: fb-pop 0.6s var(--ease-spring); }
+@keyframes fb-pop { from { transform: scale(0.3); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .feedback-heart, .feedback-fab:hover svg { animation: none; } }
+@media print { .feedback-fab { display: none; } }

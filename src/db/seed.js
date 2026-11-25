@@ -34,7 +34,7 @@ export function seedCities(db, { dir = CITIES_DIR, now = new Date(), travelBadge
   // the long climb), for every member.
   addMissingBadges(db, readJson(travelBadgesFile), { now });
   addMissingBadges(db, readJson(SEED_REWARD_BADGES_JSON), { now });
-  addMissingBadges(db, readJson(SEED_LIMITED_BADGES_JSON), { now }); // Early Bird Edition, numbered 1–100
+  addMissingBadges(db, readJson(SEED_LIMITED_BADGES_JSON), { now }); // Early Bird Edition (1–100) and Founding Member
   return cityPackKeys(dir).map((key) => {
     const file = (f) => path.join(dir, key, f);
     const pack = readJson(file('city.json'));

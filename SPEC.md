@@ -228,6 +228,8 @@ Done when:
       badge earned, a badge given to me, a new level, a pal request and a new pal; each links to
       the place it's about. Only I can see mine; signed out, the page sends me to log in. Those
       naming another member are deleted with that member's account. Up to 200 are kept per person.
+- [ ] A pal request in the notification center has **Accept** and **Decline** right there, the
+      same as on the Pals page, while the request is still open; once answered it says so.
 
 ### Flow 9: Admin
 As an admin, I can keep the park list and badges right and remove bad content.
@@ -504,6 +506,65 @@ Done when:
       see no hearts.
 - [ ] Deleting my account deletes my saved parks (`ON DELETE CASCADE`).
 
+### Flow 16: Founding Members and feedback
+As one of the first members, I'm thanked with a Founding Member badge and a direct line to the
+people who make the app.
+Done when:
+- [ ] The first 75 accounts get the **Founding Member** badge automatically at sign-up, numbered
+      #1 to #75 in sign-up order (members who joined before this shipped get theirs at the next
+      start, oldest first). Deleting an account never hands its number to someone else. After 75,
+      only an admin gives it (Admin › Members › Give a badge), without a number. The rules never
+      take it back.
+- [ ] Members with Founding Member or Early Bird Edition see a **Feedback** button fixed in the
+      lower right (above the phone tab bar). It opens a small, special-feeling panel: "You're one of
+      our first explorers. Tell us anything." with Idea / Something's broken / Love it, one text box
+      (1,000 characters) and Send. It works without JavaScript (a `/feedback` page). The page
+      I was on is saved with it. After sending: "Thank you. We read every one." At most 20 a day.
+- [ ] Everyone else gets 404 for `/feedback`.
+- [ ] **Admin › Feedback** lists every message newest first (name, kind, page, date) with "Mark
+      done"; done ones are hidden behind a filter. Deleting an account deletes its feedback.
+
+### Flow 17: Drops of Sunshine
+As a member, I can send a quick thank-you to the people who look after my parks, so that park
+staff hear how much their work matters.
+Done when:
+- [ ] A **Drops of Sunshine** button sits on every park page and in the header menu (`/sunshine`).
+      The form is one text box (500 characters) and a Send button. The park is already chosen: the
+      park page's park; otherwise the closest park to my GPS position if I allow it (within 2 km),
+      else the park of my latest stamp in this city. "Change" lets me pick another park in the
+      city, or "The whole parks department" for a general note. Nothing else is required.
+- [ ] Sending shows a happy animation (sun rays and drops of light) and "Your drop of sunshine is
+      on its way." With reduced motion it's a still sun. Without JavaScript the form still works and
+      the thank-you page shows the still sun.
+- [ ] Notes wait for admin review in **Admin › Drops of Sunshine** (park or "Parks department",
+      city, member, date, text), with Approve and Hide, filtered by status and city. Nothing is
+      sent to the city yet. My GPS position is used only to choose the park in my browser and is
+      never sent or stored. At most 10 a day per member. Deleting an account deletes its notes.
+
+### Flow 18: Nonprofit spotlights
+As a member, I see a local nonprofit that cares for this park or its waterways, so that the most
+visited parks send people to the groups doing the most good.
+Done when:
+- [ ] A nonprofit or member can **suggest a nonprofit** (`/nonprofits/suggest`, signed in): name,
+      website, one-sentence mission (160 characters), the parks or city it serves, and why it
+      qualifies (cares for this park or waterway, 1% for the Planet nonprofit partner, or other
+      local nonprofit). Suggestions wait for an admin. At most 5 a day.
+- [ ] **Admin › Nonprofits** approves, edits, pauses and removes spotlights: name, website (https),
+      mission line, an optional logo (PNG or SVG, sanitized), the qualifying reason, and where it
+      shows: chosen parks, or every park in a city.
+- [ ] A park page shows at most one spotlight as a small card near the bottom, labelled "Local
+      nonprofit" with the reason ("Cares for this park" / "1% for the Planet partner"): logo,
+      name, mission line and a "Learn more" link (`rel="noopener sponsored"`). Park-specific
+      spotlights win over city-wide ones; ties rotate by day.
+- [ ] Views and clicks are counted per spotlight and park (a click goes through
+      `/go/nonprofit/:id`, which redirects to the site). No personal data is stored or sent with
+      them. Admin › Nonprofits shows views, clicks and the top parks for each.
+
+### Flow 19: Our mission (admin)
+- [ ] **Admin › Mission** shows the Parks Passport mission: healthy people, healthy communities,
+      healthy public governance and meaningful giving, as a cycle of shared stewardship, with
+      doughnut economics as the frame. It is static copy, ready to become a public page later.
+
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.
 - **users**: id, email (unique, lower-cased), password_hash (scrypt, nullable for magic-link-only
@@ -532,6 +593,14 @@ SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in 
   measure, minutes (credited for a check), points, sort, active
 - **activity_logs**: id, user_id, visit_id, activity_id, amount, minutes, miles, logged_on,
   created_at, unique(visit_id, activity_id). Private to the owner.
+- **founding**: the `founding_awarded` counter in **settings**; the badge is a `manual` badge
+  (`founding-member`) given with `source_type = 'founding'` and a serial.
+- **feedback**: id, user_id, kind (idea|bug|love), text, page, created_at, done_at.
+- **sunshine_notes**: id, user_id, city_id, park_id (null = the whole department), text, status
+  (new|approved|hidden), created_at, reviewed_at.
+- **nonprofits**: id, name, url, mission, logo, reason (steward|one_percent|local), status
+  (suggested|active|paused), city_id, suggested_by, created_at. **nonprofit_parks**: nonprofit_id,
+  park_id. **nonprofit_stats**: nonprofit_id, park_id, day, views, clicks.
 - **pal_codes**: user_id, code (unique), created_at. **pal_requests**: from_user, to_user,
   created_at, unique(from_user, to_user). **pal_request_sends** and **pal_code_failures**: user_id, at.
 - **pal_links**: user_a, user_b (a < b), created_at. **pal_invites**: user_id, token_hash,
