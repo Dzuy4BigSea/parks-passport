@@ -9,6 +9,7 @@ import { buildApp } from './app.js';
 import { createThemeGenerator } from './lib/theme-ai.js';
 import { createGeoIp } from './lib/geoip.js';
 import { createIdeaTriager } from './lib/idea-ai.js';
+import { backfillFounding } from './domain/founding.js';
 
 const config = loadConfig();
 const db = openDb(path.join(config.dataDir, 'app.db'));
@@ -50,6 +51,8 @@ for (const c of seedCities(db)) {
       `seeded city pack seed/cities/${c.key}`);
   }
 }
+const founders = backfillFounding(db); // Founding Member numbers for members who joined before it existed
+if (founders) app.log.info({ founders }, 'gave Founding Member badges');
 
 try {
   await app.listen({ port: config.port, host: config.host });

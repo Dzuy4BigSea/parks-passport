@@ -16,7 +16,7 @@ function announcementsBlock(a, base) {
   ${a.levelUp ? html`<div class="announce announce-level" data-kind="level"><span class="announce-art" aria-hidden="true">🚀</span>
     <p><strong>Level up! You're now ${/^[AEIOU]/.test(a.levelUp.name) ? 'an' : 'a'} ${a.levelUp.name}.</strong></p></div>` : ''}
   ${a.badges.map((b) => html`<div class="announce${b.serial ? ' is-holo' : ''}" data-kind="${b.given_by ? 'gift' : b.kind}">${badgeArt(b.art, 'announce-art')}
-    <p><strong>New badge: ${b.name}</strong>${b.serial ? html`<br><span class="limited-no">Limited edition #${b.serial}${b.limited_count ? ` of ${b.limited_count}` : ''}</span>` : ''}${b.description ? html`<br><span class="announce-desc">${b.description}</span>` : ''}${b.given_by ? html`<br><span class="gift-note">From ${b.given_by}${b.award_note ? `: “${b.award_note}”` : ''}</span>` : ''}</p></div>`)}
+    <p><strong>New badge: ${b.name}</strong>${b.serial ? html`<br><span class="limited-no">${b.limited_count ? `Limited edition #${b.serial} of ${b.limited_count}` : `No. ${b.serial}`}</span>` : ''}${b.description ? html`<br><span class="announce-desc">${b.description}</span>` : ''}${b.given_by ? html`<br><span class="gift-note">From ${b.given_by}${b.award_note ? `: “${b.award_note}”` : ''}</span>` : ''}</p></div>`)}
   <p class="announce-more"><a href="${base}/passport#badges">See your badges</a></p>
 </div>`;
 }
@@ -88,6 +88,35 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 const aria = (on) => (on ? html` aria-current="page"` : '');
 
 // Phones: members navigate with a bottom tab bar whose center button stamps the nearest park.
+// Founding Members and Early Bird Edition holders (SPEC Flow 16): a little thank-you button in the
+// lower right. Without JS it's a link to /feedback; with JS, public/js/feedback.js opens the dialog.
+function feedbackButton({ csrf, path }) {
+  const page = String(path || '/').split(/[?#]/)[0];
+  return html`<a class="feedback-fab" href="/feedback?from=${encodeURIComponent(page)}" data-feedback-open>${ICONS.sparkle}<span>Feedback</span></a>
+<dialog class="feedback-dialog" id="feedback-dialog" aria-labelledby="feedback-h">
+  <form method="post" action="/feedback" class="feedback-form">
+    <input type="hidden" name="_csrf" value="${csrf}"><input type="hidden" name="page" value="${page}">
+    <p class="feedback-eyebrow">${ICONS.sparkle} Founding explorer</p>
+    <h2 id="feedback-h">You're one of our first explorers. Tell us anything.</h2>
+    ${feedbackFields()}
+    <p class="feedback-error error-text" role="alert" hidden></p>
+    <div class="feedback-actions"><button type="submit" class="btn btn-primary">Send</button>
+      <button type="button" class="btn btn-quiet" data-feedback-close>Not now</button></div>
+  </form>
+  <div class="feedback-thanks" hidden><p class="feedback-heart" aria-hidden="true">💛</p><h2 tabindex="-1">Thank you. We read every one.</h2>
+    <button type="button" class="btn" data-feedback-close>Close</button></div>
+</dialog>`;
+}
+
+/** Kind and message fields, shared by the dialog and the /feedback page. */
+export function feedbackFields({ kind = 'idea', text = '', idPrefix = 'fb' } = {}) {
+  return html`<fieldset class="feedback-kinds"><legend class="visually-hidden">What kind of feedback</legend>
+    ${[['idea', '💡 Idea'], ['bug', "🛠️ Something's broken"], ['love', '💛 Love it']].map(([k, label]) => html`<label class="chip-check"><input type="radio" name="kind" value="${k}"${k === kind ? html` checked` : ''}> ${label}</label>`)}
+  </fieldset>
+  <label for="${idPrefix}-text" class="visually-hidden">Your feedback</label>
+  <textarea id="${idPrefix}-text" name="text" rows="4" maxlength="1000" required placeholder="What would make Parks Passport better?">${text}</textarea>`;
+}
+
 function tabBar(current, base) {
   const tab = (href, label, key, icon) => html`<li><a href="${href}"${aria(key === current)}>${icon}<span>${label}</span></a></li>`;
   return html`<nav class="tabbar" aria-label="Quick">
@@ -117,7 +146,7 @@ export function statusPills(status) {
 
 export function layout({ title, body, head = null, scripts = [], current = '', user = null, csrf = '', announcements = null, nudge = null,
   analytics = null, consent = { chosen: true, analytics: false, ads: false }, events = [], showConsentBanner = false, path = '/',
-  theme = null, cities = [], status = null, description = null, baseUrl = '', canonicalPath = null, shareImages = null }) {
+  theme = null, cities = [], status = null, description = null, baseUrl = '', canonicalPath = null, shareImages = null, feedback = false }) {
   // Parks and Passport links stay in the city being viewed (SPEC Flow 14).
   const base = theme?.key && theme.key !== 'default' ? cityPath(theme) : '';
   const nav = user
@@ -154,6 +183,7 @@ ${head}
 ${scripts.map((src) => html`<script type="module" src="${src}"></script>`)}
 <script type="module" src="/js/announce.js"></script>
 ${announcements ? html`<script type="module" src="/js/reveal.js"></script>` : ''}
+${feedback ? html`<script type="module" src="/js/feedback.js"></script>` : ''}
 </head>
 <body${user ? html` class="has-tabbar"` : ''}>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -184,8 +214,16 @@ ${showConsentBanner ? consentBanner(csrf, path) : ''}
     <p><a href="/privacy">Privacy</a>${photos ? html` · <a href="/credits">Photo credits</a>` : ''}${analytics?.gtmId ? html` · <a href="/consent?back=${encodeURIComponent(path)}" id="cookie-settings">Cookie settings</a>` : ''}</p>
     <p class="credit"><span>© ${new Date().getFullYear()} Parks Passport</span>
       <a class="bigsea" href="https://bigsea.co" rel="noopener" title="Purpose built by Big Sea"><span>Purpose built by</span><img src="/brand/bigsea-logo.svg" alt="Big Sea" width="54" height="15"></a></p>
+    <div class="impact">
+      <p>Big Sea is a Certified B Corporation and a member of 1% for the Planet.</p>
+      <ul class="impact-logos">
+        <li><a href="https://www.bcorporation.net/" rel="noopener"><img src="/brand/b-corp.png" alt="Certified B Corporation" width="29" height="48" loading="lazy"></a></li>
+        <li><a href="https://onepercentfortheplanet.org/" rel="noopener"><img src="/brand/one-percent-for-the-planet.png" alt="1% for the Planet member" width="40" height="48" loading="lazy"></a></li>
+      </ul>
+    </div>
   </div>
 </footer>
+${feedback && current !== 'feedback' ? feedbackButton({ csrf, path }) : ''}
 ${user ? tabBar(current, base) : ''}
 </body>
 </html>`;

@@ -9,6 +9,7 @@ import { badgeBoard } from '../domain/badges/index.js';
 import { palsWhoStamped } from '../domain/pals.js';
 import { isSaved } from '../domain/saved.js';
 import { activitiesForPark, visitToday, logsForVisit } from '../domain/activities.js';
+import { spotlightFor, recordView, isBot } from '../domain/nonprofits.js';
 
 /**
  * Renders a park page with everything the viewer may see. `problem` ({ text, area, offerHonor })
@@ -37,7 +38,11 @@ export function renderParkPage(app, req, reply, park, { problem = null, stamped 
     for (const l of logs) if (!listed.has(l.activity_id)) list.push(db.prepare('SELECT * FROM activities WHERE id = ?').get(l.activity_id));
     activities = { list, logs, stampedToday: Boolean(visit), flash: activityFlash };
   }
+  // One nonprofit spotlight (SPEC Flow 18); a view is counted for real page loads only.
+  const spotlight = spotlightFor(db, park, { now: app.now() });
+  if (spotlight && req.method === 'GET' && !problem && !isBot(req.headers['user-agent'])) recordView(db, spotlight.id, park.id, { now: app.now() });
   return reply.page({ events, ...parkPage({
+    spotlight,
     activities,
     theme, area: areaForPark(theme, park), celebrate,
     park, user, csrf: req.csrfToken(), today, problem, stamped, flash,

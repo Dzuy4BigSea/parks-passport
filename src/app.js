@@ -38,6 +38,8 @@ import adminRoutes from './routes/admin.js';
 import ideaRoutes from './routes/ideas.js';
 import activityRoutes from './routes/activities.js';
 import notificationRoutes from './routes/notifications.js';
+import { canSendFeedback } from './domain/founding.js';
+import communityRoutes from './routes/community.js';
 import { shareNudge } from './views/pages/pals.js';
 
 // Paths with tokens or handles in the URL: no analytics scripts there (see reply.page).
@@ -159,6 +161,7 @@ export function buildApp({
         // Streak and points for the phone header (members only).
         status: req.user ? { streak: weeklyStreak(visitDates(db, req.user.id), localDate(now(), req.city.time_zone)), points: totalPoints(db, req.user.id), unread: unreadCount(db, req.user.id) } : null,
         analytics: private_ ? null : config.analytics || null,
+        feedback: req.user ? canSendFeedback(db, req.user.id) : false,
         // The banner asks only when there is something to consent to (GTM) and no choice yet.
         showConsentBanner: !private_ && Boolean(config.analytics?.gtmId) && !consent.chosen && !path.startsWith('/consent'),
       })));
@@ -217,6 +220,7 @@ export function buildApp({
   app.register(ideaRoutes);
   app.register(activityRoutes);
   app.register(notificationRoutes);
+  app.register(communityRoutes);
   app.register(consentRoutes);
 
   // Friendly HTML errors instead of Fastify's JSON (e.g. an upload over the size limit).

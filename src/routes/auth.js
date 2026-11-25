@@ -5,6 +5,7 @@ import { emailCopy } from '../domain/email-copy.js';
 import { inviteForToken, acceptInvites } from '../domain/invites.js';
 import { inviterForNext, palUpOnSignup } from '../domain/pals.js';
 import { canUseIdeas } from '../domain/ideas.js';
+import { awardFounding } from '../domain/founding.js';
 import { verifyPassword, burnPasswordCheck } from '../lib/crypto.js';
 import {
   createUser, findUserByEmail, findUserById, createSession, deleteSession, deleteAllSessions,
@@ -107,6 +108,7 @@ export default async function authRoutes(app) {
     const palInviter = inviterForNext(db, str(req.body.next));
     const joinInvite = inviteForToken(db, str(req.body.invite_token), { now: now() });
     acceptInvites(db, user.email, user.id, { now: now() });
+    awardFounding(db, user.id, { now: now() }); // the first 75 (SPEC Flow 16)
     const inviterIds = new Set([joinInvite?.invited_by, palInviter?.id].filter(Boolean));
     let palled = false;
     for (const id of inviterIds) palled = palUpOnSignup(db, id, user.id, { now: now(), random: app.random }) || palled;

@@ -70,7 +70,9 @@ export default async function palRoutes(app) {
       const result = answerRequest(db, req.user.id, requestId(req), action === 'accept', { now: now(), random: app.random });
       if (!result) return reply.callNotFound();
       if (action === 'accept') app.track(req.user.id, 'pal_accepted');
-      return reply.redirect(`/pals?done=${action === 'accept' ? 'accepted' : 'declined'}`, 303);
+      const done = action === 'accept' ? 'accepted' : 'declined';
+      // Answered from the notification center: back there (SPEC Flow 8).
+      return reply.redirect(req.body.from === 'notifications' ? `/notifications?done=${done}` : `/pals?done=${done}`, 303);
     });
   }
   app.post('/pals/requests/:id/cancel', { preHandler: requireUser }, async (req, reply) => {

@@ -365,7 +365,42 @@ Checks: `test/unit/limited.test.js` (seeded, numbering, reuse, sold out, display
 by join date, members get 404, form rules), `test/e2e/limited.spec.js` (tick and give, holographic
 reveal with the number and note, passport tile, close-up, axe at 375 px), and the existing suite.
 
-### M25 — Join from an invite and you're Park Pals; choose your display name (Flows 1, 8 and 9)
+### M25 — Founding Members and feedback (Flow 16)
+- Migration 022 (`feedback`), `seed/limited-badges.json` gains `founding-member` (manual, not
+  limited), `src/domain/founding.js` (award at sign-up and at start, counter in settings, serial),
+  `src/domain/feedback.js`, `/feedback` and Admin › Feedback, the layout's button and
+  `public/js/feedback.js` (dialog).
+
+Checks: `test/unit/founding.test.js` (first 75 numbered, 76th not, backfill oldest first, deleted
+numbers never reused, admin gives after 75, never revoked, button only for holders, 404 for others,
+send, limits, admin list and done), `test/e2e/feedback.spec.js` (send from the dialog at 375 px,
+axe), and the existing suite.
+
+### M26 — Drops of Sunshine (Flow 17)
+- Migration 023 (`sunshine_notes`), `src/domain/sunshine.js`, `/sunshine` and the park-page
+  button, `public/js/sunshine.js` (nearest park in the browser, the animation), Admin › Drops of
+  Sunshine.
+
+Checks: `test/unit/sunshine.test.js` (default park choice, department note, other city's park
+refused, length, limit, admin review, privacy), `test/e2e/sunshine.spec.js` (one-tap send with
+geolocation, animation and reduced motion, axe at 375 px), and the existing suite.
+
+### M27 — Answer pal requests from notifications (Flow 8)
+Checks: `test/unit/notifications.test.js` (Accept / Decline shown while open, answered state,
+someone else's request 404) and the existing suite.
+
+### M28 — Nonprofit spotlights (Flow 18)
+- Migration 024 (`nonprofits`, `nonprofit_parks`, `nonprofit_stats`), `src/domain/nonprofits.js`,
+  `/nonprofits/suggest`, `/go/nonprofit/:id`, the park-page card, Admin › Nonprofits.
+
+Checks: `test/unit/nonprofits.test.js` (suggest and limit, approve, park beats city, rotation,
+paused hidden, counts, redirect only to the saved URL, logo sanitizing), the park page in the axe
+sweep, and the existing suite.
+
+### M29 — Our mission in admin (Flow 19)
+Checks: Admin › Mission in the admin axe sweep; 404 for members.
+
+### M30 — Join from an invite and you're Park Pals; choose your display name (Flows 1, 8 and 9)
 - Signing up from a pal's invite link (`/signup?next=/pals/invite/<token>`) makes the two Park Pals
   straight away and lands on the passport; the sign-up page says so. A dead token in `next` just
   signs up. Existing members still log in and tap Accept.
@@ -373,12 +408,12 @@ reveal with the number and note, passport tile, close-up, axe at 375 px), and th
   field and is re-checked, so it proves the mailbox and the 30 days) makes the new member and that
   admin Park Pals. The address alone doesn't. Sign-up and log-in pages whose `next` is an invite link
   load no analytics.
-
 - Display names: "doesn't have to be your real name" at sign-up and in Account, where it can be
-  changed (`POST /account/name`, `setDisplayName`; the handle follows; migration 022 `retired_handles`
-  keeps old handles from being reused by anyone else). Notifications store `{actor}` and show the
-  other member's current name. The admin invite no longer
-  fills in the name.
+  changed (`POST /account/name`, `setDisplayName`; the handle follows; migration 025
+  `retired_handles` keeps old handles from being reused by anyone else). Notifications store
+  `{actor}` and show the other member's current name. The admin invite no longer fills in the name.
 
-Checks: `test/unit/auth.test.js` (change name, handle follows, limits, CSRF), `test/unit/pals.test.js` (pal link sign-up pals both ways, made-up and regenerated links, admin invite only via its link), `test/unit/analytics.test.js` (no analytics with an invite in `next`),
+Checks: `test/unit/auth.test.js` (change name, handle follows, retired handles, limits, CSRF),
+`test/unit/pals.test.js` (pal link sign-up pals both ways, made-up and regenerated links, admin
+invite only via its link), `test/unit/analytics.test.js` (no analytics with an invite in `next`),
 `test/e2e/pals.spec.js` (sign up from the link, see the inviter's feed), and the existing suite.

@@ -967,6 +967,13 @@ img.feed-icon { width: 2rem; height: 2rem; }
 .credit .bigsea img { display: block; height: 15px; width: auto; opacity: 0.7; transition: opacity 0.2s; }
 .credit .bigsea:hover { color: var(--ink); }
 .credit .bigsea:hover img { opacity: 1; }
+/* B Corp and 1% for the Planet: the official one-color (black) marks, unaltered, full strength,
+   48px tall (above both minimum sizes) with clear space on every side. */
+.impact { margin-top: 1rem; text-align: center; }
+.impact p { font-size: 0.8rem; }
+.impact-logos { list-style: none; display: flex; justify-content: center; align-items: center; gap: 1.5rem; margin: 0.6rem 0 0; padding: 0; }
+.impact-logos a { display: block; padding: 4px; }
+.impact-logos img { display: block; height: 48px; width: auto; }
 
 /* Admin › Email › Messages editor. */
 .email-editor { display: grid; gap: 1rem; }
@@ -1459,3 +1466,101 @@ html.fx-locked { overflow: hidden; }
 /* Admin › Members: the give bar and ticks. */
 .give-bar h3 { margin-top: 0; }
 .give-tick { width: 1.4rem; height: 1.4rem; }
+
+/* ---------- Feedback for founding explorers (Flow 16) ---------- */
+.feedback-fab {
+  position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: 1.25rem; z-index: 40;
+  display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 1rem; border-radius: 999px;
+  background: #ffd166; color: var(--ink); font-weight: 800; text-decoration: none; /* ink on sun: 12:1 */
+  box-shadow: 0 10px 24px -10px rgba(14, 42, 51, 0.6), 0 0 0 3px #fffaf0, 0 0 0 5px #7c6cf2;
+}
+.feedback-fab svg { width: 18px; height: 18px; }
+.feedback-fab:hover svg { animation: fb-twinkle 0.9s var(--ease-spring); }
+.has-tabbar .feedback-fab { bottom: calc(var(--tabbar-h) + 1rem); }
+/* Park list on a phone: the Map/List toggle sits bottom center, so the button shrinks to its icon. */
+@media (max-width: 1023.98px) {
+  body:has(.map-toggle) .feedback-fab { width: 48px; padding: 0; justify-content: center; }
+  body:has(.map-toggle) .feedback-fab span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+/* Room below the footer so the button never covers its last links. */
+body:has(.feedback-fab) .site-footer { padding-bottom: 5.5rem; }
+@keyframes fb-twinkle { 50% { transform: rotate(45deg) scale(1.25); } }
+.feedback-dialog { width: min(30rem, calc(100vw - 2rem)); border: 0; border-radius: var(--radius); padding: 1.25rem; background: var(--surface); color: var(--ink);
+  box-shadow: 0 30px 60px -20px rgba(14, 42, 51, 0.6), inset 0 0 0 3px #ffd166; }
+.feedback-dialog::backdrop { background: rgba(14, 42, 51, 0.55); }
+.feedback-dialog h2 { margin: 0.2rem 0 0.8rem; font-size: 1.25rem; }
+.feedback-eyebrow { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #9a5b00; }
+.feedback-eyebrow svg { width: 16px; height: 16px; }
+.feedback-kinds { border: 0; padding: 0; margin: 0 0 0.6rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.feedback-form textarea { width: 100%; font: inherit; padding: 0.6rem; border: 2px solid var(--line); border-radius: var(--radius-sm); }
+.feedback-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+.feedback-heart { font-size: 2.5rem; margin: 0; animation: fb-pop 0.6s var(--ease-spring); }
+@keyframes fb-pop { from { transform: scale(0.3); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .feedback-heart, .feedback-fab:hover svg { animation: none; } }
+@media print { .feedback-fab { display: none; } }
+
+/* ---------- Drops of Sunshine (Flow 17) ---------- */
+.sunshine-eyebrow { margin: 0; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.8rem; color: #9a5b00; }
+.sunshine-form textarea { width: 100%; font: inherit; padding: 0.7rem; border: 2px solid var(--line); border-radius: var(--radius-sm); }
+.sunshine-to { margin: 0 0 0.5rem; }
+.sunshine-change { margin: 0.6rem 0 0.9rem; }
+.sunshine-change summary { cursor: pointer; font-weight: 600; min-height: 24px; }
+.sunshine-change select { display: block; width: 100%; margin: 0.4rem 0; }
+.sunshine-send { font-size: 1.05rem; }
+.pill-sunshine { background: #fff1cc; color: #7a4800; text-decoration: none; }
+.sunshine-nudge { margin: 0.5rem 0 1.25rem; }
+.sunshine { text-align: left; }
+.sunshine-burst { position: relative; width: 180px; height: 180px; margin: 0.5rem auto 0.25rem; }
+.sunshine-burst svg { width: 100%; height: 100%; overflow: visible; }
+.sun-rays line { stroke: #ffb703; stroke-width: 7; stroke-linecap: round; }
+.sun-core { fill: #ffd166; stroke: #ffb703; stroke-width: 4; }
+.sun-smile { fill: none; stroke: #7a4800; stroke-width: 5; stroke-linecap: round; }
+.sun-eye { fill: #7a4800; }
+.sun-drop {
+  position: absolute; left: 50%; top: 50%; width: 12px; height: 16px; margin: -8px 0 0 -6px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: radial-gradient(circle at 35% 35%, #fffaf0, #ffd166 45%, #ff9f1c);
+  opacity: 0; transform: rotate(calc(var(--d) * 36deg)) translateY(0);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sun-core { transform-origin: 100px 100px; animation: sun-pop 0.7s var(--ease-spring) both; }
+  .sun-rays { transform-origin: 100px 100px; animation: sun-spin 12s linear infinite, sun-rays-in 0.8s 0.15s ease-out both; }
+  .sun-smile, .sun-eye { animation: sun-fade 0.4s 0.5s ease-out both; }
+  .sun-drop { animation: sun-drop 1.6s calc(0.35s + var(--d) * 0.07s) cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+  .sunshine-burst + h1 { animation: sun-fade 0.5s 0.4s ease-out both; }
+}
+@media (prefers-reduced-motion: reduce) { .sun-drop { display: none; } }
+@keyframes sun-pop { from { transform: scale(0.2); } }
+@keyframes sun-spin { to { transform: rotate(360deg); } }
+@keyframes sun-rays-in { from { opacity: 0; } }
+@keyframes sun-fade { from { opacity: 0; transform: translateY(6px); } }
+@keyframes sun-drop {
+  0% { opacity: 0; transform: rotate(calc(var(--d) * 36deg)) translateY(0) scale(0.4); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(calc(var(--d) * 36deg)) translateY(-120px) scale(1); }
+}
+.notification { flex-wrap: wrap; }
+.notification .request-actions, .notification .request-answered { margin-left: auto; align-self: center; }
+
+/* ---------- Nonprofit spotlights (Flow 18) ---------- */
+.spotlight { margin: 1.5rem 0; padding: 0.9rem 1rem; border: 1px dashed #cdbf9f; border-radius: var(--radius); background: var(--surface); }
+.spotlight-label { margin: 0 0 0.4rem; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.spotlight-body { display: flex; gap: 0.85rem; align-items: flex-start; }
+.spotlight-logo { flex: none; width: 56px; height: 56px; object-fit: contain; border-radius: 10px; }
+.spotlight h2 { margin: 0 0 0.2rem; font-size: 1.05rem; }
+.spotlight p { margin: 0 0 0.35rem; }
+.spotlight-suggest { font-size: 0.85rem; margin: 0.5rem 0 0; }
+.plain-list { list-style: none; margin: 0; padding: 0; }
+
+/* ---------- Our mission (Flow 19) ---------- */
+.mission-eyebrow { margin: 0.5rem 0 0; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.8rem; color: var(--aqua-ink); }
+.mission-lead { font-size: 1.15rem; }
+.mission-cycle { display: grid; gap: 1rem; align-items: center; margin: 0.5rem 0 1rem; }
+@media (min-width: 768px) { .mission-cycle { grid-template-columns: 240px 1fr; } }
+.mission-ring { width: 100%; max-width: 260px; margin: 0 auto; }
+.mission-ring > circle { fill: none; stroke: var(--line); stroke-width: 10; stroke-dasharray: 2 14; stroke-linecap: round; }
+.mission-node circle { stroke: #fffaf0; stroke-width: 4; }
+.mission-node-0 circle { fill: #00b3a4; } .mission-node-1 circle { fill: #ff4d88; } .mission-node-2 circle { fill: #ffc83d; } .mission-node-3 circle { fill: #7c6cf2; }
+.mission-node text { font: 800 22px var(--sans); fill: #0e2a33; }
+.mission-center { font: 700 15px var(--sans); fill: var(--muted); }
+.mission-steps { margin: 0; padding-left: 1.4rem; display: grid; gap: 0.5rem; }
+@media (prefers-reduced-motion: no-preference) { .mission-ring > circle { animation: sun-spin 60s linear infinite; transform-origin: 160px 160px; } }
