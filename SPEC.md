@@ -528,7 +528,8 @@ Done when:
 As a member, I can send a quick thank-you to the people who look after my parks, so that park
 staff hear how much their work matters.
 Done when:
-- [ ] A **Drops of Sunshine** button sits on every park page and in the header menu (`/sunshine`).
+- [ ] A **Drops of Sunshine** button sits on every park page ("Say thanks"), with links on my
+      passport and Account page (`/sunshine`; the phone header has no room for another item).
       The form is one text box (500 characters) and a Send button. The park is already chosen: the
       park page's park; otherwise the closest park to my GPS position if I allow it (within 2 km),
       else the park of my latest stamp in this city. "Change" lets me pick another park in the
@@ -558,7 +559,8 @@ Done when:
       spotlights win over city-wide ones; ties rotate by day.
 - [ ] Views and clicks are counted per spotlight and park (a click goes through
       `/go/nonprofit/:id`, which redirects to the site). No personal data is stored or sent with
-      them. Admin › Nonprofits shows views, clicks and the top parks for each.
+      them, and only for a park the spotlight can show on; crawlers and link previews aren't
+      counted. Admin › Nonprofits shows views, clicks and the top parks for each.
 
 ### Flow 19: Our mission (admin)
 - [ ] **Admin › Mission** shows the Parks Passport mission: healthy people, healthy communities,

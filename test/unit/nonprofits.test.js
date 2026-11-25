@@ -136,3 +136,47 @@ test('Admin › Mission: the draft mission for admins only (M29)', async () => {
   assert.match(page, /shared stewardship/);
   assert.match((await people.boss.c.get('/admin')).body, /href="\/admin\/mission"/);
 });
+
+test('QA: many parks save; the suggester\'s words survive approval; clicks only count where it shows, not for bots; the form keeps its city', async () => {
+  const { app, db, people, park, city, add } = await world();
+  const boss = people.boss.c;
+  // Every St. Pete park ticked (100+ checkboxes) still saves.
+  const all = db.prepare("SELECT id FROM parks WHERE city_id = (SELECT id FROM city_themes WHERE key = 'st-pete')").pluck().all();
+  assert.ok(all.length > 60);
+  await boss.get('/admin/nonprofits/new');
+  const csrf = [...boss.jar].find(([k]) => k.endsWith('pp_csrf'))[1];
+  const fd = new FormData();
+  for (const [k, v] of Object.entries({ _csrf: csrf, name: 'Big Tent', url: 'https://tent.example.org', mission: 'm', reason: 'local', city_id: String(city('st-pete')), status: 'active' })) fd.append(k, v);
+  for (const id of all) fd.append('parks', String(id));
+  const req = new Request('http://test.local/', { method: 'POST', body: fd });
+  const res = await app.inject({ method: 'POST', url: '/admin/nonprofits/new', payload: Buffer.from(await req.arrayBuffer()),
+    headers: { cookie: [...boss.jar].map(([k, v]) => `${k}=${v}`).join('; '), 'content-type': req.headers.get('content-type') } });
+  assert.equal(res.statusCode, 303);
+  const tent = db.prepare("SELECT id FROM nonprofits WHERE name = 'Big Tent'").pluck().get();
+  assert.equal(db.prepare('SELECT COUNT(*) FROM nonprofit_parks WHERE nonprofit_id = ?').pluck().get(tent), all.length);
+  // "Local nonprofit" isn't said twice.
+  assert.match((await people.ana.c.get('/st-pete/parks/a-park')).body, /<p class="spotlight-label">Local nonprofit<\/p>/);
+
+  // A suggestion keeps the suggester's words after an admin saves it.
+  await people.ana.c.get('/nonprofits/suggest?city=st-pete');
+  await people.ana.c.post('/nonprofits/suggest', { name: 'Pond Pals', url: 'https://pond.example.org', mission: 'Pond care.', serves: 'The pond at A Park', reason: 'steward', city: 'st-pete' });
+  const sid = db.prepare("SELECT id FROM nonprofits WHERE name = 'Pond Pals'").pluck().get();
+  await boss.postMultipart(`/admin/nonprofits/${sid}`, { name: 'Pond Pals', url: 'https://pond.example.org', mission: 'Pond care.', reason: 'steward', city_id: String(city('st-pete')), status: 'active' });
+  assert.equal(db.prepare('SELECT serves FROM nonprofits WHERE id = ?').pluck().get(sid), 'The pond at A Park');
+
+  // Clicks: only for a park it can show on; crawlers aren't counted (but still redirected).
+  const a = park('a-park');
+  const b = park('b-park');
+  const only = add({ name: 'Only A', url: 'https://only.example.org', parks: [a.id] });
+  await client(app).get(`/go/nonprofit/${only}?park=${b.id}`);
+  const bot = await app.inject({ method: 'GET', url: `/go/nonprofit/${only}?park=${a.id}`, headers: { 'user-agent': 'Googlebot/2.1' } });
+  assert.equal(bot.statusCode, 302);
+  assert.equal(db.prepare('SELECT COALESCE(SUM(clicks), 0) FROM nonprofit_stats WHERE nonprofit_id = ?').pluck().get(only), 0);
+  await client(app).get(`/go/nonprofit/${only}?park=${a.id}`);
+  assert.equal(db.prepare('SELECT SUM(clicks) FROM nonprofit_stats WHERE nonprofit_id = ?').pluck().get(only), 1);
+
+  // A suggestion goes to the city its form was for, even if another tab switched city since.
+  await people.ana.c.get('/westminster/parks'); // remembers Westminster
+  await people.ana.c.post('/nonprofits/suggest', { name: 'Tab Two', url: 'https://tab.example.org', mission: 'x', serves: 'y', reason: 'local', city: 'st-pete' });
+  assert.equal(db.prepare("SELECT c.key FROM nonprofits n JOIN city_themes c ON c.id = n.city_id WHERE n.name = 'Tab Two'").pluck().get(), 'st-pete');
+});
