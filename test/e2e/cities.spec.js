@@ -1,7 +1,7 @@
 // Multi-city (SPEC Flow 14): Westminster, CA alongside St. Pete.
 import { test, expect } from '@playwright/test';
 import { expectNoAxeViolations } from './axe.js';
-import { signUp } from './helpers.js';
+import { signUp, freshPage } from './helpers.js';
 
 const AT_SIGLER = { latitude: 33.757335, longitude: -118.002137, accuracy: 15 };
 
@@ -60,7 +60,8 @@ test('profile photo upload and pal faces: axe clean at 375 px', async ({ page, b
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.goto('/pals');
   const link = await page.locator('#invite-link').inputValue();
-  const friend = await browser.newPage({ baseURL: testInfo.project.use.baseURL, viewport: { width: 375, height: 800 } });
+  const friend = await freshPage(browser, testInfo);
+  await friend.setViewportSize({ width: 375, height: 800 });
   await signUp(friend, { name: 'Ben Pal' });
   await friend.goto(link);
   await friend.getByRole('button', { name: 'Accept and become Park Pals' }).click();

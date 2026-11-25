@@ -4,7 +4,7 @@ import { stubGtm } from './analytics.js';
 import { signUp } from './helpers.js';
 
 // No saved choice: these tests see the banner like a first-time visitor.
-test.use({ storageState: { cookies: [], origins: [] } });
+test.use({ storageState: { cookies: [], origins: [{ origin: 'http://127.0.0.1:8181', localStorage: [{ name: 'pp-celebrations', value: 'off' }] }] } });
 
 test.beforeEach(async ({ page }) => {
   await stubGtm(page);

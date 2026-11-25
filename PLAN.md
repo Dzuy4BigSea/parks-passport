@@ -298,3 +298,15 @@ replace, remove and deletion, pal faces only for sharing pals, the filter, stats
 Checks: `test/unit/rewards.test.js` (odds schedule, each surprise once and announced on the same
 page, Night Owl by city time, one lucky drop per stamp in order, kept after deletes, admin
 validation), updated rule and level tests, and the existing suite.
+
+### M20 — Game feel: badge reveal, inspect, passport opening (Flow 11)
+- `public/js/fx.js` (on/off per device, reduced motion, confetti, buzz, dialog focus trap),
+  `reveal.js` (from the announcements, which now carry `data-kind`), `inspect.js` (passport badge
+  grid), `welcome.js` (`/passport?welcome=1` after sign-up), `prefs.js` (Account › On this device).
+- CSS under "Celebrations" in `public/css/app.css` (`fx-reveal`, `fx-inspect`, `fx-welcome`).
+- The e2e suite runs with celebrations off (`playwright.config.js` storage state);
+  `test/e2e/celebrations.spec.js` turns them on.
+
+Checks: `test/e2e/celebrations.spec.js` (passport opening, surprise reveal tapped open, inspect and
+flip, Escape returns focus, axe clean and no sideways scroll at 375 px, off switch, reduced motion),
+the sign-up redirect in `test/unit/auth.test.js`, the existing suite, and `npm run lighthouse`.
