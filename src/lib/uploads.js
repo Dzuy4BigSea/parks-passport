@@ -38,8 +38,9 @@ export async function withUploads(app, routes) {
     });
     await scope.register(multipart, {
       attachFieldsToBody: 'keyValues',
-      // fields: the admin badge form sends every rule setting (24 today); room to grow.
-      limits: { fileSize: MAX_UPLOAD_BYTES + 1024 * 1024, files: 1, fields: 60, fieldSize: 64 * 1024 },
+      // fields: the admin badge form sends every rule setting (24 today), and the nonprofit form a
+      // checkbox per ticked park (a city has up to ~150); room to grow.
+      limits: { fileSize: MAX_UPLOAD_BYTES + 1024 * 1024, files: 1, fields: 400, fieldSize: 64 * 1024 },
     });
     routes(scope);
   });

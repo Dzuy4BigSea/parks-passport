@@ -105,7 +105,7 @@ const SPOTLIGHT_REASONS = { steward: 'Cares for this park', one_percent: '1% for
 function spotlightCard(n, park) {
   const logo = /^upload:([a-f0-9]{24})$/.exec(String(n.logo || ''));
   return html`<aside class="spotlight" aria-labelledby="spotlight-h">
-  <p class="spotlight-label">Local nonprofit · ${SPOTLIGHT_REASONS[n.reason]}</p>
+  <p class="spotlight-label">Local nonprofit${n.reason === 'local' ? '' : ` · ${SPOTLIGHT_REASONS[n.reason]}`}</p>
   <div class="spotlight-body">
     ${logo ? html`<img class="spotlight-logo" src="/badge-art/${logo[1]}.png" alt="" width="56" height="56" loading="lazy">` : ''}
     <div><h2 id="spotlight-h">${n.name}</h2><p>${n.mission}</p>

@@ -75,8 +75,8 @@ ${sent ? html`${SUN}
 <p class="sunshine-again"><a class="btn" href="/sunshine">Send another</a> <a class="btn btn-quiet" href="/">Done</a></p>`
     : html`<p class="sunshine-eyebrow"><span aria-hidden="true">☀️</span> Drops of Sunshine</p>
 <h1>Thank the people who look after your parks</h1>
-<form method="post" action="/sunshine" class="card-form sunshine-form" novalidate data-pins="${JSON.stringify(pins)}">
-  ${csrfField(csrf)}
+<form method="post" action="/sunshine" class="card-form sunshine-form" novalidate data-pins="${JSON.stringify(pins)}"${values.park ? html` data-chosen` : ''}>
+  ${csrfField(csrf)}<input type="hidden" name="city" value="${city.key}">
   ${error ? html`<p class="error-text" role="alert" tabindex="-1" data-announce>${error}</p>` : ''}
   <p class="sunshine-to">To: <strong data-sunshine-to>${selectedName}</strong></p>
   <label for="sunshine-text" class="visually-hidden">Your note</label>
@@ -111,7 +111,7 @@ ${notes.length ? html`<ul class="idea-list">${notes.map((n) => html`<li class="i
   <p class="idea-line"><span aria-hidden="true">☀️</span> ${n.text}</p>
   <p class="muted">To ${n.park_name || 'the parks department'} · ${n.city_name} · ${n.display_name} (@${n.handle}) · ${dateOf(n.created_at)}</p>
   <div class="idea-actions">${Object.keys(SUNSHINE_STATUSES).filter((s) => s !== n.status && s !== 'new').map((s) => html`<form method="post" action="/admin/sunshine/${n.id}">
-    ${csrfField(csrf)}<input type="hidden" name="status" value="${s}"><input type="hidden" name="back" value="${status}">
+    ${csrfField(csrf)}<input type="hidden" name="status" value="${s}"><input type="hidden" name="back" value="${status}"><input type="hidden" name="city_filter" value="${city?.key || ''}">
     <button type="submit" class="btn btn-small${s === 'approved' ? ' btn-primary' : ''}">${s === 'approved' ? 'Approve' : 'Hide'}<span class="visually-hidden"> note ${n.id}</span></button></form>`)}</div>
 </li>`)}</ul>` : html`<p>No notes here.</p>`}`,
   };
@@ -142,7 +142,7 @@ ${sent ? html`<p class="notice" role="status" tabindex="-1" data-announce>Thank 
 <p><a href="/">Back to Parks Passport</a></p>` : html`<p>Park pages in ${where} can spotlight a nonprofit that looks after the park or its waterways, or gives back to the planet. Tell us about one; our team reviews every suggestion.</p>
 ${errorSummary(errors, { name: 'Name', url: 'Website', mission: 'What it does', serves: 'Parks or waterways', reason: 'Why it belongs here' })}
 <form method="post" action="/nonprofits/suggest" class="card-form" novalidate>
-  ${csrfField(csrf)}
+  ${csrfField(csrf)}<input type="hidden" name="city" value="${city.key}">
   ${field('name', 'Nonprofit name', values.name, { error: errors.name, max: 80 })}
   ${field('url', 'Website', values.url, { error: errors.url, type: 'url', hint: 'Starting with https://' })}
   ${field('mission', 'What it does, in one sentence', values.mission, { error: errors.mission, max: 160 })}
@@ -225,7 +225,7 @@ ${isNew ? '' : html`<form method="post" action="/admin/nonprofits/${nonprofit.id
 const CYCLE = [
   ['Healthy people', 'Getting outside, moving and noticing the places around us. Stamps, activities and streaks make the habit easy and fun.'],
   ['Healthy communities', 'Exploring with Park Pals, families and groups, so parks become places where neighbors meet.'],
-  ['Healthy public life', 'Gratitude flows back to the people who run our parks (Drops of Sunshine), and real use of real parks helps cities decide where care and money go.'],
+  ['Healthy public governance', 'Gratitude for the people who run our parks (Drops of Sunshine, gathered now and shared with parks departments soon), and real use of real parks helps cities decide where care and money go.'],
   ['Meaningful giving', 'The most-visited park pages point people to the nonprofits that care for those parks and waterways, and Big Sea gives through 1% for the Planet.'],
 ];
 
@@ -255,21 +255,21 @@ export function adminMissionPage() {
   </svg>
   <ol class="mission-steps">${CYCLE.map(([label, text]) => html`<li><strong>${label}.</strong> ${text}</li>`)}</ol>
 </div>
-<p>Each turn of the cycle feeds the next. Healthy people build healthy communities. Healthy communities ask more of, and give more to, their public institutions. Healthy public life makes room for meaningful giving. And giving, in time, money and attention, makes it easier for the next person to be healthy. We call that <strong>shared stewardship</strong>: of ourselves, our governments, our neighbors, our land, and the businesses, for-profit and nonprofit, that serve them.</p>
+<p>Each turn of the cycle feeds the next. Healthy people build healthy communities. Healthy communities ask more of, and give more to, their public institutions. Healthy public governance makes room for meaningful giving. And giving, in time, money and attention, makes it easier for the next person to be healthy. We call that <strong>shared stewardship</strong>: of ourselves, our governments, our neighbors, our land, and the businesses, for-profit and nonprofit, that serve them.</p>
 
 <h2>Inside the doughnut</h2>
 <p>We borrow a frame from <strong>doughnut economics</strong>: the goal isn't endless growth, it's a safe and just space between a social foundation (what everyone needs to live well) and an ecological ceiling (what the planet can sustain). Parks sit right in that space. They're shared, they're close to home, and they cost the planet very little to enjoy.</p>
 <p>So Parks Passport is built to be <em>enough</em>, not more:</p>
 <ul>
   <li><strong>Health over screen time.</strong> The app's job is to get you out the door and then out of the way.</li>
-  <li><strong>Private by default.</strong> Your location and photos are yours. We never sell data, and nothing about you is shared without your choice.</li>
+  <li><strong>Private by default.</strong> Your location and photos are yours, your passport starts private, and you choose who sees what.</li>
   <li><strong>Gratitude over grievance.</strong> We make it easy to thank park crews, because appreciation keeps good people doing good work.</li>
-  <li><strong>Local and accountable.</strong> Spotlights go only to nonprofits that care for our parks and waterways, or give back to the planet, and every one is reviewed by a person.</li>
+  <li><strong>Local and accountable.</strong> Spotlights go only to local nonprofits, especially those that care for our parks and waterways or give back to the planet, and every one is reviewed by a person.</li>
   <li><strong>Light on the planet.</strong> A small app on a small server, made by a Certified B Corporation that's a member of 1% for the Planet.</li>
 </ul>
 
 <h2>How we'll know it's working</h2>
-<p>More people visiting more parks, more often. More notes of thanks reaching the people who keep parks beautiful. More neighbors finding and supporting the nonprofits that care for those parks. And cities with a clearer picture of how their parks are loved.</p>
+<p>More people visiting more parks, more often. More notes of thanks for the people who keep parks beautiful, on their way to parks departments. More neighbors finding and supporting the nonprofits that care for those parks. And cities with a clearer picture of how their parks are loved.</p>
 </article>`,
   };
 }

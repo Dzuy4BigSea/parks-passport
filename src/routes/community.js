@@ -6,7 +6,7 @@ import {
 } from '../domain/sunshine.js';
 import { listCities } from '../domain/city.js';
 import {
-  suggestNonprofit, saveNonprofit, nonprofitById, deleteNonprofit, nonprofitsForAdmin, nonprofitCounts, recordClick, STATUSES as NP_STATUSES,
+  suggestNonprofit, saveNonprofit, nonprofitById, deleteNonprofit, nonprofitsForAdmin, nonprofitCounts, recordClick, showsOn, isBot, STATUSES as NP_STATUSES,
 } from '../domain/nonprofits.js';
 import { withUploads } from '../lib/uploads.js';
 import { storeBadgeArt, removeBadgeArt } from '../lib/images.js';
@@ -58,11 +58,14 @@ export default async function communityRoutes(app) {
     }
     return reply.page(sunshineView(req));
   });
+  // The form carries its city, so a second tab on another city doesn't change where it goes.
+  const formCity = (req) => listCities(db).find((c) => c.key === req.body.city) || req.city;
   app.post('/sunshine', { preHandler: requireUser }, async (req, reply) => {
+    req.city = formCity(req);
     const result = sendSunshine(db, req.user, req.city.id, req.body, { now: now() });
     if (result.error) return reply.code(422).page(sunshineView(req, { error: result.error, values: result.values }));
     const slug = result.note.parkId ? db.prepare('SELECT slug FROM parks WHERE id = ?').pluck().get(result.note.parkId) : '';
-    return reply.redirect(`/sunshine?sent=1${slug ? `&to=${encodeURIComponent(slug)}` : ''}`, 303);
+    return reply.redirect(`/sunshine?sent=1&city=${req.city.key}${slug ? `&to=${encodeURIComponent(slug)}` : ''}`, 303);
   });
 
   // ---------- Nonprofit spotlights (SPEC Flow 18) ----------
@@ -70,6 +73,7 @@ export default async function communityRoutes(app) {
     csrf: req.csrfToken(), city: req.city, sent: req.query.done === 'sent',
   })));
   app.post('/nonprofits/suggest', { preHandler: requireUser }, async (req, reply) => {
+    req.city = formCity(req);
     const result = suggestNonprofit(db, req.user, req.city.id, req.body, { now: now() });
     if (result.errors) return reply.code(422).page(suggestNonprofitPage({ csrf: req.csrfToken(), city: req.city, errors: result.errors, values: result.values }));
     return reply.redirect('/nonprofits/suggest?done=sent', 303);
@@ -80,7 +84,8 @@ export default async function communityRoutes(app) {
     const n = idOf(req) ? nonprofitById(db, idOf(req)) : null;
     if (!n || n.status !== 'active') return reply.callNotFound();
     const parkId = /^\d+$/.test(String(req.query.park || '')) ? Number(req.query.park) : null;
-    if (parkId && db.prepare('SELECT 1 FROM parks WHERE id = ?').get(parkId)) recordClick(db, n.id, parkId, { now: now() });
+    // Counted only for a park this spotlight can show on, and not for crawlers or link previews.
+    if (parkId && showsOn(db, n, parkId) && !isBot(req.headers['user-agent'])) recordClick(db, n.id, parkId, { now: now() });
     return reply.header('Cache-Control', 'no-store').redirect(n.url, 302);
   });
 
@@ -106,7 +111,8 @@ export default async function communityRoutes(app) {
       const id = idOf(req);
       if (!id || !setSunshineStatus(db, id, String(req.body.status), { now: now() })) return reply.callNotFound();
       const back = Object.hasOwn(SUNSHINE_STATUSES, req.body.back) ? req.body.back : 'new';
-      return reply.redirect(`/admin/sunshine?status=${back}`, 303);
+      const city = listCities(db).find((c) => c.key === req.body.city_filter);
+      return reply.redirect(`/admin/sunshine?status=${back}${city ? `&city=${city.key}` : ''}`, 303);
     });
     // Nonprofits: list with views and clicks; the form (with a logo upload) is below.
     admin.get('/nonprofits', async (req, reply) => {

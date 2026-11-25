@@ -49,7 +49,7 @@ test('send: one box; park or department; other cities and unknown parks refused;
   const { c, id } = people.ana;
   await c.get('/sunshine?city=st-pete');
   const sent = await c.post('/sunshine', { text: 'Thank you for the new benches!', park: 'a-park' });
-  assert.equal(sent.headers.location, '/sunshine?sent=1&to=a-park');
+  assert.equal(sent.headers.location, '/sunshine?sent=1&city=st-pete&to=a-park');
   const thanks = (await c.get(sent.headers.location)).body;
   assert.match(thanks, /Your drop of sunshine is on its way\./);
   assert.match(thanks, /Thank you for thanking A Park\./);
@@ -57,7 +57,7 @@ test('send: one box; park or department; other cities and unknown parks refused;
   // The name comes from the database, never from the URL.
   assert.doesNotMatch((await c.get('/sunshine?sent=1&to=Evil%20Corp')).body, /Evil Corp/);
 
-  assert.equal((await c.post('/sunshine', { text: 'To everyone in Parks & Rec: thank you.', park: 'department' })).headers.location, '/sunshine?sent=1');
+  assert.equal((await c.post('/sunshine', { text: 'To everyone in Parks & Rec: thank you.', park: 'department' })).headers.location, '/sunshine?sent=1&city=st-pete');
   assert.deepEqual(notes().map((n) => [n.slug, n.user_id, n.status]), [['a-park', id, 'new'], [null, id, 'new']]);
 
   assert.match((await c.post('/sunshine', { text: '  ', park: 'a-park' })).body, /Write a few words of thanks first/);
