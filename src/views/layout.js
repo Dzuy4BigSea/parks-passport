@@ -189,7 +189,7 @@ ${feedback ? html`<script type="module" src="/js/feedback.js"></script>` : ''}
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap header-row">
-    <a class="brand" href="/">${BRAND_MARK}<span class="brand-text">Parks Passport${city ? html` <span class="brand-city">${city}</span>` : ''}</span></a>
+    <a class="brand" href="${user && theme?.key ? cityPath(theme) : '/'}">${BRAND_MARK}<span class="brand-text">Parks Passport${city ? html` <span class="brand-city">${city}</span>` : ''}</span></a>
     ${user ? html`<div class="header-chips${user.is_admin ? ' has-admin' : ''}">${statusPills(status)}${bell(status?.unread || 0, current === 'notifications')}${user.is_admin ? html`<a class="pill" href="/admin">Admin</a>` : ''}</div>` : ''}
     <nav aria-label="Main" class="site-nav">
       <ul class="nav-list">

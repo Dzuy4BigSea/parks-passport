@@ -4,7 +4,7 @@ import { magicLinkEmail, passwordResetEmail, deleteAccountEmail } from '../views
 import { emailCopy } from '../domain/email-copy.js';
 import { inviteForToken, acceptInvites } from '../domain/invites.js';
 import { inviterForNext, palUpOnSignup } from '../domain/pals.js';
-import { cityByKey, listCities } from '../domain/city.js';
+import { cityByKey, cityById, listCities } from '../domain/city.js';
 import { canUseIdeas } from '../domain/ideas.js';
 import { awardFounding } from '../domain/founding.js';
 import { verifyPassword, burnPasswordCheck } from '../lib/crypto.js';
@@ -48,6 +48,10 @@ export default async function authRoutes(app) {
   const startSession = (req, reply, userId) => {
     const previous = req.cookies[app.cookieNames.session];
     if (previous) deleteSession(db, previous);
+    // A new device opens in the member's home city.
+    const homeId = db.prepare('SELECT home_city_id FROM users WHERE id = ?').pluck().get(userId);
+    const home = homeId ? cityById(db, homeId) : null;
+    if (home) reply.rememberCity(home);
     return reply.signIn(createSession(db, userId, { now: now() }));
   };
 
@@ -115,7 +119,7 @@ export default async function authRoutes(app) {
     const inviterIds = new Set([joinInvite?.invited_by, palInviter?.id].filter(Boolean));
     let palled = false;
     for (const id of inviterIds) palled = palUpOnSignup(db, id, user.id, { now: now(), random: app.random }) || palled;
-    db.prepare('UPDATE users SET home_city_id = ? WHERE id = ?').run(req.city.id, user.id); // where they joined
+    if (req.city.listed) db.prepare('UPDATE users SET home_city_id = ? WHERE id = ?').run(req.city.id, user.id); // where they joined
     startSession(req, reply, user.id);
     app.track(user.id, 'sign_up', { method: 'password' });
     if (palled) app.track(user.id, 'pal_accepted');

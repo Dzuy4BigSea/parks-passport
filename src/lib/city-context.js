@@ -15,6 +15,7 @@ export const cityContext = fp(async function cityContext(app, { db, secureCookie
   const cookieOpts = { path: '/', httpOnly: true, sameSite: 'lax', secure: secureCookies, maxAge: YEAR };
   app.decorateRequest('city', null);
   app.decorateRequest('cityFromUrl', false);
+  app.decorateRequest('cityAsked', false); // a valid ?city= on a GET
   app.decorateRequest('cityRemembered', false); // the visitor chose a city before (a cookie)
   app.decorateReply('rememberCity', function rememberCity(city) {
     if (this.request.cookies[name] !== city.key) this.setCookie(name, city.key, cookieOpts);
@@ -29,6 +30,7 @@ export const cityContext = fp(async function cityContext(app, { db, secureCookie
     const remembered = cityByKey(db, req.cookies[name] || '');
     req.cityRemembered = Boolean(remembered || asked);
     req.cityFromUrl = Boolean(fromUrl);
+    req.cityAsked = Boolean(asked);
     req.city = fromUrl || asked || remembered || defaultCity(db);
     if ((fromUrl || asked) && req.method === 'GET') reply.rememberCity(req.city);
   });

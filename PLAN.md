@@ -426,5 +426,6 @@ invite only via its link), `test/unit/analytics.test.js` (no analytics with an i
   cookie). No footer city list for members. Privacy page wording.
 
 Checks: `test/unit/cities.test.js` (home set at sign-up, `/` goes home, browsing stays, footer,
-Account change and limits, CSRF, nudge by IP and by location, Not now, migration backfill), the
+Account change and limits, CSRF, nudge by IP and by location, Not now, migration backfill; sign-in
+opens home, the logo, bogus `?city=`, unlisted cities), request logs without query strings, the
 Account page in the axe sweep, and the existing suite.

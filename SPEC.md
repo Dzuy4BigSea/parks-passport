@@ -470,12 +470,14 @@ Done when:
       the landing page list every listed city; members don't get the footer list.
 - [ ] **Home city:** each member has one, set to the city they signed up in (existing members:
       the city they stamped most in). Opening the site (`/`) signed in goes to the home city; from
-      there they stay in whatever city they browse until they open the site again. Account ›
-      Home city changes it and links to the other cities for a look.
+      there they stay in whatever city they browse until they open the site again (the logo keeps
+      them in the city they're browsing). Signing in on a new device opens the home city. Only a
+      listed city can be a home city. Account › Home city changes it and links to the other cities
+      for a look.
 - [ ] **Away from home:** signed in, when the home page is opened near another listed city (the
       IP, or "Use my location") within 160 km, it says "You're near Westminster. Explore its parks
       while you're here?" with a link and "Not now", which hides it for that city for a day. The home
-      city doesn't change.
+      city doesn't change. The coordinates are never stored: request logs keep the path only.
 - [ ] **Nearest-city suggestion:** on `/`, before a visitor has picked a city, the home page
       suggests the listed city nearest their IP address ("Looks like you're near Westminster")
       when it's within 160 km and isn't the city shown. It never switches by itself. The IP is

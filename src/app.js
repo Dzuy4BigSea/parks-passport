@@ -61,7 +61,10 @@ export function buildApp({
   // Docker network (CLAUDE.md "How traffic reaches an app"). req.ip is then the rightmost public
   // address in X-Forwarded-For, the one nginx appended, never one a client typed further left
   // (rate limits and the nearest-city suggestion depend on it).
-  const app = Fastify({ logger, trustProxy: 'loopback,linklocal,uniquelocal', bodyLimit: 1024 * 1024 });
+  // Request logs keep the path only: query strings can hold a location ("Use my location") or a token.
+  const pathOnly = (url) => String(url || '').split('?')[0];
+  const loggerOpts = logger === true ? { serializers: { req: (req) => ({ method: req.method, url: pathOnly(req.url), hostname: req.hostname, remoteAddress: req.ip }) } } : logger;
+  const app = Fastify({ logger: loggerOpts, trustProxy: 'loopback,linklocal,uniquelocal', bodyLimit: 1024 * 1024 });
 
   app.decorate('db', db);
   app.decorate('mailer', mailer);
@@ -200,7 +203,7 @@ export function buildApp({
   const AWAY_COOKIE = 'pp_away';
   app.get('/', async (req, reply) => {
     let suggest = null;
-    const homeCity = req.user?.home_city_id && !req.query.city ? cityById(db, req.user.home_city_id) : null;
+    const homeCity = req.user?.home_city_id && !req.cityAsked ? cityById(db, req.user.home_city_id) : null;
     if (homeCity) {
       req.city = homeCity;
       reply.rememberCity(homeCity);

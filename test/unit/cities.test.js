@@ -9,7 +9,7 @@ import Database from 'better-sqlite3';
 import { makeApp, client, testClock } from './helpers.js';
 import { migrate } from '../../src/db/index.js';
 import { seedBadges, seedCities, cityPackKeys, CITIES_DIR } from '../../src/db/seed.js';
-import { seedCityPack, cityByKey, listCities, nearestCity, RESERVED_CITY_KEYS } from '../../src/domain/city.js';
+import { seedCityPack, cityByKey, listCities, nearestCity, RESERVED_CITY_KEYS, clearThemeCache } from '../../src/domain/city.js';
 import { importParksCsv, PARK_CSV_COLUMNS } from '../../src/domain/csv-import.js';
 import { isPublicIp, createGeoIp } from '../../src/lib/geoip.js';
 import { parseCsv } from '../../src/lib/csv.js';
@@ -364,4 +364,27 @@ test('migration 026 backfills home city from where members stamped most', () => 
   migrate(db, dir);
   assert.equal(db.prepare("SELECT home_city_id FROM users WHERE email = 'a@x.com'").pluck().get(), city('westminster'));
   assert.equal(db.prepare("SELECT home_city_id FROM users WHERE email = 'b@x.com'").pluck().get(), null);
+});
+
+test('M31 QA: signing in opens the home city; the logo keeps you in the city you browse; bogus ?city= still goes home', async () => {
+  const { app, db } = citiesApp();
+  const wes = client(app);
+  await wes.get('/westminster');
+  await wes.post('/signup', { display_name: 'Wes', email: 'wes@example.com', password: PW });
+  // A fresh device: log in, and the passport opens in Westminster.
+  const phone = client(app);
+  await phone.post('/login', { email: 'wes@example.com', password: PW });
+  assert.equal((await phone.get('/passport')).headers.location, '/westminster/passport');
+  // Browsing St. Pete, the logo points at St. Pete, not "/".
+  assert.match((await phone.get('/st-pete/parks')).body, /<a class="brand" href="\/st-pete">/);
+  assert.match((await client(app).get('/st-pete/parks')).body, /<a class="brand" href="\/">/); // visitors: "/"
+  // A made-up ?city= doesn't skip the home city.
+  assert.match((await phone.get('/?city=bogus')).body, /href="\/westminster\/parks"/);
+  // An unlisted city never becomes a home city.
+  db.prepare("UPDATE city_themes SET listed = 0 WHERE key = 'asheville'").run();
+  clearThemeCache(db);
+  const ash = client(app);
+  await ash.get('/asheville');
+  await ash.post('/signup', { display_name: 'Ash', email: 'ash@example.com', password: PW });
+  assert.equal(db.prepare("SELECT home_city_id FROM users WHERE email = 'ash@example.com'").pluck().get(), null);
 });
