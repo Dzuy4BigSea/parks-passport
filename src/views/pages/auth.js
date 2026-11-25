@@ -1,4 +1,5 @@
 import { html } from '../html.js';
+import { cityPath } from '../urls.js';
 import { avatar } from '../avatar.js';
 import { csrfField, errorSummary, field } from '../forms.js';
 import { visibilityForm } from './pals.js';
@@ -155,7 +156,24 @@ function profilePhoto({ csrf, user, error }) {
 </section>`;
 }
 
-export function accountPage({ csrf, user, errors = {}, notice, ideas = false, values = {} }) {
+// Home city (SPEC Flow 14): where Parks Passport opens. Other cities are a link away.
+function homeCityForm({ csrf, user, cities, error }) {
+  const home = user.home_city_id;
+  return html`<section id="home-city" aria-labelledby="home-city-h">
+<h2 id="home-city-h">Home city</h2>
+<form method="post" action="/account/home-city" class="card-form">
+  ${csrfField(csrf)}
+  <div class="field${error ? ' field-error' : ''}"><label for="city">Parks Passport opens in</label>
+    ${error ? html`<p class="error-text" id="city-error">${error}</p>` : ''}
+    <select id="city" name="city"${error ? html` aria-invalid="true" aria-describedby="city-error"` : ''}>${cities.map((c) => html`<option value="${c.key}"${c.id === home ? html` selected` : ''}>${c.copy.place}</option>`)}</select></div>
+  <p class="hint">Away from home? When you open Parks Passport near another city, we'll offer its parks.</p>
+  <button type="submit" class="btn">Save home city</button>
+</form>
+<p class="muted">Just looking: ${cities.map((c, i) => html`${i ? ' · ' : ''}<a href="${cityPath(c)}">${c.copy.short}</a>`)}</p>
+</section>`;
+}
+
+export function accountPage({ csrf, user, errors = {}, notice, ideas = false, values = {}, cities = [] }) {
   return {
     title: 'Account',
     current: 'account',
@@ -182,6 +200,8 @@ ${ideas ? html`<p><a href="/ideas">Share a badge idea</a></p>` : ''}
   ${csrfField(csrf)}
   <button type="submit" class="btn">Log out</button>
 </form>
+
+${cities.length > 1 ? homeCityForm({ csrf, user, cities, error: errors.city }) : ''}
 
 ${visibilityForm({ csrf, user })}
 

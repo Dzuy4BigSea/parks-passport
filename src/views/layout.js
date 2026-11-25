@@ -199,7 +199,7 @@ ${announcements ? html`<script type="module" src="/js/reveal.js"></script>` : ''
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap header-row">
-    <a class="brand" href="/">${BRAND_MARK}<span class="brand-text">Parks Passport${city ? html` <span class="brand-city">${city}</span>` : ''}</span></a>
+    <a class="brand" href="${user && theme?.key ? cityPath(theme) : '/'}">${BRAND_MARK}<span class="brand-text">Parks Passport${city ? html` <span class="brand-city">${city}</span>` : ''}</span></a>
     ${user ? html`<div class="header-chips${user.is_admin ? ' has-admin' : ''}">${statusPills(status)}${bell(status?.unread || 0, current === 'notifications')}${user.is_admin ? html`<a class="pill" href="/admin">Admin</a>` : ''}</div>` : ''}
     <nav aria-label="Main" class="site-nav">
       <ul class="nav-list">
@@ -220,7 +220,7 @@ ${showConsentBanner ? consentBanner(csrf, path) : ''}
     ${theme?.motifs?.length ? html`<div class="motif-strip" aria-hidden="true">${theme.motifs.map((m) => motifIcon(m))}</div>` : ''}
     ${city ? html`<p class="footer-city">Made for ${theme.copy?.made_for || (theme.tagline ? `the ${theme.tagline}` : city)}.</p>` : ''}
     <p>An independent project. Not affiliated with ${theme?.copy?.official || 'any city government'}.</p>
-    ${cities.length > 1 ? html`<nav class="footer-cities" aria-label="Cities"><p>Cities: ${cities.map((c, i) => html`${i ? ' · ' : ''}<a href="${cityPath(c)}"${c.key === theme?.key ? html` aria-current="page"` : ''}>${c.copy.short}</a>`)}</p></nav>` : ''}
+    ${cities.length > 1 && !user ? html`<nav class="footer-cities" aria-label="Cities"><p>Cities: ${cities.map((c, i) => html`${i ? ' · ' : ''}<a href="${cityPath(c)}"${c.key === theme?.key ? html` aria-current="page"` : ''}>${c.copy.short}</a>`)}</p></nav>` : ''}
     <p><a href="/privacy">Privacy</a>${photos ? html` · <a href="/credits">Photo credits</a>` : ''}${analytics?.gtmId ? html` · <a href="/consent?back=${encodeURIComponent(path)}" id="cookie-settings">Cookie settings</a>` : ''}</p>
     <p class="credit"><span>© ${new Date().getFullYear()} Parks Passport</span>
       <a class="bigsea" href="https://bigsea.co" rel="noopener" title="Purpose built by Big Sea"><span>Purpose built by</span><img src="/brand/bigsea-logo.svg" alt="Big Sea" width="54" height="15"></a></p>

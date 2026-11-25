@@ -20,14 +20,14 @@ import { buildEvent, queueEvent, takeEvents, parseConsent, CONSENT_COOKIE } from
 import consentRoutes from './routes/consent.js';
 import { totalPoints } from './domain/points.js';
 import { levelFor } from './domain/levels.js';
-import { getTheme, listCities, nearestCity } from './domain/city.js';
+import { getTheme, listCities, nearestCity, cityByKey, cityById } from './domain/city.js';
 import { cityContext } from './lib/city-context.js';
 import { weeklyStreak, visitDates } from './domain/engagement.js';
 import { homeData } from './domain/home.js';
 import { garyTip } from './views/gary.js';
 import { parseLatLng } from './domain/geo.js';
 import { localDate } from './domain/time.js';
-import { authPlugin } from './lib/auth.js';
+import { authPlugin, requireUser } from './lib/auth.js';
 import parkRoutes from './routes/parks.js';
 import authRoutes from './routes/auth.js';
 import visitRoutes from './routes/visits.js';
@@ -66,7 +66,10 @@ export function buildApp({
   // Docker network (CLAUDE.md "How traffic reaches an app"). req.ip is then the rightmost public
   // address in X-Forwarded-For, the one nginx appended, never one a client typed further left
   // (rate limits and the nearest-city suggestion depend on it).
-  const app = Fastify({ logger, trustProxy: 'loopback,linklocal,uniquelocal', bodyLimit: 1024 * 1024 });
+  // Request logs keep the path only: query strings can hold a location ("Use my location") or a token.
+  const pathOnly = (url) => String(url || '').split('?')[0];
+  const loggerOpts = logger === true ? { serializers: { req: (req) => ({ method: req.method, url: pathOnly(req.url), hostname: req.hostname, remoteAddress: req.ip }) } } : logger;
+  const app = Fastify({ logger: loggerOpts, trustProxy: 'loopback,linklocal,uniquelocal', bodyLimit: 1024 * 1024 });
 
   app.decorate('db', db);
   app.decorate('mailer', mailer);
@@ -201,19 +204,39 @@ export function buildApp({
     const gary = outfitFor(db, user, app.weather.current(city)).outfit;
     return reply.page({ city, gary, ...homePage({
       total: countActiveParks(db, city.id), theme: city, user, dash, gary, today: localDate(now(), city.time_zone),
-      cities: listCities(db).filter((c) => c.listed), suggest,
+      cities: listCities(db).filter((c) => c.listed), suggest, csrf: req.csrfToken(),
     }) });
   }
 
   // Within this distance of a city's center, the home page offers to switch to it.
+  // Signed in, opening the site ("/") goes to the member's home city (and from there they stay in
+  // whatever city they browse) and, when they're near another city
+  // (their IP, or "Use my location"), offers it while they're there, unless they said "Not now" today.
   const SUGGEST_WITHIN_M = 160_000;
+  const AWAY_COOKIE = 'pp_away';
   app.get('/', async (req, reply) => {
     let suggest = null;
-    if (!req.cityRemembered && app.geoip) {
+    const homeCity = req.user?.home_city_id && !req.cityAsked ? cityById(db, req.user.home_city_id) : null;
+    if (homeCity) {
+      req.city = homeCity;
+      reply.rememberCity(homeCity);
+    }
+    if (req.user) {
+      const point = parseLatLng(req.query.lat, req.query.lng) || app.geoip?.lookup(req.ip) || null;
+      const near = nearestCity(db, point);
+      if (near && near.city.key !== req.city.key && near.distance_m <= SUGGEST_WITHIN_M && req.cookies[AWAY_COOKIE] !== near.city.key) {
+        suggest = { ...near.city, away: true };
+      }
+    } else if (!req.cityRemembered && app.geoip) {
       const near = nearestCity(db, app.geoip.lookup(req.ip));
       if (near && near.city.key !== req.city.key && near.distance_m <= SUGGEST_WITHIN_M) suggest = near.city;
     }
     return home(req, reply, req.city, suggest);
+  });
+  app.post('/city/away/dismiss', { preHandler: requireUser }, async (req, reply) => {
+    const city = cityByKey(db, String(req.body.city || ''));
+    if (city) reply.setCookie(AWAY_COOKIE, city.key, { path: '/', httpOnly: true, sameSite: 'lax', secure: config.secureCookies, maxAge: 86400 });
+    return reply.redirect('/', 303);
   });
   app.get('/:city', async (req, reply) => (req.cityFromUrl ? home(req, reply, req.city) : reply.callNotFound()));
   app.get('/privacy', async (req, reply) => reply.page(privacyPage()));

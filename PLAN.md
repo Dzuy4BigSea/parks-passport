@@ -452,3 +452,15 @@ Checks: `test/unit/outfits.test.js` (seeded as drafts, approve and hide, starter
 badge unlocks, choose only what you have, weather mapping and fallback with a fake fetch),
 `test/e2e/outfits.spec.js` (admin approves, member picks, Gary changes, axe at 375 px), and the
 existing suite.
+
+### M34 — Home city and the away nudge (Flow 14)
+- Migration 028 (`users.home_city_id`, backfilled from the city each member stamped most). Set at
+  sign-up; Account › Home city (`POST /account/home-city`). `/` signed in opens the home city
+  and remembers it; other pages keep the city being browsed (the admin city bar unchanged).
+- The away nudge on `/` (IP or `?lat&lng`), "Not now" (`POST /city/away/dismiss`, a day's `pp_away`
+  cookie). No footer city list for members. Privacy page wording.
+
+Checks: `test/unit/cities.test.js` (home set at sign-up, `/` goes home, browsing stays, footer,
+Account change and limits, CSRF, nudge by IP and by location, Not now, migration backfill; sign-in
+opens home, the logo, bogus `?city=`, unlisted cities), request logs without query strings, the
+Account page in the axe sweep, and the existing suite.

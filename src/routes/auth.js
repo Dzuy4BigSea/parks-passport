@@ -4,6 +4,7 @@ import { magicLinkEmail, passwordResetEmail, deleteAccountEmail } from '../views
 import { emailCopy } from '../domain/email-copy.js';
 import { inviteForToken, acceptInvites } from '../domain/invites.js';
 import { inviterForNext, palUpOnSignup } from '../domain/pals.js';
+import { cityByKey, cityById, listCities } from '../domain/city.js';
 import { canUseIdeas } from '../domain/ideas.js';
 import { awardFounding } from '../domain/founding.js';
 import { verifyPassword, burnPasswordCheck } from '../lib/crypto.js';
@@ -47,6 +48,10 @@ export default async function authRoutes(app) {
   const startSession = (req, reply, userId) => {
     const previous = req.cookies[app.cookieNames.session];
     if (previous) deleteSession(db, previous);
+    // A new device opens in the member's home city.
+    const homeId = db.prepare('SELECT home_city_id FROM users WHERE id = ?').pluck().get(userId);
+    const home = homeId ? cityById(db, homeId) : null;
+    if (home) reply.rememberCity(home);
     return reply.signIn(createSession(db, userId, { now: now() }));
   };
 
@@ -70,6 +75,8 @@ export default async function authRoutes(app) {
       return reply.page(sendFailedPage());
     }
   }
+
+  const listedCities = () => listCities(db).filter((c) => c.listed);
 
   // Sign up
   app.get('/signup', async (req, reply) => {
@@ -112,6 +119,7 @@ export default async function authRoutes(app) {
     const inviterIds = new Set([joinInvite?.invited_by, palInviter?.id].filter(Boolean));
     let palled = false;
     for (const id of inviterIds) palled = palUpOnSignup(db, id, user.id, { now: now(), random: app.random }) || palled;
+    if (req.city.listed) db.prepare('UPDATE users SET home_city_id = ? WHERE id = ?').run(req.city.id, user.id); // where they joined
     startSession(req, reply, user.id);
     app.track(user.id, 'sign_up', { method: 'password' });
     if (palled) app.track(user.id, 'pal_accepted');
@@ -230,18 +238,27 @@ export default async function authRoutes(app) {
   // Account and deletion
   const VISIBILITY_SAVED = { private: 'only you', pals: 'your Park Pals', public: 'anyone with the link' };
   app.get('/account', { preHandler: requireUser }, async (req, reply) =>
-    reply.page(accountPage({
+    reply.page(accountPage({ cities: listedCities(),
       csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user),
       notice: req.query.done === 'visibility' ? `Saved. Your passport is now visible to ${VISIBILITY_SAVED[req.user.default_visibility]}.`
         : req.query.done === 'editions' ? 'Saved your editions.'
-          : { avatar: 'Profile photo saved.', avatar_removed: 'Profile photo removed.', name: `Saved. You're now ${req.user.display_name} (@${req.user.handle}).` }[req.query.done] || null,
+          : { avatar: 'Profile photo saved.', avatar_removed: 'Profile photo removed.', name: `Saved. You're now ${req.user.display_name} (@${req.user.handle}).`, home: `Saved. Parks Passport now opens in ${req.city.copy.short}.` }[req.query.done] || null,
     })));
+
+  // Home city: where the app opens (SPEC Flow 14).
+  app.post('/account/home-city', { preHandler: requireUser }, async (req, reply) => {
+    const city = cityByKey(db, str(req.body.city));
+    if (!city || !city.listed) return reply.code(422).page(accountPage({ cities: listedCities(), csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user), errors: { city: 'Choose a city.' } }));
+    db.prepare('UPDATE users SET home_city_id = ? WHERE id = ?').run(city.id, req.user.id);
+    reply.rememberCity(city);
+    return reply.redirect('/account?done=home', 303);
+  });
 
   // Display name (and the handle made from it).
   app.post('/account/name', { preHandler: requireUser }, async (req, reply) => {
     const result = setDisplayName(db, req.user.id, str(req.body.display_name, 200));
     if (result.errors) {
-      return reply.code(422).page(accountPage({ csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user), errors: result.errors, values: { display_name: str(req.body.display_name, 200) } }));
+      return reply.code(422).page(accountPage({ cities: listedCities(), csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user), errors: result.errors, values: { display_name: str(req.body.display_name, 200) } }));
     }
     return reply.redirect('/account?done=name', 303);
   });
@@ -251,7 +268,7 @@ export default async function authRoutes(app) {
     const file = Buffer.isBuffer(req.body.photo) && req.body.photo.length ? req.body.photo : null;
     const stored = await storeAvatar(file, app.config.uploadsDir);
     if (stored.error) {
-      return reply.code(422).page(accountPage({ csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user), errors: { photo: stored.error } }));
+      return reply.code(422).page(accountPage({ cities: listedCities(), csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user), errors: { photo: stored.error } }));
     }
     // The key as it is now (another upload may have finished since this request began).
     const old = db.prepare('SELECT avatar_key FROM users WHERE id = ?').pluck().get(req.user.id);
@@ -290,7 +307,7 @@ export default async function authRoutes(app) {
   app.post('/account/delete', { preHandler: requireUser }, async (req, reply) => {
     if (!(await verifyPassword(str(req.body.delete_password), req.user.password_hash))) {
       reply.code(422);
-      return reply.page(accountPage({
+      return reply.page(accountPage({ cities: listedCities(),
         csrf: req.csrfToken(), user: req.user,
         errors: { delete_password: 'That password is incorrect.' },
       }));
