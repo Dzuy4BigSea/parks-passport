@@ -38,6 +38,8 @@ import adminRoutes from './routes/admin.js';
 import ideaRoutes from './routes/ideas.js';
 import activityRoutes from './routes/activities.js';
 import notificationRoutes from './routes/notifications.js';
+import groupRoutes from './routes/groups.js';
+import { myGroups, groupAllowance } from './domain/groups.js';
 import { canSendFeedback } from './domain/founding.js';
 import communityRoutes from './routes/community.js';
 import messageRoutes from './routes/messages.js';
@@ -200,6 +202,7 @@ export function buildApp({
       // ?lat&lng comes from "Use my location"; it's used for this page only, never stored.
       dash = homeData(db, user, city, { now: now(), near: parseLatLng(req.query.lat, req.query.lng) });
       dash.tip = garyTip(dash.tipInput);
+      dash.groups = { groups: myGroups(db, user.id), allowance: groupAllowance(db, user) };
     }
     const gary = outfitFor(db, user, app.weather.current(city)).outfit;
     return reply.page({ city, gary, ...homePage({
@@ -256,6 +259,7 @@ export function buildApp({
   app.register(ideaRoutes);
   app.register(activityRoutes);
   app.register(notificationRoutes);
+  app.register(groupRoutes);
   app.register(communityRoutes);
   app.register(messageRoutes);
   app.register(outfitRoutes);

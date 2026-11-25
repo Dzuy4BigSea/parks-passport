@@ -1,4 +1,5 @@
 import { requireUser, safeNext } from '../lib/auth.js';
+import { myGroups } from '../domain/groups.js';
 import {
   inviteTokenFor, regenerateInvite, inviterForToken, acceptInvite, removePal, palsOf, leaderboard, palsFeed,
   friendCodeFor, regenerateFriendCode, formatCode, requestByCode, palRequests, answerRequest, cancelRequest, CODE_LIMITS,
@@ -24,6 +25,8 @@ export default async function palRoutes(app) {
     requested: "Request sent. You'll be Park Pals when they accept.",
     declined: 'Request declined. If they keep asking, make a new friend code below.',
     cancelled: 'Request cancelled.',
+    group_invited: 'Group invite sent. They\u2019ll see it in their notifications.',
+    group_already: 'They\u2019re already in that group, or already invited.',
   };
   const showPals = (req, reply, extra = {}) => {
     const user = req.user;
@@ -34,6 +37,7 @@ export default async function palRoutes(app) {
       inviteUrl: `${app.config.baseUrl}/pals/invite/${inviteTokenFor(db, user.id, { now: now(), onCreate: () => app.track(user.id, 'pal_invite_created') })}?city=${req.city.key}`,
       friendCode: formatCode(friendCodeFor(db, user.id, { now: now() })), requests: palRequests(db, user.id),
       pals: palsOf(db, user.id).map((p) => ({ ...p, visible: canViewOwner(db, user.id, p.id, p.default_visibility) })), board: leaderboard(db, user.id), feed: palsFeed(db, user.id, { page }),
+      groups: myGroups(db, user.id),
       ...extra,
     }));
   };

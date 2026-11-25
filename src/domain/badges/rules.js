@@ -36,6 +36,12 @@ export const mondayOf = (day) => day - ((weekdayOf(day) + 6) % 7);
 export const luckyChance = (n, { chance, floor = 0, half_life = 1 }) => Math.max(floor, chance * 0.5 ** ((n - 1) / half_life));
 
 export const RULES = {
+  gps_checkins: {
+    label: 'Check in by GPS N times',
+    params: { n: 'number' },
+    evaluate: ({ n }, ctx) => count(ctx.visits.filter((v) => v.method === 'gps').length, n, 'GPS check-ins'),
+  },
+
   parks_count: {
     label: 'Stamp N different parks',
     params: { n: 'number' },

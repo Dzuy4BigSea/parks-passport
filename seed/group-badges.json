@@ -1,0 +1,13 @@
+[
+  {
+    "slug": "troop-leader",
+    "name": "Troop Leader",
+    "art": "🎖️",
+    "kind": "known",
+    "description": "Checked in by GPS 10 times. You can start your own groups: your gym, your run club, your class.",
+    "rule_type": "gps_checkins",
+    "rule_params": {
+      "n": 10
+    }
+  }
+]

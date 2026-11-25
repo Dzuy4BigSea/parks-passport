@@ -655,6 +655,37 @@ Done when:
       have that suits it, else Classic. If the weather service fails or is slow (2 s), Gary
       wears Classic and nothing breaks.
 
+### Flow 23: Groups
+As a member, I can be in groups (a gym, a running club, a class) that see each other's progress as
+counts, so exploring feels like a team sport. (Group goals and team badges: Flow 24, M36.)
+Done when:
+- [ ] **Unlocking:** 10 GPS check-ins earns the **Troop Leader** badge (rule `gps_checkins`) and
+      lets me start up to 3 groups. Before that, Groups shows my progress toward it. An admin can
+      set any member's limits in Admin › Members › Groups (0 to 50; empty means what they've
+      earned).
+- [ ] **Starting:** a group has a name (40 characters), an emoji and an optional description
+      (200). I'm its owner and first member.
+- [ ] **Joining, three ways:** (1) a member invites one of their Park Pals, from the group page or
+      from a pal on the Pals page; the pal gets a notification and joins or declines (declining
+      tells nobody); (2) each group has a code (`XXXX-XXXX`) and a link (`/groups/join/<code>`;
+      signed out, it offers sign-up or log-in); (3) what the code does is the owner's choice:
+      "Ask me first" (the default: the owner gets a notification and approves or declines) or
+      "Anyone with the code joins". A new code stops the old code and link. Wrong codes are
+      limited to 20 an hour per IP.
+- [ ] **How many:** I can be in 5 groups, 10 after 25 GPS check-ins (or what an admin set).
+- [ ] **Privacy:** every place I can join says that group members see my display name and my
+      counts (parks stamped, check-ins, badges, level), never my locations, photos, reviews or
+      visits. The group page shows exactly that, with initials instead of profile photos, whatever
+      anyone's passport visibility. Every group page and action is a 404 to non-members, and
+      owner actions are a 404 to other members.
+- [ ] **Owners:** can edit the group, choose what the code does, make a new code, approve or
+      decline requests, remove a member, hand the group to a member and end it (members are
+      told). An owner who leaves, or deletes their account, hands it to the longest-standing
+      member; the last one out ends it.
+- [ ] **Home:** the signed-in home has a "Your groups" card: my groups, or how to join one with a
+      code and how close I am to Troop Leader. Group news (invites, requests, approvals, joins, a
+      group ending) goes in the notification center.
+
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.
 - **users**: id, email (unique, lower-cased), password_hash (scrypt, nullable for magic-link-only

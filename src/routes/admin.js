@@ -20,10 +20,11 @@ import { allActivities, badgeTargets, setActivityActive } from '../domain/activi
 import { isSuperAdmin, ideaById, badgePrefill, markBuilt } from '../domain/ideas.js';
 import { EMAIL_KINDS, COPY_FIELDS, emailCopy, saveEmailCopy, resetEmailCopy, isCustomized } from '../domain/email-copy.js';
 import {
-  adminCity, adminEmail, adminEmailMessage, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
+  adminCity, adminEmail, adminEmailMessage, adminGroupLimits, adminHome, adminParks, adminParkForm, adminImport, adminBadges, adminBadgeForm, adminModeration, adminUsers,
   adminActivities, adminStats, adminGiveBadge,
 } from '../views/pages/admin.js';
 import { grantBadge, grantBadgeToMany, takeBackGrant } from '../domain/badges/index.js';
+import { groupAllowance, setGroupLimits } from '../domain/groups.js';
 import { adminStats as computeStats } from '../domain/stats.js';
 
 const MAX_CSV_BYTES = 1024 * 1024;
@@ -370,6 +371,20 @@ export default async function adminRoutes(app) {
         return reply.code(422).page(giveView(req, member, { error: message, values: req.body }));
       }
       return reply.redirect(`/admin/users/${member.id}/badges?done=given`, 303);
+    });
+    // A member's group limits (SPEC Flow 23).
+    const limitsView = (req, member, extra = {}) => adminGroupLimits({ member: db.prepare('SELECT * FROM users WHERE id = ?').get(member.id), allowance: groupAllowance(db, member), csrf: req.csrfToken(), ...extra });
+    r.get('/users/:id/groups', async (req, reply) => {
+      const member = memberOf(req);
+      if (!member) return reply.callNotFound();
+      return reply.page(limitsView(req, member, { notice: req.query.done ? 'Saved.' : null }));
+    });
+    r.post('/users/:id/groups', async (req, reply) => {
+      const member = memberOf(req);
+      if (!member) return reply.callNotFound();
+      const result = setGroupLimits(db, member.id, { create: req.body.group_create_limit, join: req.body.group_join_limit });
+      if (result.errors) return reply.code(422).page(limitsView(req, member, { errors: result.errors, values: req.body }));
+      return reply.redirect(`/admin/users/${member.id}/groups?done=saved`, 303);
     });
     r.post('/users/:id/badges/:badgeId/delete', async (req, reply) => {
       const member = memberOf(req);

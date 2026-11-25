@@ -464,3 +464,15 @@ Checks: `test/unit/cities.test.js` (home set at sign-up, `/` goes home, browsing
 Account change and limits, CSRF, nudge by IP and by location, Not now, migration backfill; sign-in
 opens home, the logo, bogus `?city=`, unlisted cities), request logs without query strings, the
 Account page in the axe sweep, and the existing suite.
+
+### M35 — Groups (Flow 23)
+- Migration 029 (`member_groups`, `group_members`, `group_invites`, `group_requests`,
+  `users.group_create_limit` and `group_join_limit`), `src/domain/groups.js`, `src/routes/groups.js`,
+  `src/views/pages/groups.js` (Groups, a group, the join link, the home card).
+- The `gps_checkins` rule and Troop Leader in `seed/group-badges.json`; Admin › Members › Groups;
+  invite to a group from the Pals page; owned groups handed on when an account is deleted.
+
+Checks: `test/unit/groups.test.js` (unlocking, limits, validation, ask-first and open codes, link,
+new code, pal invites only, join limit, privacy and 404s, owner actions, leave, end, account deletion,
+home card), `test/e2e/groups.spec.js` (start, ask with the code, approve, home card; axe and no
+sideways scroll at 375 px), and the existing suite.

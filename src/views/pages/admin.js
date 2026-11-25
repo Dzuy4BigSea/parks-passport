@@ -329,7 +329,7 @@ ${invites.length ? html`<div class="table-wrap"><table class="admin-table">
     <td data-label="Member">${u.display_name} <span class="muted">@${u.handle}</span><br><span class="muted">${u.email}</span></td>
     <td data-label="Parks">${u.parks}</td>
     <td data-label="Joined">${dateOf(u.created_at)}</td>
-    <td data-label="Badges"><a href="/admin/users/${u.id}/badges">Give a badge<span class="visually-hidden"> to ${u.display_name}</span></a></td>
+    <td data-label="Badges"><a href="/admin/users/${u.id}/badges">Give a badge<span class="visually-hidden"> to ${u.display_name}</span></a><br><a href="/admin/users/${u.id}/groups">Groups<span class="visually-hidden"> for ${u.display_name}</span></a></td>
     <td data-label="Admin">${u.id === me.id ? html`Admin (you)` : html`<form method="post" action="/admin/users/${u.id}/admin">${csrfField(csrf)}
       <input type="hidden" name="admin" value="${u.is_admin ? '0' : '1'}">
       <button type="submit" class="btn btn-small" aria-label="${u.is_admin ? `Remove admin (${u.display_name})` : `Make admin (${u.display_name})`}">${u.is_admin ? 'Remove admin' : 'Make admin'}</button></form>`}</td>
@@ -557,6 +557,24 @@ ${barTable({ caption: 'By method (all time)', rows: stats.byMethod, value: 'chec
     extra: { title: 'Last 30 days', get: (r) => r.checkins30 || 0 } })}
 ${stats.topParks.length ? barTable({ caption: 'Top parks, last 30 days', rows: stats.topParks, value: 'checkins', label: { title: 'Park', get: (r) => `${r.name} (${r.city})` },
     extra: { title: 'Members', get: (r) => r.members } }) : html`<p>No check-ins in the last 30 days.</p>`}`);
+}
+
+// A member's group limits (SPEC Flow 23): empty means what they've earned.
+export function adminGroupLimits({ member, allowance, csrf, errors = {}, values = null, notice = null }) {
+  const v = values || { group_create_limit: member.group_create_limit ?? '', group_join_limit: member.group_join_limit ?? '' };
+  return page(`Groups for ${member.display_name}`, html`<p class="breadcrumb"><a href="/admin">Admin</a> › <a href="/admin/users">Members</a></p>
+<h1>Groups for ${member.display_name}</h1>
+${notice ? html`<p class="notice" role="status" tabindex="-1" data-announce>${notice}</p>` : ''}
+${errorSummary(errors)}
+<p>Now: can start ${allowance.createLimit} (runs ${allowance.owned}), can be in ${allowance.joinLimit} (in ${allowance.joined}). ${allowance.gps} GPS check-ins.</p>
+<form method="post" action="/admin/users/${member.id}/groups" class="card-form admin-form">
+  ${csrfField(csrf)}
+  ${input('group_create_limit', 'Groups they can start', v.group_create_limit, { type: 'number', error: errors.group_create_limit, attrs: html`min="0" max="50" step="1"`,
+    hint: 'Leave empty for what they\u2019ve earned: 3 once they\u2019re a Troop Leader (10 GPS check-ins), otherwise none. 0 turns it off.' })}
+  ${input('group_join_limit', 'Groups they can be in', v.group_join_limit, { type: 'number', error: errors.group_join_limit, attrs: html`min="0" max="50" step="1"`,
+    hint: 'Leave empty for what they\u2019ve earned: 5, or 10 after 25 GPS check-ins.' })}
+  <button type="submit" class="btn btn-primary">Save</button>
+</form>`);
 }
 
 // Give a member a badge (SPEC Flow 9). It pops up on their next page, with the note.
