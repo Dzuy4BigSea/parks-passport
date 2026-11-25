@@ -13,7 +13,7 @@ const crumb = html`<p class="breadcrumb"><a href="/admin">Admin</a></p>`;
 
 // ---------- Feedback (SPEC Flow 16) ----------
 
-export function feedbackPage({ csrf, page = '', sent = false, error = null, values = {} }) {
+export function feedbackPage({ csrf, page = '', sent = false, reply = null, error = null, values = {} }) {
   return {
     title: 'Feedback',
     current: 'feedback',
@@ -21,6 +21,7 @@ export function feedbackPage({ csrf, page = '', sent = false, error = null, valu
 <p class="feedback-eyebrow">${ICONS.sparkle} Founding explorer</p>
 ${sent
     ? html`<p class="feedback-heart" aria-hidden="true">💛</p><h1>Thank you. We read every one.</h1>
+  ${reply ? html`<div class="gary-chat is-page"><p class="gary-msg is-gary"><span class="gary-name">Gary</span> ${reply}</p></div>` : ''}
   <p><a href="/">Back to Parks Passport</a></p>`
     : html`<h1>You're one of our first explorers. Tell us anything.</h1>
   <p>Ideas, bugs, things you love: it all shapes what we build next.</p>
@@ -74,7 +75,7 @@ ${sent ? html`${SUN}
 <p>Thank you for thanking ${sentTo || `the people who look after ${city.copy?.short || city.name}'s parks`}. Notes like yours remind park crews why the work matters.</p>
 <p class="sunshine-again"><a class="btn" href="/sunshine">Send another</a> <a class="btn btn-quiet" href="/">Done</a></p>`
     : html`<p class="sunshine-eyebrow"><span aria-hidden="true">☀️</span> Drops of Sunshine</p>
-<h1>Thank the people who look after your parks</h1>
+<h1>Thank the people who look after our parks</h1>
 <form method="post" action="/sunshine" class="card-form sunshine-form" novalidate data-pins="${JSON.stringify(pins)}"${values.park ? html` data-chosen` : ''}>
   ${csrfField(csrf)}<input type="hidden" name="city" value="${city.key}">
   ${error ? html`<p class="error-text" role="alert" tabindex="-1" data-announce>${error}</p>` : ''}

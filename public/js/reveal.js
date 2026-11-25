@@ -24,6 +24,9 @@ if (box && celebrationsOn()) {
   }).filter((i) => i.title);
   if (!items.length) {
     // nothing to show
+  } else if (document.querySelector('[data-messages]')) {
+    // Messages from the team (message.js) go first; the badges they brought come right after.
+    document.addEventListener('pp:messages-done', () => show(items), { once: true });
   } else if (document.querySelector('.fx-welcome')) {
     // The passport opening goes first; the badges come right after it.
     document.addEventListener('fx:closed', () => show(items), { once: true });

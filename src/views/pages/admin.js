@@ -50,6 +50,8 @@ export function adminHome({ counts }) {
   <li><a href="/admin/mission"><strong>Our mission</strong><span>Draft for review</span></a></li>
   <li><a href="/admin/nonprofits"><strong>Nonprofits</strong><span>${counts.nonprofitsActive ?? 0} active · ${counts.nonprofitsSuggested ?? 0} suggested</span></a></li>
   <li><a href="/admin/sunshine"><strong>Drops of Sunshine</strong><span>${counts.newSunshine ?? 0} new thank-you notes</span></a></li>
+  <li><a href="/admin/gary"><strong>Gary’s outfits</strong><span>Review outfit drafts and unlocks</span></a></li>
+  <li><a href="/admin/messages"><strong>Messages</strong><span>${counts.liveMessages ?? 0} live · notes, greetings and giveaways</span></a></li>
   <li><a href="/admin/feedback"><strong>Feedback</strong><span>${counts.openFeedback ?? 0} open · from founding explorers</span></a></li>
   <li><a href="/admin/ideas"><strong>Badge ideas</strong><span>${counts.newIdeas ?? 0} new · share with contributors</span></a></li>
   <li><a href="/admin/activities"><strong>Activities</strong><span>Healthy things to do at parks</span></a></li>
@@ -317,6 +319,7 @@ ${invites.length ? html`<div class="table-wrap"><table class="admin-table">
   ${input('note', 'Note (optional)', giveValues.note, { hint: 'Shown with the badge. Up to 140 characters.', attrs: html`maxlength="140"` })}
   <p class="hint">It pops up the next time each of them opens the app. Limited editions are numbered in the order the members joined. Anyone who already has the badge is skipped.</p>
   <button type="submit" class="btn btn-pop">Give to ticked members</button>
+  <button type="submit" class="btn" formaction="/admin/messages/compose" formnovalidate>Message ticked members</button>
 </form>
 <div class="table-wrap"><table class="admin-table">
   <caption class="visually-hidden">Members</caption>

@@ -1,4 +1,5 @@
 import { html } from '../html.js';
+import { garySvg } from '../gary-art.js';
 import { avatar, sharesWithPals } from '../avatar.js';
 import { ICONS } from '../icons.js';
 import { motifIcon } from '../motif.js';
@@ -159,7 +160,7 @@ function palsCard(items, total) {
 </section>`;
 }
 
-function dashboard({ user, total, theme, dash, suggest, csrf }) {
+function dashboard({ user, total, theme, dash, suggest, gary, csrf }) {
   const first = String(user.display_name).split(/\s+/)[0];
   const pct = total ? Math.round((dash.stamped / total) * 100) : 0;
   const levelPct = Math.round(dash.level.progress * 100);
@@ -168,7 +169,7 @@ function dashboard({ user, total, theme, dash, suggest, csrf }) {
   return html`<div class="home">
 ${citySuggestion(suggest, csrf)}
 <section class="gary-brief" aria-labelledby="hello-h">
-  <img class="gary-art" src="/brand/gary.svg" alt="" width="240" height="280">
+  ${garySvg(gary?.art || {}, { id: 'home', width: 240, height: 280, className: 'gary-art' })}
   <div class="gary-bubble">
     <p class="eyebrow">${theme.tagline || 'Welcome back'}</p>
     <h1 id="hello-h">Hi, ${first}</h1>
@@ -226,12 +227,12 @@ ${dash.nearby.length ? html`<section class="home-near" aria-labelledby="near-h">
 </div>`;
 }
 
-export function homePage({ total, theme, user = null, dash = null, today = '', cities = [], suggest = null, csrf = '' }) {
+export function homePage({ total, theme, user = null, dash = null, today = '', cities = [], suggest = null, gary = null, csrf = '' }) {
   return {
     title: null,
     description: theme.copy?.description,
     scripts: user && dash ? ['/js/home.js'] : [],
-    body: user && dash ? dashboard({ user, total, theme, dash, today, suggest, csrf }) : landing({ total, theme, cities, suggest }),
+    body: user && dash ? dashboard({ user, total, theme, dash, today, suggest, gary, csrf }) : landing({ total, theme, cities, suggest }),
   };
 }
 

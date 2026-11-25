@@ -345,11 +345,11 @@ test('home city: set where you join, opening the site goes there, changeable in 
   assert.doesNotMatch((await open(sam)).body, /near Westminster/);
 });
 
-test('migration 026 backfills home city from where members stamped most', () => {
+test('migration 028 backfills home city from where members stamped most', () => {
   const db = new Database(':memory:');
   const dir = path.join(path.dirname(import.meta.filename), '../../src/db/migrations');
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-mig-'));
-  for (const f of fs.readdirSync(dir).filter((f) => f < '026')) fs.copyFileSync(path.join(dir, f), path.join(tmp, f));
+  for (const f of fs.readdirSync(dir).filter((f) => f < '028')) fs.copyFileSync(path.join(dir, f), path.join(tmp, f));
   migrate(db, tmp);
   seedCities(db);
   const city = (k) => cityByKey(db, k).id;
@@ -366,7 +366,7 @@ test('migration 026 backfills home city from where members stamped most', () => 
   assert.equal(db.prepare("SELECT home_city_id FROM users WHERE email = 'b@x.com'").pluck().get(), null);
 });
 
-test('M31 QA: signing in opens the home city; the logo keeps you in the city you browse; bogus ?city= still goes home', async () => {
+test('M34 QA: signing in opens the home city; the logo keeps you in the city you browse; bogus ?city= still goes home', async () => {
   const { app, db } = citiesApp();
   const wes = client(app);
   await wes.get('/westminster');

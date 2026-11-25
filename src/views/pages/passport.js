@@ -120,7 +120,7 @@ ${welcome ? html`<span id="welcome-data" hidden data-name="${user.display_name}"
 ${cityTabs(cities, theme, cityHref)}
 ${next ? nextUpCards(next, { city: theme }) : ''}
 ${week && !readOnly ? weekCard({ week, goals: WEEKLY_GOALS }) : ''}
-${readOnly ? '' : html`<p class="sunshine-nudge"><a href="/sunshine?city=${theme.key}"><span aria-hidden="true">☀️</span> Send a drop of sunshine</a> to the crews who keep your parks beautiful.</p>`}
+${readOnly ? '' : html`<p class="sunshine-nudge"><a href="/sunshine?city=${theme.key}"><span aria-hidden="true">☀️</span> Send a drop of sunshine</a> to the crews who keep our parks beautiful.</p>`}
 
 ${showWantToGo ? html`<section aria-labelledby="want-h" id="want-to-go">
   <h2 id="want-h">Want to go</h2>

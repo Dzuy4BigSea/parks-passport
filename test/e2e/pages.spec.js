@@ -31,6 +31,7 @@ test('signed-out pages', async ({ page }) => {
 });
 
 test('signed-in pages, including admin', async ({ page }) => {
+  test.slow(); // ~30 pages, each with an axe scan
   const { email } = await signUp(page, { name: 'Page Check' });
   const db = new Database(path.join(process.env.PP_E2E_DATA_DIR, 'app.db'));
   db.prepare('UPDATE users SET is_admin = 1 WHERE email = ?').run(email);
@@ -39,7 +40,7 @@ test('signed-in pages, including admin', async ({ page }) => {
   for (const url of ['/', '/stamp', '/st-pete/passport', '/pals', '/account', `/u/${handle}?preview=1`, '/st-pete/parks?unvisited=1',
     '/admin', '/admin/parks', '/admin/parks/new', '/admin/import', '/admin/badges', '/admin/badges/new',
     '/admin/moderation', '/admin/users', '/admin/email', '/admin/email/messages/magic_link', '/admin/email/messages/invite', '/admin/city', '/admin/stats',
-    '/admin/feedback', '/admin/sunshine', '/admin/nonprofits', '/admin/nonprofits/new', '/admin/mission', '/sunshine', '/nonprofits/suggest']) {
+    '/admin/feedback', '/admin/messages', '/admin/messages/new', '/admin/gary', '/admin/sunshine', '/admin/nonprofits', '/admin/nonprofits/new', '/admin/mission', '/sunshine', '/nonprofits/suggest', '/account/gary']) {
     await check(page, url);
   }
 });

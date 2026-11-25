@@ -1,0 +1,91 @@
+[
+  { "slug": "classic", "name": "Classic rope hat", "blurb": "Gary's everyday camp shirt and rope hat. Good in any weather that isn't trying too hard.",
+    "starter": true, "status": "approved", "weather": ["mild"], "unlock_badges": [], "art": {} },
+  { "slug": "sun-hat", "name": "Sun hat", "blurb": "A wide straw brim and shades for the hot, bright days.",
+    "starter": true, "weather": ["hot"], "unlock_badges": [],
+    "art": {
+      "shirt": { "main": "#ff7a59", "dark": "#c8553a", "sleeve": "#f06a4a" },
+      "hat": "<ellipse cx=\"120\" cy=\"97\" rx=\"80\" ry=\"14\" fill=\"#e8c46c\"/><path d=\"M78 94 C76 52 164 52 162 94 Z\" fill=\"#f2d48a\"/><path d=\"M78 86 Q120 78 162 86 L162 94 Q120 86 78 94 Z\" fill=\"#ff4d88\"/><path d=\"M96 64 Q120 58 144 64\" stroke=\"#d6b25c\" stroke-width=\"2\" fill=\"none\"/>",
+      "face": "<rect x=\"89\" y=\"109\" width=\"27\" height=\"18\" rx=\"7\" fill=\"#0e2a33\"/><rect x=\"124\" y=\"109\" width=\"27\" height=\"18\" rx=\"7\" fill=\"#0e2a33\"/><path d=\"M116 115 h8\" stroke=\"#0e2a33\" stroke-width=\"3\"/><path d=\"M93 113 h9 M128 113 h9\" stroke=\"#fffaf0\" stroke-width=\"2\" opacity=\"0.55\"/>"
+    } },
+  { "slug": "rain-slicker", "name": "Rain slicker", "blurb": "A bright yellow slicker and a sou'wester. Puddles, here we come.",
+    "starter": true, "weather": ["rain"], "unlock_badges": [],
+    "art": {
+      "shirt": { "main": "#ffc83d", "dark": "#d99a00", "sleeve": "#f5b800" },
+      "hat": "<path d=\"M60 99 Q120 84 180 99 Q186 114 168 114 Q120 101 72 114 Q54 114 60 99 Z\" fill=\"#f5b800\"/><path d=\"M76 99 C74 52 166 52 164 99 Z\" fill=\"#ffc83d\"/><path d=\"M120 55 V97\" stroke=\"#d99a00\" stroke-width=\"2\"/>",
+      "body": "<g fill=\"#0e2a33\"><rect x=\"128\" y=\"236\" width=\"14\" height=\"5\" rx=\"2\"/><rect x=\"128\" y=\"256\" width=\"14\" height=\"5\" rx=\"2\"/></g><g fill=\"#7fc8ff\" opacity=\"0.8\"><path d=\"M30 150 q4 8 0 10 q-4 -2 0 -10Z\"/><path d=\"M206 140 q4 8 0 10 q-4 -2 0 -10Z\"/><path d=\"M18 200 q4 8 0 10 q-4 -2 0 -10Z\"/></g>"
+    } },
+  { "slug": "early-bird", "name": "Early Bird", "blurb": "For our first explorers: a bird cap with a sunrise pin. You were here at dawn.",
+    "weather": ["mild"], "unlock_badges": ["founding-member", "early-bird-100"],
+    "art": {
+      "shirt": { "main": "#6fb7ff", "dark": "#2f6fbd", "sleeve": "#5aa6f2" },
+      "hat": "<path d=\"M70 98 C68 46 172 46 170 98 Z\" fill=\"#4d8fdb\"/><path d=\"M112 50 q-8 -16 2 -22 q0 10 6 14 q2 -14 12 -14 q-6 8 -4 18 Z\" fill=\"#2f6fbd\"/><circle cx=\"100\" cy=\"72\" r=\"8\" fill=\"#fffaf0\"/><circle cx=\"140\" cy=\"72\" r=\"8\" fill=\"#fffaf0\"/><circle cx=\"101\" cy=\"73\" r=\"4\" fill=\"#0e2a33\"/><circle cx=\"141\" cy=\"73\" r=\"4\" fill=\"#0e2a33\"/><path d=\"M104 86 Q120 80 136 86 L120 104 Z\" fill=\"#ff9f1c\"/><path d=\"M66 98 Q120 88 174 98\" stroke=\"#2f6fbd\" stroke-width=\"6\" stroke-linecap=\"round\" fill=\"none\"/>",
+      "body": "<circle cx=\"176\" cy=\"254\" r=\"10\" fill=\"#ffc83d\"/><path d=\"M168 254 h16\" stroke=\"#ff7a59\" stroke-width=\"2\"/><g stroke=\"#ffc83d\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M176 240 v-4 M164 246 l-3 -3 M188 246 l3 -3\"/></g>"
+    } },
+  { "slug": "winter-parka", "name": "Winter parka", "blurb": "A puffy red parka, a fur collar and a striped beanie for snowy trails.",
+    "weather": ["snow", "cold"], "unlock_badges": ["four-week-streak"],
+    "art": {
+      "shirt": { "main": "#c8155a", "dark": "#8e0f40", "sleeve": "#b3134f" },
+      "body": "<g stroke=\"#8e0f40\" stroke-width=\"2\" fill=\"none\" opacity=\"0.6\"><path d=\"M40 238 Q120 228 200 238\"/><path d=\"M36 260 Q120 250 204 260\"/></g><path d=\"M88 186 q8 -10 16 -2 q8 -8 16 0 q8 -8 16 0 q8 -8 16 2 q4 10 -4 14 q-30 10 -60 0 q-8 -4 0 -14 Z\" fill=\"#f4efe6\"/>",
+      "hat": "<path d=\"M72 98 C70 50 170 50 168 98 Z\" fill=\"#00756c\"/><path d=\"M76 78 Q120 68 164 78\" stroke=\"#ffc83d\" stroke-width=\"5\" fill=\"none\"/><rect x=\"68\" y=\"88\" width=\"104\" height=\"18\" rx=\"8\" fill=\"#00b3a4\"/><circle cx=\"120\" cy=\"48\" r=\"11\" fill=\"#ffc83d\"/>",
+      "face": "<circle cx=\"93\" cy=\"138\" r=\"9\" fill=\"#ff4d88\" opacity=\"0.3\"/><circle cx=\"147\" cy=\"138\" r=\"9\" fill=\"#ff4d88\" opacity=\"0.3\"/>"
+    } },
+  { "slug": "fleece-scarf", "name": "Fleece and scarf", "blurb": "A cozy fleece and a knit scarf for crisp mornings.",
+    "weather": ["cold"], "unlock_badges": ["five-parks"],
+    "art": {
+      "shirt": { "main": "#5b4bd6", "dark": "#3d2fa8", "sleeve": "#5040c6" },
+      "body": "<path d=\"M94 178 Q120 196 146 178 L152 192 Q120 212 88 192 Z\" fill=\"#ff7a59\"/><path d=\"M126 196 l10 42 l-14 3 l-6 -41 Z\" fill=\"#ff7a59\"/><path d=\"M122 232 h15 M120 224 h15\" stroke=\"#c8553a\" stroke-width=\"2\"/>"
+    } },
+  { "slug": "beach", "name": "Beach day", "blurb": "An aloha shirt, a visor and shades. Waterfront parks, here we go.",
+    "weather": ["hot"], "unlock_badges": ["paddle-ready"],
+    "art": {
+      "shirt": { "main": "#ff4d88", "dark": "#c8155a", "sleeve": "#f03a78" },
+      "body": "<g fill=\"#ffc83d\"><circle cx=\"58\" cy=\"248\" r=\"5\"/><circle cx=\"182\" cy=\"246\" r=\"5\"/><circle cx=\"152\" cy=\"270\" r=\"4\"/><circle cx=\"88\" cy=\"270\" r=\"4\"/><circle cx=\"170\" cy=\"222\" r=\"3\"/></g><g fill=\"#fffaf0\" opacity=\"0.85\"><circle cx=\"52\" cy=\"244\" r=\"3\"/><circle cx=\"64\" cy=\"244\" r=\"3\"/><circle cx=\"176\" cy=\"242\" r=\"3\"/><circle cx=\"188\" cy=\"242\" r=\"3\"/></g>",
+      "hat": "<path d=\"M76 94 C80 62 160 62 164 94 Q150 74 120 74 Q90 74 76 94 Z\" fill=\"#4a3020\"/><path d=\"M72 90 Q120 78 168 90 L168 98 Q120 86 72 98 Z\" fill=\"#00b3a4\"/><path d=\"M84 96 Q120 88 156 96 Q166 110 120 112 Q74 110 84 96 Z\" fill=\"#00756c\"/>",
+      "face": "<rect x=\"89\" y=\"109\" width=\"27\" height=\"18\" rx=\"7\" fill=\"#0e2a33\"/><rect x=\"124\" y=\"109\" width=\"27\" height=\"18\" rx=\"7\" fill=\"#0e2a33\"/><path d=\"M116 115 h8\" stroke=\"#0e2a33\" stroke-width=\"3\"/>"
+    } },
+  { "slug": "desert-ranger", "name": "Desert ranger", "blurb": "A wide-brim hat and a bandana for high desert sun, from Bend to Trinidad.",
+    "weather": ["hot"], "unlock_badges": ["two-cities"],
+    "art": {
+      "shirt": { "main": "#b9a36b", "dark": "#8c7a46", "sleeve": "#ab955e" },
+      "hat": "<path d=\"M54 97 Q120 84 186 97 Q188 105 178 107 Q120 97 62 107 Q52 105 54 97 Z\" fill=\"#8a5a2b\"/><path d=\"M84 95 C82 56 158 56 156 95 Z\" fill=\"#a06a35\"/><path d=\"M120 58 V76\" stroke=\"#7a4a20\" stroke-width=\"3\"/><path d=\"M84 88 Q120 82 156 88 L156 95 Q120 89 84 95 Z\" fill=\"#3d2414\"/>",
+      "body": "<path d=\"M98 184 L142 184 L120 214 Z\" fill=\"#c8155a\"/><g fill=\"#fffaf0\"><circle cx=\"112\" cy=\"191\" r=\"1.6\"/><circle cx=\"128\" cy=\"191\" r=\"1.6\"/><circle cx=\"120\" cy=\"201\" r=\"1.6\"/></g>"
+    } },
+  { "slug": "explorer", "name": "Explorer", "blurb": "A pith helmet and binoculars, for the explorer with 25 parks behind them.",
+    "weather": ["mild", "hot"], "unlock_badges": ["quarter-century"],
+    "art": {
+      "shirt": { "main": "#6b8f3a", "dark": "#4a6626", "sleeve": "#5f8233" },
+      "hat": "<path d=\"M64 100 Q120 86 176 100 Q174 111 120 107 Q66 111 64 100 Z\" fill=\"#c9b27c\"/><path d=\"M76 98 C74 50 166 50 164 98 Z\" fill=\"#e3cf9c\"/><path d=\"M78 91 Q120 83 162 91\" stroke=\"#00756c\" stroke-width=\"5\" fill=\"none\"/><circle cx=\"120\" cy=\"52\" r=\"4\" fill=\"#c9b27c\"/>",
+      "body": "<path d=\"M100 226 L94 188 M140 226 L146 188\" stroke=\"#4a3020\" stroke-width=\"3\"/><rect x=\"96\" y=\"224\" width=\"18\" height=\"26\" rx=\"6\" fill=\"#0e2a33\"/><rect x=\"126\" y=\"224\" width=\"18\" height=\"26\" rx=\"6\" fill=\"#0e2a33\"/><rect x=\"110\" y=\"230\" width=\"20\" height=\"9\" fill=\"#0e2a33\"/><circle cx=\"105\" cy=\"246\" r=\"4\" fill=\"#7fc8ff\"/><circle cx=\"135\" cy=\"246\" r=\"4\" fill=\"#7fc8ff\"/>"
+    } },
+  { "slug": "night-owl", "name": "Night owl", "blurb": "A dark beanie, a headlamp and a reflective stripe for after-dark plans.",
+    "weather": [], "unlock_badges": ["night-owl"],
+    "art": {
+      "shirt": { "main": "#26364d", "dark": "#1b2738", "sleeve": "#2f4260" },
+      "body": "<path d=\"M34 250 Q120 240 206 250\" stroke=\"#ffc83d\" stroke-width=\"4\" fill=\"none\" opacity=\"0.85\"/>",
+      "hat": "<path d=\"M72 98 C70 52 170 52 168 98 Z\" fill=\"#26364d\"/><rect x=\"68\" y=\"88\" width=\"104\" height=\"16\" rx=\"8\" fill=\"#1b2738\"/><path d=\"M132 88 L188 66 L188 120 L132 100 Z\" fill=\"#fff6dc\" opacity=\"0.4\"/><rect x=\"108\" y=\"84\" width=\"24\" height=\"18\" rx=\"5\" fill=\"#ffc83d\"/><circle cx=\"120\" cy=\"93\" r=\"5\" fill=\"#fffaf0\"/>"
+    } },
+  { "slug": "pup-bandana", "name": "Pup pal bandana", "blurb": "A paw-print bandana, so the dogs know he's one of them.",
+    "weather": [], "unlock_badges": ["dog-days"],
+    "art": {
+      "body": "<path d=\"M92 184 L148 184 L120 222 Z\" fill=\"#ff7a59\"/><g fill=\"#fffaf0\"><circle cx=\"120\" cy=\"200\" r=\"4.5\"/><circle cx=\"112.5\" cy=\"193\" r=\"2.2\"/><circle cx=\"120\" cy=\"190\" r=\"2.2\"/><circle cx=\"127.5\" cy=\"193\" r=\"2.2\"/></g>"
+    } },
+  { "slug": "harvest-sweater", "name": "Harvest sweater", "blurb": "A pumpkin-orange knit and a flat cap for fall leaves and Thanksgiving walks.",
+    "weather": ["cold"], "unlock_badges": ["weekend-warrior"],
+    "art": {
+      "shirt": { "main": "#d9772b", "dark": "#a6541a", "sleeve": "#c96a22" },
+      "body": "<g fill=\"#a6541a\"><path d=\"M56 248 q8 -10 16 0 q-8 10 -16 0 Z\"/><path d=\"M168 248 q8 -10 16 0 q-8 10 -16 0 Z\"/><path d=\"M150 270 q8 -10 16 0 q-8 10 -16 0 Z\"/></g><g stroke=\"#a6541a\" stroke-width=\"2\" opacity=\"0.5\"><path d=\"M34 266 H206\"/><path d=\"M38 274 H202\"/></g>",
+      "hat": "<path d=\"M72 98 C70 58 168 58 168 98 Z\" fill=\"#7a4a20\"/><path d=\"M108 96 Q150 88 180 102 Q152 112 110 104 Z\" fill=\"#5c3616\"/><path d=\"M80 80 Q120 70 160 80\" stroke=\"#5c3616\" stroke-width=\"2\" fill=\"none\"/>"
+    } },
+  { "slug": "holiday", "name": "Holiday cap", "blurb": "A floppy red cap and a green scarf for winter holidays.",
+    "weather": ["snow", "cold"], "unlock_badges": ["regular"],
+    "art": {
+      "body": "<path d=\"M94 178 Q120 196 146 178 L152 192 Q120 212 88 192 Z\" fill=\"#00756c\"/><path d=\"M126 196 l10 42 l-14 3 l-6 -41 Z\" fill=\"#00756c\"/><path d=\"M122 232 h15\" stroke=\"#fffaf0\" stroke-width=\"2\"/>",
+      "hat": "<path d=\"M72 98 C70 50 170 50 168 98 Z\" fill=\"#c8155a\"/><path d=\"M150 60 Q180 64 184 92\" stroke=\"#c8155a\" stroke-width=\"16\" stroke-linecap=\"round\" fill=\"none\"/><circle cx=\"184\" cy=\"98\" r=\"10\" fill=\"#fffaf0\"/><rect x=\"66\" y=\"88\" width=\"108\" height=\"18\" rx=\"9\" fill=\"#fffaf0\"/>"
+    } },
+  { "slug": "acorn-cap", "name": "Golden acorn cap", "blurb": "A lucky acorn cap, for whoever found the Golden Acorn.",
+    "weather": [], "unlock_badges": ["golden-acorn"],
+    "art": {
+      "hat": "<path d=\"M70 99 C70 50 170 50 170 99 Q120 89 70 99 Z\" fill=\"#b07a2a\"/><g stroke=\"#7a4f16\" stroke-width=\"2\" fill=\"none\"><path d=\"M80 80 Q120 70 160 80\"/><path d=\"M78 91 Q120 81 162 91\"/><path d=\"M90 66 Q120 58 150 66\"/></g><path d=\"M118 52 q2 -12 10 -14\" stroke=\"#5c3616\" stroke-width=\"4\" stroke-linecap=\"round\" fill=\"none\"/><circle cx=\"140\" cy=\"62\" r=\"3\" fill=\"#ffd166\"/>"
+    } }
+]
