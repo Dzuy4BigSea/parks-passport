@@ -164,6 +164,7 @@ export function accountPage({ csrf, user, errors = {}, notice, ideas = false, va
 <h1>Account</h1>
 ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
 ${profilePhoto({ csrf, user, error: errors.photo })}
+${errors.display_name ? errorSummary({ display_name: errors.display_name }, { display_name: 'Display name' }) : ''}
 <form method="post" action="/account/name" class="card-form" id="name" novalidate>
   ${csrfField(csrf)}
   ${field({ name: 'display_name', label: 'Display name', value: values.display_name ?? user.display_name, error: errors.display_name, autocomplete: 'nickname', maxlength: 40,
@@ -201,7 +202,7 @@ ${visibilityForm({ csrf, user })}
 
 <h2>Delete my account</h2>
 <p>This permanently removes your account and everything in it: visits, photos, ratings, badges and Park Pals.</p>
-${errorSummary(errors, { delete_password: 'Password' })}
+${errorSummary(errors.delete_password ? { delete_password: errors.delete_password } : {}, { delete_password: 'Password' })}
 <form method="post" action="/account/delete" class="card-form danger" novalidate>
   ${csrfField(csrf)}
   ${field({ name: 'delete_password', label: 'Confirm with your password', type: 'password', error: errors.delete_password, autocomplete: 'current-password' })}

@@ -134,7 +134,7 @@ export function grantBadge(db, { admin, userId, badgeId, note = '' }, { now = ne
     db.prepare(`INSERT INTO user_badges (user_id, badge_id, awarded_at, source_type, source_id, note, serial)
       VALUES (?, ?, ?, 'grant', ?, ?, ?)`).run(userId, badgeId, now.toISOString(), admin.id, text || null, serial);
     const what = serial ? `${badge.name} badge, #${serial} of ${badge.limited_count}` : `${badge.name} badge`;
-    notify(db, userId, { kind: 'gift', text: `${admin.display_name} gave you the ${what}${text ? `: “${text}”` : '.'}`, link: '/passport#badges', actorId: admin.id }, { now });
+    notify(db, userId, { kind: 'gift', text: `{actor} gave you the ${what}${text ? `: “${text}”` : '.'}`, link: '/passport#badges', actorId: admin.id }, { now });
     return { ok: true, badge, serial };
   })();
 }

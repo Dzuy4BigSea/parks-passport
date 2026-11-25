@@ -375,7 +375,9 @@ reveal with the number and note, passport tile, close-up, axe at 375 px), and th
   load no analytics.
 
 - Display names: "doesn't have to be your real name" at sign-up and in Account, where it can be
-  changed (`POST /account/name`, `setDisplayName`; the handle follows). The admin invite no longer
+  changed (`POST /account/name`, `setDisplayName`; the handle follows; migration 022 `retired_handles`
+  keeps old handles from being reused by anyone else). Notifications store `{actor}` and show the
+  other member's current name. The admin invite no longer
   fills in the name.
 
 Checks: `test/unit/auth.test.js` (change name, handle follows, limits, CSRF), `test/unit/pals.test.js` (pal link sign-up pals both ways, made-up and regenerated links, admin invite only via its link), `test/unit/analytics.test.js` (no analytics with an invite in `next`),

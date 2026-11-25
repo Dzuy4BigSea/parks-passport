@@ -33,7 +33,9 @@ Done when:
       creates the account, signs me in, and lands me on `/passport`.
 - [ ] My display name is what others see, and it needn't be my real name (sign-up and Account say
       so; an admin's invite doesn't fill it in). I can change it in Account (1 to 40 characters); my
-      handle and passport link follow the new name, and old links stop working.
+      handle and passport link follow the new name (not for a change of case or spacing), and old
+      links stop working: nobody else can take an old handle, though I can take mine back.
+      Notifications show other members by the name they use now.
 - [ ] Signing up with an email that's already registered shows "An account with this email
       already exists" inline, and no second user row is created.
 - [ ] An invalid email or a short password shows an inline error on that field, and nothing is

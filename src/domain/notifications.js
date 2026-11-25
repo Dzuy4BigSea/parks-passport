@@ -19,9 +19,12 @@ export const PAGE_SIZE = 30;
 
 /** A page of notifications, newest first: { items, hasMore }. */
 export function listNotifications(db, userId, { page = 1 } = {}) {
-  const rows = db.prepare(`SELECT id, kind, text, link, created_at, read_at FROM notifications WHERE user_id = ?
-    ORDER BY id DESC LIMIT ? OFFSET ?`).all(userId, PAGE_SIZE + 1, (Math.max(1, page) - 1) * PAGE_SIZE);
-  return { items: rows.slice(0, PAGE_SIZE), hasMore: rows.length > PAGE_SIZE };
+  const rows = db.prepare(`SELECT n.id, n.kind, n.text, n.link, n.created_at, n.read_at, a.display_name AS actor
+    FROM notifications n LEFT JOIN users a ON a.id = n.actor_id WHERE n.user_id = ?
+    ORDER BY n.id DESC LIMIT ? OFFSET ?`).all(userId, PAGE_SIZE + 1, (Math.max(1, page) - 1) * PAGE_SIZE);
+  // The other member's name as it is now (they may have changed it since).
+  const items = rows.slice(0, PAGE_SIZE).map(({ actor, ...n }) => ({ ...n, text: n.text.replace('{actor}', actor || 'Someone') }));
+  return { items, hasMore: rows.length > PAGE_SIZE };
 }
 
 export const markAllRead = (db, userId, { now = new Date() } = {}) =>

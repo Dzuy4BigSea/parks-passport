@@ -241,7 +241,7 @@ export default async function authRoutes(app) {
     if (result.errors) {
       return reply.code(422).page(accountPage({ csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user), errors: result.errors, values: { display_name: str(req.body.display_name, 200) } }));
     }
-    return reply.redirect('/account?done=name#name', 303);
+    return reply.redirect('/account?done=name', 303);
   });
 
   // Profile photo (SPEC Flow 8): one per member, seen by whoever can see their passport.
