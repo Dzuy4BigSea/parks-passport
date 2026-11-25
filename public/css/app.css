@@ -403,6 +403,20 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; 
 .nextup .label { display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .nextup strong { display: block; font: 750 1.05rem/1.25 var(--display); overflow-wrap: anywhere; }
 .nextup .meta { font-size: 0.88rem; color: var(--muted); }
+.nextup li:nth-child(4) .icon { background: var(--violet-tint); color: var(--ink); }
+/* Phones: two across, text full width, the icon hanging off the bottom edge (as the lore cards). */
+@media (max-width: 767px) {
+  .nextup { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(0.6rem + 27px) 0.6rem; padding-bottom: 27px; }
+  .nextup a, .nextup .nextup-card { display: block; padding: 0.85rem 0.85rem 2.2rem; }
+  .nextup .icon {
+    position: absolute; left: 50%; bottom: -27px; margin-left: -27px;
+    width: 54px; height: 54px; border-radius: 50%; border: 4px solid var(--sand);
+  }
+  .nextup .icon svg { width: 24px; height: 24px; }
+  .nextup .label { font-size: 0.7rem; letter-spacing: 0.06em; }
+  .nextup strong { font-size: 0.98rem; }
+  .nextup .meta { display: block; font-size: 0.82rem; }
+}
 
 /* ---------- Explore (park search): list + map, postcard cards ----------
    Modeled on property search: a list beside a sticky map on desktop, a Map/List toggle with a
