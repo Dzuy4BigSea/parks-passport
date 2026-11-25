@@ -33,7 +33,8 @@ test('invite a pal, share, see each other in the feed and leaderboard, then go p
   await ben.getByLabel('Password').fill('correct horse battery');
   await ben.getByRole('button', { name: 'Create account' }).click();
   await ben.getByRole('button', { name: 'Accept and become Park Pals' }).click();
-  await expect(ben.getByRole('status').first()).toContainText("You're now Park Pals!");
+  await expect(ben.getByText("You're now Park Pals!")).toBeVisible();
+  await expect(ben.locator('.announcements')).toContainText('New badge: Better With Friends'); // a surprise (M19)
 
   // Ben sees Ana's stamp and badge in the feed, and Ana on the leaderboard.
   await expect(ben.locator('.feed')).toContainText('Ana stamped Abercrombie Park');
@@ -97,7 +98,7 @@ test('add a pal by friend code at 375px: request, accept, axe clean', async ({ p
   await expectNoAxeViolations(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
   await page.getByRole('button', { name: 'Accept Dee' }).click();
-  await expect(page.getByRole('status').first()).toContainText("You're now Park Pals!");
+  await expect(page.getByText("You're now Park Pals!")).toBeVisible();
   await expect(page.locator('.pal-list')).toContainText('Dee');
 
   // A wrong code shows an inline error.

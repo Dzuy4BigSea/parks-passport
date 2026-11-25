@@ -166,6 +166,22 @@ Done when:
 - [ ] Seed badges ship with v1: at least 6 known, 3 hidden, 1 lucky and 1 social.
 - [ ] A new badge or level-up appears in an accessible announcement (`role="status"`) on the
       page after the action, and when shareable it offers "Share with Park Pals".
+- [ ] **Reward schedule** (mobile-game practice: early quick wins, variable-ratio surprises,
+      rising thresholds). Rewards always come from going out or using the app; nothing is paid for.
+  - **Surprise badges** (hidden, `milestone(action)`): Trail Planner (first park page opened),
+    Say Cheese (first profile photo), Better With Friends (first pal, both people), Critic's
+    Corner (first rating), Shutterbug (first photo, including a photo stamp) and Night Owl
+    (looking at parks between 9 pm and 4 am in that city's time). Each first-time action is
+    recorded once (action and time only) and the badge shows on that same page.
+  - **Lucky drops** (`lucky_drop(order, chance, floor, half_life)`): Golden Acorn, Shooting Star,
+    Rainbow Find and Lucky Penny. One roll per stamp, for the next undropped one in order, so at
+    most one per stamp. The chance is 45% on a first stamp, halves every 3 stamps and stays at
+    3% or more. Never taken back. The original 5% Lucky Clover stays.
+  - **The long climb:** levels Trailblazer 1600, Pathfinder 2500, Summit Seeker 3800, Wayfinder
+    5600 and Grand Ranger 8000 points after Park Legend; Forty Fields, Seventy-Five Strong and
+    Century Club for 40, 75 and 100 parks in any city.
+  - New badges ship in `seed/reward-badges.json` and are added by slug to existing databases.
+    Admins can create more with the two new rule types.
 
 ### Flow 8: Privacy, Park Pals and sharing
 As a member, I control who sees my activity and can connect with friends so that exploring

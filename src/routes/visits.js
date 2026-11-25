@@ -1,4 +1,5 @@
 import { requireUser } from '../lib/auth.js';
+import { markMilestone } from '../domain/milestones.js';
 import { getParkById } from '../domain/parks.js';
 import { parkTimeZone } from '../domain/city.js';
 import { parkPath } from '../views/urls.js';
@@ -33,6 +34,8 @@ export default async function visitRoutes(app) {
   // Badges for the stamper, and "Better Together" for pals who stamped here the same day.
   function afterStamp(user, visit, park) {
     app.track(user.id, 'check_in', { park_slug: park.slug, method: visit.method });
+    // Lucky drop odds follow stamps ever made, so stamping and deleting doesn't reset them.
+    db.prepare('UPDATE users SET lucky_rolls = lucky_rolls + 1 WHERE id = ?').run(user.id);
     const opts = { now: app.now(), random: app.random };
     // Photos already uploaded here that day count toward this stamp (+3).
     attachSameDayPhotos(db, user.id, visit, { now: app.now() });
@@ -123,6 +126,7 @@ export default async function visitRoutes(app) {
       if (stored) await removePhotoFiles(app.config.uploadsDir, stored.fileKey);
       return parkWithProblem(req, reply, park, problemFor(result, park));
     }
+    if (stored) markMilestone(db, req.user.id, 'photo', { now: app.now() });
     afterStamp(req.user, result.visit, park);
     if (stored) app.track(req.user.id, 'photo_upload', { park_slug: park.slug });
     return reply.redirect(parkPath(park, `?stamped=${result.visit.id}`), 303);

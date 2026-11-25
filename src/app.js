@@ -128,7 +128,8 @@ export function buildApp({
   app.decorateReply('page', function page(view) {
     if (view.status) this.code(view.status);
     const req = this.request;
-    const announcements = req.user && this.statusCode < 400 ? takeAnnouncements(req.user) : null;
+    // HEAD runs the GET handler but discards the body: don't use up announcements on it.
+    const announcements = req.user && this.statusCode < 400 && req.method !== 'HEAD' ? takeAnnouncements(req.user) : null;
     // After a stamp or a new badge, nudge a private passport towards sharing (until dismissed 3 times).
     const nudge = req.user && (announcements || view.offerShare) && req.user.default_visibility === 'private'
       && req.user.share_nudge_dismissals < 3 ? shareNudge({ csrf: req.csrfToken(), back: req.url }) : null;

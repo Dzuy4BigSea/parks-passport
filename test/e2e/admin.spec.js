@@ -80,6 +80,25 @@ test('badge form shows only the chosen rule\'s settings', async ({ page }) => {
   await expect(page.getByLabel('N (how many)')).toBeVisible();
 });
 
+// QA (M19): the whole form (every rule setting) is posted; it once hit the upload field limit (413).
+test('a lucky drop badge saves through the real form', async ({ page }) => {
+  const { email } = await signUp(page, { name: 'Admin' });
+  makeAdmin(email);
+  await page.goto('/admin/badges/new');
+  await page.getByLabel('Name', { exact: true }).fill('Four Leaf Test');
+  await page.getByLabel('Slug').fill(`four-leaf-${Date.now()}`);
+  await page.getByLabel('Hint (shown for hidden and lucky badges)').fill('Keep stamping.');
+  await page.getByLabel('Rule', { exact: true }).selectOption('lucky_drop');
+  await page.getByLabel('Order among lucky drops (1 = first)').fill('99');
+  await page.getByLabel('Chance on a first stamp (0–1)').fill('0.025');
+  await page.getByLabel('Lowest chance (0–1)').fill('0');
+  await page.getByLabel('Stamps until the chance halves').fill('4');
+  await page.getByLabel(/Lucky: awarded at random/).check();
+  await page.getByRole('button', { name: 'Add badge' }).click();
+  await expect(page).toHaveURL(/\/admin\/badges\/\d+\?saved=1$/);
+  await expect(page.locator('p.notice[role=status]').first()).toHaveText('Saved.');
+});
+
 for (const url of ['/admin', '/admin/parks', '/admin/badges', '/admin/moderation', '/admin/users', '/admin/import', '/admin/email']) {
   test(`${url} fits at 375px and passes axe`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
