@@ -299,3 +299,69 @@ test('share previews and invites are city-specific: image, alt text and title; ?
   assert.match(mail.text, /a free passport for Asheville parks/);
   assert.match(mail.text, /\/join\/[\w-]+\?city=asheville/);
 });
+
+test('home city: set where you join, opening the site goes there, changeable in Account; away nudge', async () => {
+  const fake = await createGeoIp({ file: import.meta.filename, open: async () => ({ get: (ip) => ({
+    '203.0.113.7': { location: { latitude: 33.75, longitude: -117.99 } }, // near Westminster
+  })[ip] }) });
+  const { app, db } = citiesApp({ geoip: fake });
+  const cookie = (c) => [...c.jar].map(([k, v]) => `${k}=${v}`).join('; ');
+  const open = (c, ip = '127.0.0.1', url = '/') => app.inject({ method: 'GET', url, headers: { 'x-forwarded-for': ip, cookie: cookie(c) } });
+  const homeOf = (email) => db.prepare('SELECT c.key FROM users u JOIN city_themes c ON c.id = u.home_city_id WHERE u.email = ?').pluck().get(email);
+
+  // Signed up from Westminster: Westminster is home.
+  const wes = client(app);
+  await wes.get('/westminster');
+  await wes.post('/signup', { display_name: 'Wes', email: 'wes@example.com', password: PW });
+  assert.equal(homeOf('wes@example.com'), 'westminster');
+  // Browsing St. Pete, then opening the site again: home.
+  await wes.get('/st-pete/parks');
+  assert.equal((await wes.get('/passport')).headers.location, '/st-pete/passport'); // stays where you browse
+  assert.match((await wes.get('/')).body, /href="\/westminster\/parks"/);
+  assert.equal((await wes.get('/passport')).headers.location, '/westminster/passport');
+  // Members don't get the footer city list; visitors do.
+  assert.doesNotMatch((await open(wes)).body, /class="footer-cities"/);
+  assert.match((await client(app).get('/')).body, /class="footer-cities"/);
+
+  // Account: change home city.
+  const acct = (await wes.get('/account')).body;
+  assert.match(acct, /<option value="westminster" selected>/);
+  assert.equal((await wes.post('/account/home-city', { city: 'nowhere' })).statusCode, 422);
+  assert.equal((await wes.post('/account/home-city', { city: 'st-pete' })).headers.location, '/account?done=home');
+  assert.equal(homeOf('wes@example.com'), 'st-pete');
+  assert.match((await wes.get('/account?done=home')).body, /Parks Passport now opens in St\. Pete\./);
+  assert.equal((await wes.post('/account/home-city', { city: 'westminster' }, { csrf: false })).statusCode, 403);
+
+  // Opening the site near Westminster (home St. Pete): a nudge, not a switch; "Not now" hides it for the day.
+  const nudged = await open(wes, '203.0.113.7');
+  assert.match(nudged.body, /You're near Westminster\. Explore its parks while you're here\?|You&#39;re near Westminster\. Explore its parks while you&#39;re here\?/);
+  assert.match(nudged.body, /<a href="\/westminster">See Westminster parks<\/a>/);
+  assert.match(nudged.body, /href="\/st-pete\/parks"/);
+  await wes.post('/city/away/dismiss', { city: 'westminster' });
+  assert.doesNotMatch((await open(wes, '203.0.113.7')).body, /near Westminster/);
+  // "Use my location" near Westminster nudges too; at home, no nudge.
+  const sam = await member(app, 'sam2@example.com');
+  assert.match((await open(sam, '127.0.0.1', '/?lat=33.75&lng=-117.99')).body, /near Westminster/);
+  assert.doesNotMatch((await open(sam)).body, /near Westminster/);
+});
+
+test('migration 026 backfills home city from where members stamped most', () => {
+  const db = new Database(':memory:');
+  const dir = path.join(path.dirname(import.meta.filename), '../../src/db/migrations');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-mig-'));
+  for (const f of fs.readdirSync(dir).filter((f) => f < '026')) fs.copyFileSync(path.join(dir, f), path.join(tmp, f));
+  migrate(db, tmp);
+  seedCities(db);
+  const city = (k) => cityByKey(db, k).id;
+  const park = (cityKey, slug) => db.prepare("INSERT INTO parks (slug, name, city_id, active, created_at, updated_at) VALUES (?, ?, ?, 1, 'x', 'x')").run(slug, slug, city(cityKey)).lastInsertRowid;
+  const u = db.prepare("INSERT INTO users (email, password_hash, display_name, handle, created_at) VALUES ('a@x.com', 'h', 'A', 'a', 'x')").run().lastInsertRowid;
+  const v = db.prepare("INSERT INTO visits (user_id, park_id, visited_on, visited_at, method, created_at) VALUES (?, ?, ?, ?, 'honor', 'x')");
+  const [p1, p2, p3] = [park('westminster', 'w1'), park('westminster', 'w2'), park('asheville', 'a1')];
+  v.run(u, p1, '2026-01-01', '2026-01-01T12:00:00Z');
+  v.run(u, p2, '2026-01-02', '2026-01-02T12:00:00Z');
+  v.run(u, p3, '2026-01-03', '2026-01-03T12:00:00Z');
+  db.prepare("INSERT INTO users (email, password_hash, display_name, handle, created_at) VALUES ('b@x.com', 'h', 'B', 'b', 'x')").run();
+  migrate(db, dir);
+  assert.equal(db.prepare("SELECT home_city_id FROM users WHERE email = 'a@x.com'").pluck().get(), city('westminster'));
+  assert.equal(db.prepare("SELECT home_city_id FROM users WHERE email = 'b@x.com'").pluck().get(), null);
+});

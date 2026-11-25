@@ -20,8 +20,14 @@ function lore(theme, { limit = 6, heading = `${theme.tagline || theme.name} lore
 }
 
 // "You're near Westminster": the nearest city to the visitor's IP, when it isn't the one shown.
-function citySuggestion(suggest) {
+function citySuggestion(suggest, csrf = '') {
   if (!suggest) return '';
+  if (suggest.away) {
+    // Signed in, away from home: explore this city for now; home stays home.
+    return html`<div class="city-suggest notice">${ICONS.pin}<span>You're near ${suggest.copy.short}. Explore its parks while you're here?
+  <a href="${cityPath(suggest)}">See ${suggest.copy.short} parks</a></span>
+  <form method="post" action="/city/away/dismiss" class="inline-form"><input type="hidden" name="_csrf" value="${csrf}"><input type="hidden" name="city" value="${suggest.key}"><button type="submit" class="btn btn-quiet btn-small">Not now</button></form></div>`;
+  }
   return html`<p class="city-suggest notice">${ICONS.pin}<span>Looks like you're near ${suggest.copy.short}.
   <a href="${cityPath(suggest)}">See ${suggest.copy.short} parks</a></span></p>`;
 }
@@ -153,14 +159,14 @@ function palsCard(items, total) {
 </section>`;
 }
 
-function dashboard({ user, total, theme, dash, suggest }) {
+function dashboard({ user, total, theme, dash, suggest, csrf }) {
   const first = String(user.display_name).split(/\s+/)[0];
   const pct = total ? Math.round((dash.stamped / total) * 100) : 0;
   const levelPct = Math.round(dash.level.progress * 100);
   const tip = dash.tip;
   const slots = Math.max(0, 4 - dash.recent.length);
   return html`<div class="home">
-${citySuggestion(suggest)}
+${citySuggestion(suggest, csrf)}
 <section class="gary-brief" aria-labelledby="hello-h">
   <img class="gary-art" src="/brand/gary.svg" alt="" width="240" height="280">
   <div class="gary-bubble">
@@ -220,12 +226,12 @@ ${dash.nearby.length ? html`<section class="home-near" aria-labelledby="near-h">
 </div>`;
 }
 
-export function homePage({ total, theme, user = null, dash = null, today = '', cities = [], suggest = null }) {
+export function homePage({ total, theme, user = null, dash = null, today = '', cities = [], suggest = null, csrf = '' }) {
   return {
     title: null,
     description: theme.copy?.description,
     scripts: user && dash ? ['/js/home.js'] : [],
-    body: user && dash ? dashboard({ user, total, theme, dash, today, suggest }) : landing({ total, theme, cities, suggest }),
+    body: user && dash ? dashboard({ user, total, theme, dash, today, suggest, csrf }) : landing({ total, theme, cities, suggest }),
   };
 }
 
@@ -272,7 +278,7 @@ earning a badge or level, creating or accepting a Park Pals invite, answering th
 These never include your email, name, handle, comments, captions or location.</p>
 
 <h2 id="location">Finding your city</h2>
-<p>When you first open the home page, we may suggest the Parks Passport city closest to you. To do that, your IP address is
+<p>When you open the home page, we may suggest the Parks Passport city closest to you (signed in: when it isn't your home city). To do that, your IP address is
 looked up in a location database on our own server. The lookup doesn't store it or send it to anyone, and we only use the nearest city.
 (Like most web servers, our server's request log records the IP address of each request.)</p>
 

@@ -417,3 +417,14 @@ Checks: `test/unit/auth.test.js` (change name, handle follows, retired handles, 
 `test/unit/pals.test.js` (pal link sign-up pals both ways, made-up and regenerated links, admin
 invite only via its link), `test/unit/analytics.test.js` (no analytics with an invite in `next`),
 `test/e2e/pals.spec.js` (sign up from the link, see the inviter's feed), and the existing suite.
+
+### M31 — Home city and the away nudge (Flow 14)
+- Migration 026 (`users.home_city_id`, backfilled from the city each member stamped most). Set at
+  sign-up; Account › Home city (`POST /account/home-city`). `/` signed in opens the home city
+  and remembers it; other pages keep the city being browsed (the admin city bar unchanged).
+- The away nudge on `/` (IP or `?lat&lng`), "Not now" (`POST /city/away/dismiss`, a day's `pp_away`
+  cookie). No footer city list for members. Privacy page wording.
+
+Checks: `test/unit/cities.test.js` (home set at sign-up, `/` goes home, browsing stays, footer,
+Account change and limits, CSRF, nudge by IP and by location, Not now, migration backfill), the
+Account page in the axe sweep, and the existing suite.
