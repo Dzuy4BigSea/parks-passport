@@ -1,0 +1,11 @@
+slug,name,address,phone,lat,lng,checkin_radius_m,categories,city_url,needs_pin
+cane-creek-park,Cane Creek Park,"201 CC Camp Road, Cookeville, TN 38501",(931) 526-6668,36.162550,-85.537677,,basketball|lake|picnic-shelter|playground|trails|water-access,https://www.cookeville-tn.gov/Facilities/Facility/Details/Cane-Creek-Park-1,0
+capshaw-park,Capshaw Park,"560 East Stevens Street, Cookeville, TN 38501",(931) 520-4386,36.156108,-85.495260,,trails,https://www.cookeville-tn.gov/Facilities/Facility/Details/Capshaw-Park-13,0
+cinderella-park,Cinderella Park,"700 Cinderella Lane, Cookeville, TN 38501",(931) 520-4386,36.180477,-85.489323,,basketball|trails,https://www.cookeville-tn.gov/Facilities/Facility/Details/Cinderella-Park-7,0
+city-lake-natural-area,City Lake Natural Area,"Bridgeway Drive, Cookeville, TN 38506",(931) 520-4386,36.130257,-85.444401,,trails|water-access,https://www.cookeville-tn.gov/Facilities/Facility/Details/City-Lake-Natural-Area-5,0
+dogwood-park,Dogwood Park,"30 E Broad Street, Cookeville, TN 38501",(931) 520-4386,36.163335,-85.505136,,picnic-shelter|playground,https://www.cookeville-tn.gov/Facilities/Facility/Details/Dogwood-Park-6,0
+ensor-sink-natural-area,Ensor Sink Natural Area,"670 Clover Hill Road, Cookeville, TN 38501",(931) 520-4386,36.149365,-85.506929,,,https://www.cookeville-tn.gov/Facilities/Facility/Details/Ensor-Sink-Natural-Area-11,0
+franklin-avenue-park,Franklin Avenue Park,"550 North Franklin Avenue, Cookeville, TN 38501",(931) 520-4386,36.171217,-85.515606,,picnic-shelter,https://www.cookeville-tn.gov/Facilities/Facility/Details/Franklin-Avenue-Park-12,0
+park-view-park,Park View Park,"570 Scott Avenue, Cookeville, TN 38501",(931) 520-4386,36.151337,-85.511008,,ball-fields,https://www.cookeville-tn.gov/Facilities/Facility/Details/Park-View-Park-9,0
+walnut-park,Walnut Park,"186 South Walnut Avenue, Cookeville, TN 38501",(931) 520-4386,36.160066,-85.506728,,,https://www.cookeville-tn.gov/Facilities/Facility/Details/Walnut-Park-10,0
+west-end-park,West End Park,"609 West End Street, Cookeville, TN 38501",(931) 520-4386,36.165200,-85.520552,,ball-fields|basketball,https://www.cookeville-tn.gov/Facilities/Facility/Details/West-End-Park-8,0

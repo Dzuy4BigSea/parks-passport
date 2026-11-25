@@ -1,0 +1,87 @@
+{
+  "key": "trinidad",
+  "name": "Trinidad",
+  "tagline": "Santa Fe Trail",
+  "sort": 7,
+  "listed": true,
+  "time_zone": "America/Denver",
+  "bounds": {
+    "minLat": 37.1,
+    "maxLat": 37.22,
+    "minLng": -104.56,
+    "maxLng": -104.44,
+    "center": {
+      "lat": 37.169,
+      "lng": -104.508
+    }
+  },
+  "copy": {
+    "short": "Trinidad",
+    "place": "Trinidad, Colorado",
+    "official": "the City of Trinidad",
+    "gary": "I've been wandering Trinidad parks and I still find something new on most visits, like the bandstand at Kit Carson Park or a walk along the Purgatoire River.",
+    "description": "Check in at every Trinidad, Colorado park you visit, collect stamps and badges, rate your favorites and explore with your Park Pals.",
+    "search_examples": "Central, Kit Carson, Cimino…",
+    "made_for": "Trinidad and the Santa Fe Trail"
+  },
+  "accent": "#A4452C",
+  "accent_2": "#4E7A8C",
+  "areas": [
+    {
+      "slug": "downtown",
+      "name": "Downtown & North",
+      "lat": 37.172,
+      "lng": -104.506
+    },
+    {
+      "slug": "west",
+      "name": "West Trinidad",
+      "lat": 37.166,
+      "lng": -104.52
+    },
+    {
+      "slug": "south",
+      "name": "South Side",
+      "lat": 37.158,
+      "lng": -104.507
+    }
+  ],
+  "motifs": [
+    {
+      "slug": "fishers-peak",
+      "name": "Fishers Peak",
+      "blurb": "Fishers Peak, the flat-topped mesa that rises over town, is now the heart of Colorado's Fishers Peak State Park.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M2 40l10-10 4-14h16l4 14 10 10z\"/><path d=\"M16 16h16\"/><path d=\"M20 24l2-4 2 6 2-4 2 2\"/><path d=\"M2 44h44\"/></svg>"
+    },
+    {
+      "slug": "santa-fe-trail",
+      "name": "The Santa Fe Trail",
+      "blurb": "Wagons on the Santa Fe Trail's Mountain Route rolled through Trinidad on their way over Raton Pass.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M6 30c0-10 8-16 18-16s18 6 18 16\"/><path d=\"M6 30h36\"/><circle cx=\"14\" cy=\"36\" r=\"6\"/><circle cx=\"36\" cy=\"36\" r=\"6\"/><path d=\"M14 30v12M8 36h12M36 30v12M30 36h12\"/><path d=\"M12 14v-2M24 12v-2M36 14v-2\"/></svg>"
+    },
+    {
+      "slug": "purgatoire",
+      "name": "The Purgatoire River",
+      "blurb": "The Purgatoire River runs right through town, and the Riverwalk follows it for walkers, joggers and cyclists.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 16c6 0 8 4 14 4s8-4 14-4 8 4 12 4\"/><path d=\"M4 26c6 0 8 4 14 4s8-4 14-4 8 4 12 4\"/><path d=\"M4 36h40\"/><path d=\"M10 36v8M38 36v8\"/></svg>"
+    },
+    {
+      "slug": "bandstand",
+      "name": "Kit Carson bandstand",
+      "blurb": "Kit Carson Park, named for the frontiersman, has a playground, picnic tables and a historic bandstand.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 20l20-12 20 12z\"/><path d=\"M8 20v18M40 20v18M24 20v18M16 20v18M32 20v18\"/><path d=\"M4 38h40v4H4z\"/><path d=\"M24 8V4\"/></svg>"
+    },
+    {
+      "slug": "skate-park",
+      "name": "The skate park",
+      "blurb": "Trinidad's 14,000-square-foot skate park was ranked ninth in the world by Tony Hawk when it opened in 2003.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 26c2 3 4 4 7 4h26c3 0 5-1 7-4\"/><path d=\"M15 30v3M33 30v3\"/><circle cx=\"15\" cy=\"36\" r=\"3\"/><circle cx=\"33\" cy=\"36\" r=\"3\"/><path d=\"M6 44h36\"/><path d=\"M28 16c6 0 10-3 14-9\"/></svg>"
+    },
+    {
+      "slug": "brick-streets",
+      "name": "Brick streets",
+      "blurb": "Many of downtown Trinidad's streets are still paved with bricks made right here in town.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><rect x=\"4\" y=\"8\" width=\"18\" height=\"8\"/><rect x=\"26\" y=\"8\" width=\"18\" height=\"8\"/><rect x=\"4\" y=\"20\" width=\"8\" height=\"8\"/><rect x=\"16\" y=\"20\" width=\"18\" height=\"8\"/><rect x=\"38\" y=\"20\" width=\"6\" height=\"8\"/><rect x=\"4\" y=\"32\" width=\"18\" height=\"8\"/><rect x=\"26\" y=\"32\" width=\"18\" height=\"8\"/></svg>"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+[
+  { "slug": "half-of-marple", "name": "Half of Marple", "art": "🍂", "kind": "known",
+    "description": "Stamped 5 different Marple parks.", "rule_type": "parks_count", "rule_params": { "n": 5 } },
+  { "slug": "every-marple-park", "name": "Every Marple Park", "art": "🏆", "kind": "known",
+    "description": "Stamped every park in Marple Township.", "rule_type": "all_parks", "rule_params": {} },
+  { "slug": "play-ball", "name": "Play Ball", "art": "⚾", "kind": "hidden",
+    "hint": "Batter up, three times.",
+    "description": "Stamped 3 Marple parks with ball fields.", "rule_type": "category_count", "rule_params": { "category": "ball-fields", "n": 3 } }
+]

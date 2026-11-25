@@ -1,0 +1,93 @@
+{
+  "key": "cookeville",
+  "name": "Cookeville",
+  "tagline": "Hub of the Upper Cumberland",
+  "sort": 3,
+  "listed": true,
+  "time_zone": "America/Chicago",
+  "bounds": {
+    "minLat": 36.08,
+    "maxLat": 36.23,
+    "minLng": -85.62,
+    "maxLng": -85.4,
+    "center": {
+      "lat": 36.163,
+      "lng": -85.505
+    }
+  },
+  "copy": {
+    "short": "Cookeville",
+    "place": "Cookeville, Tennessee",
+    "official": "the City of Cookeville",
+    "gary": "I've been wandering Cookeville parks and I still find something new on most visits, like a paddleboat ride on the lake at Cane Creek Park or a quiet loop through City Lake Natural Area.",
+    "description": "Check in at every Cookeville, Tennessee park you visit, collect stamps and badges, rate your favorites and explore with your Park Pals.",
+    "search_examples": "Cane Creek, Dogwood, City Lake…",
+    "made_for": "Cookeville and the Upper Cumberland"
+  },
+  "accent": "#2F7D4F",
+  "accent_2": "#D9A21B",
+  "areas": [
+    {
+      "slug": "downtown",
+      "name": "Downtown",
+      "lat": 36.162,
+      "lng": -85.505
+    },
+    {
+      "slug": "west",
+      "name": "West Cookeville & Cane Creek",
+      "lat": 36.163,
+      "lng": -85.528
+    },
+    {
+      "slug": "north",
+      "name": "North Cookeville",
+      "lat": 36.18,
+      "lng": -85.49
+    },
+    {
+      "slug": "east",
+      "name": "East & City Lake",
+      "lat": 36.14,
+      "lng": -85.45
+    }
+  ],
+  "motifs": [
+    {
+      "slug": "depot",
+      "name": "The Depot",
+      "blurb": "The 1909 Tennessee Central Railway depot downtown is now the Cookeville Depot Museum, with a caboose out front.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M6 22l18-12 18 12\"/><path d=\"M10 20v18h28V20\"/><path d=\"M20 38v-9h8v9\"/><path d=\"M14 26h4M30 26h4\"/><path d=\"M4 42h40\"/><path d=\"M8 45h32\"/></svg>"
+    },
+    {
+      "slug": "cane-creek-lake",
+      "name": "Cane Creek lake",
+      "blurb": "Cane Creek Park wraps around a 56-acre lake with fishing piers, and paddleboats, kayaks and canoes to rent in season.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 34c4 0 4-3 8-3s4 3 8 3 4-3 8-3 4 3 8 3 4-3 8-3\"/><path d=\"M4 42c4 0 4-3 8-3s4 3 8 3 4-3 8-3 4 3 8 3 4-3 8-3\"/><path d=\"M14 28h18l-3-7H17z\"/><path d=\"M23 21v-8\"/><circle cx=\"23\" cy=\"10\" r=\"3\"/></svg>"
+    },
+    {
+      "slug": "waterfalls",
+      "name": "Waterfall country",
+      "blurb": "The Upper Cumberland around Cookeville is waterfall country, with Burgess Falls and Cummins Falls a short drive away.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M6 10h14v8\"/><path d=\"M28 10h14\"/><path d=\"M20 18c0 8 2 14 4 20\"/><path d=\"M26 10c0 10 2 18 4 28\"/><path d=\"M32 10c0 10 1 18 2 28\"/><path d=\"M6 42c6-4 30-4 36 0\"/><path d=\"M6 10v32M42 10v32\"/></svg>"
+    },
+    {
+      "slug": "disc-golf",
+      "name": "Disc golf",
+      "blurb": "Cane Creek Park's 18-hole disc golf course is open to everyone, and you can rent discs at the concession stand.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M24 10v32\"/><path d=\"M12 18h24\"/><path d=\"M14 18l4 10h12l4-10\"/><path d=\"M18 28l2 6h8l2-6\"/><path d=\"M16 42h16\"/><path d=\"M34 6a8 3 0 0 1 10 2\"/></svg>"
+    },
+    {
+      "slug": "dogwood",
+      "name": "Dogwood blossoms",
+      "blurb": "Dogwood Park, in the middle of downtown, has a performance pavilion for summer concerts and festivals.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><circle cx=\"24\" cy=\"24\" r=\"3\"/><path d=\"M24 21c-5-2-6-9 0-13 6 4 5 11 0 13z\"/><path d=\"M27 24c2-5 9-6 13 0-4 6-11 5-13 0z\"/><path d=\"M24 27c5 2 6 9 0 13-6-4-5-11 0-13z\"/><path d=\"M21 24c-2 5-9 6-13 0 4-6 11-5 13 0z\"/></svg>"
+    },
+    {
+      "slug": "golden-eagles",
+      "name": "Golden Eagles",
+      "blurb": "Cookeville is home to Tennessee Tech University and its Golden Eagles.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 20c8-6 14-6 20 2 6-8 12-8 20-2-6 0-10 2-14 6l-6 8-6-8c-4-4-8-6-14-6z\"/><path d=\"M24 22v-6\"/><circle cx=\"24\" cy=\"13\" r=\"3\"/><path d=\"M27 13h4l-3 2\"/><path d=\"M20 38l4 6 4-6\"/></svg>"
+    }
+  ]
+}
