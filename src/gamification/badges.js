@@ -56,8 +56,9 @@ export function createBadgeEngine({ rules, loadContext, boardFilter = null, scop
    * Badges from permanent rules and disabled badges are kept.
    */
   function revokeUnmetBadges(db, userId) {
+    // Awards given by hand (source_type 'grant') aren't judged by the rules, so they're never taken back.
     const earned = db.prepare(`SELECT b.*, ub.rule_snapshot FROM user_badges ub JOIN badges b ON b.id = ub.badge_id
-      WHERE ub.user_id = ? AND b.enabled = 1`).all(userId);
+      WHERE ub.user_id = ? AND b.enabled = 1 AND ub.source_type != 'grant'`).all(userId);
     const asAwarded = earned.map((b) => {
       let snap;
       try { snap = b.rule_snapshot ? JSON.parse(b.rule_snapshot) : null; } catch { snap = null; }

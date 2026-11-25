@@ -44,10 +44,11 @@ const shortDate = (ymd) => {
 
 function badgeCard(b) {
   if (b.state === 'earned') {
-    return html`<li class="badge earned">
+    return html`<li class="badge earned${b.serial ? ' is-holo' : ''}">
+  ${b.serial ? html`<span class="holo-foil" aria-hidden="true"></span><span class="badge-serial">#${b.serial}${b.limited_count ? html`<span class="visually-hidden"> of ${b.limited_count}</span><span aria-hidden="true">/${b.limited_count}</span>` : ''}</span>` : ''}
   ${badgeArt(b.art)}
   <span class="badge-name">${b.name}</span>
-  <span class="badge-meta">Earned ${formatDate(localDate(new Date(b.awarded_at)))}</span>
+  <span class="badge-meta">${b.serial ? `Limited edition #${b.serial}${b.limited_count ? ` of ${b.limited_count}` : ''} · ` : ''}Earned ${formatDate(localDate(new Date(b.awarded_at)))}</span>
   ${b.description ? html`<span class="badge-desc">${b.description}</span>` : ''}
 </li>`;
   }

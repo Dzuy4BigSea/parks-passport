@@ -70,7 +70,8 @@ const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export const allBadgesForAdmin = (db) => db.prepare(`SELECT b.*,
-  (SELECT COUNT(*) FROM user_badges ub WHERE ub.badge_id = b.id) AS earned_count
+  (SELECT COUNT(*) FROM user_badges ub WHERE ub.badge_id = b.id) AS earned_count,
+  (SELECT COUNT(*) FROM user_badges ub WHERE ub.badge_id = b.id AND ub.serial IS NOT NULL) AS serials_given
   FROM badges b ORDER BY b.sort, b.id`).all();
 
 export const badgeForAdmin = (db, id) => db.prepare('SELECT * FROM badges WHERE id = ?').get(id) || null;
@@ -146,12 +147,21 @@ export function validateBadgeForm(form, { isNew, targets = [] }) {
       else params[key] = n;
     }
   }
+  // Limited edition: numbered copies, given by hand only.
+  const limitedRaw = String(form.limited_count ?? '').trim();
+  let limitedCount = null;
+  if (limitedRaw) {
+    const n = Number(limitedRaw);
+    if (!Number.isInteger(n) || n < 1 || n > 1000) errors.limited_count = 'Enter a whole number of copies from 1 to 1000, or leave it empty.';
+    else if (ruleType !== 'manual') errors.limited_count = 'Limited editions are given by hand: choose the "Given by an admin only" rule.';
+    else limitedCount = n;
+  }
   if (params.floor != null && params.chance != null && params.floor > params.chance) errors.param_floor = 'The lowest chance can\u2019t be above the starting chance.';
   if (Object.keys(errors).length) return { errors };
   return {
     badge: {
       slug, name, description, hint, art: art || '🏅', rule_type: ruleType,
-      rule_params: JSON.stringify(params), kind, enabled: form.enabled === '1' ? 1 : 0,
+      rule_params: JSON.stringify(params), kind, enabled: form.enabled === '1' ? 1 : 0, limited_count: limitedCount,
     },
   };
 }
@@ -159,13 +169,13 @@ export function validateBadgeForm(form, { isNew, targets = [] }) {
 export function saveBadge(db, id, badge, { now = new Date() } = {}) {
   if (id) {
     db.prepare(`UPDATE badges SET name=@name, description=@description, hint=@hint, art=@art, rule_type=@rule_type,
-      rule_params=@rule_params, kind=@kind, enabled=@enabled WHERE id=@id`).run({ ...badge, id });
+      rule_params=@rule_params, kind=@kind, enabled=@enabled, limited_count=@limited_count WHERE id=@id`).run({ ...badge, id });
     return badgeForAdmin(db, id);
   }
   if (db.prepare('SELECT 1 FROM badges WHERE slug = ?').get(badge.slug)) return { error: 'slug_taken' };
   const sort = db.prepare('SELECT COALESCE(MAX(sort), 0) + 1 FROM badges').pluck().get();
-  const newId = db.prepare(`INSERT INTO badges (slug, name, description, hint, art, rule_type, rule_params, kind, enabled, sort, created_at)
-    VALUES (@slug, @name, @description, @hint, @art, @rule_type, @rule_params, @kind, @enabled, @sort, @created_at)`)
+  const newId = db.prepare(`INSERT INTO badges (slug, name, description, hint, art, rule_type, rule_params, kind, enabled, limited_count, sort, created_at)
+    VALUES (@slug, @name, @description, @hint, @art, @rule_type, @rule_params, @kind, @enabled, @limited_count, @sort, @created_at)`)
     .run({ ...badge, sort, created_at: now.toISOString() }).lastInsertRowid;
   return badgeForAdmin(db, newId);
 }
