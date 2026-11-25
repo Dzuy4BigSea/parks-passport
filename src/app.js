@@ -4,7 +4,7 @@ import fastifyStatic from '@fastify/static';
 import formbody from '@fastify/formbody';
 import cookie from '@fastify/cookie';
 import compress from '@fastify/compress';
-import { removePhotoFiles } from './lib/images.js';
+import { removePhotoFiles, removeAvatar } from './lib/images.js';
 import { fileKeysForUser } from './domain/photos.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -53,7 +53,11 @@ export function buildApp({
 } = {}) {
   if (!db) throw new Error('buildApp needs a db');
   if (!mailer) throw new Error('buildApp needs a mailer');
-  const app = Fastify({ logger, trustProxy: true, bodyLimit: 1024 * 1024 });
+  // Trust only proxies on loopback and private networks: the shared nginx reaches us over the
+  // Docker network (CLAUDE.md "How traffic reaches an app"). req.ip is then the rightmost public
+  // address in X-Forwarded-For, the one nginx appended, never one a client typed further left
+  // (rate limits and the nearest-city suggestion depend on it).
+  const app = Fastify({ logger, trustProxy: 'loopback,linklocal,uniquelocal', bodyLimit: 1024 * 1024 });
 
   app.decorate('db', db);
   app.decorate('mailer', mailer);
@@ -70,6 +74,7 @@ export function buildApp({
   app.decorate('emailSettings', () => emailSettings(db, { envFrom: config.mailFrom || '' }));
   // Removes a user's photo files before their rows are deleted (rows cascade).
   app.decorate('beforeUserDelete', async (userId) => {
+    await removeAvatar(config.uploadsDir, db.prepare('SELECT avatar_key FROM users WHERE id = ?').pluck().get(userId));
     for (const key of fileKeysForUser(db, userId)) await removePhotoFiles(config.uploadsDir, key);
   });
 

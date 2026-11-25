@@ -1,4 +1,5 @@
 import { html } from '../html.js';
+import { avatar } from '../avatar.js';
 import { csrfField, errorSummary, field } from '../forms.js';
 import { visibilityForm } from './pals.js';
 
@@ -19,6 +20,7 @@ ${errorSummary(errors, { display_name: 'Display name', email: 'Email', password:
   ${field({ name: 'display_name', label: 'Display name', value: values.display_name, error: errors.display_name, autocomplete: 'nickname', hint: 'Shown to Park Pals you choose to share with.', maxlength: 40 })}
   ${field({ name: 'email', label: 'Email', type: 'email', value: values.email, error: errors.email, autocomplete: 'email' })}
   ${field({ name: 'password', label: 'Password', type: 'password', error: errors.password, autocomplete: 'new-password', hint: 'At least 10 characters.' })}
+  <div class="hp" aria-hidden="true"><label for="website">Leave this empty</label><input id="website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
   <button type="submit" class="btn btn-primary">Create account</button>
 </form>
 <p>Already have one? <a href="${withNext('/login', next)}">Log in</a></p>
@@ -132,6 +134,26 @@ ${errorSummary(errors, { password: 'New password' })}
   };
 }
 
+// Profile photo: upload, replace or remove. Seen by whoever can see the passport.
+const PHOTO_WHO = { private: 'only you', pals: 'you and your Park Pals', public: 'anyone with your passport link' };
+function profilePhoto({ csrf, user, error }) {
+  return html`<section id="photo" class="profile-photo" aria-labelledby="photo-h">
+  ${avatar(user, { size: 96, cls: 'avatar-lg' })}
+  <div>
+  <h2 id="photo-h">Profile photo</h2>
+  <p class="muted">Seen by ${PHOTO_WHO[user.default_visibility] || 'only you'}, like your passport (<a href="#visibility">change who</a>).${user.kids ? ' Kids edition is on: use a photo of yourself, not your kids.' : ''}</p>
+  ${error ? html`<p class="error-text" id="photo-error" role="alert">${error}</p>` : ''}
+  <form method="post" action="/account/avatar" class="inline-form photo-form" enctype="multipart/form-data">
+    ${csrfField(csrf)}
+    <label for="avatar-file" class="visually-hidden">Choose a profile photo</label>
+    <input type="file" id="avatar-file" name="photo" accept="image/jpeg,image/png,image/webp" required${error ? html` aria-describedby="photo-error" aria-invalid="true"` : ''}>
+    <button type="submit" class="btn btn-small">${user.avatar_key ? 'Replace photo' : 'Upload photo'}</button>
+  </form>
+  ${user.avatar_key ? html`<form method="post" action="/account/avatar/delete" class="inline-form">${csrfField(csrf)}<button type="submit" class="btn btn-quiet btn-small">Remove photo</button></form>` : ''}
+  </div>
+</section>`;
+}
+
 export function accountPage({ csrf, user, errors = {}, notice, ideas = false }) {
   return {
     title: 'Account',
@@ -139,6 +161,7 @@ export function accountPage({ csrf, user, errors = {}, notice, ideas = false }) 
     body: html`<div class="narrow">
 <h1>Account</h1>
 ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}
+${profilePhoto({ csrf, user, error: errors.photo })}
 <dl class="facts">
   <dt>Display name</dt><dd>${user.display_name}</dd>
   <dt>Email</dt><dd>${user.email}</dd>

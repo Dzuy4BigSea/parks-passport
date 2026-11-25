@@ -1,4 +1,6 @@
 import { html } from '../html.js';
+import { avatar } from '../avatar.js';
+import { palsSentence } from '../pals-here.js';
 import { csrfField } from '../forms.js';
 import { categoryLabel } from '../../domain/categories.js';
 import { motifForPark } from '../../domain/city.js';
@@ -97,7 +99,7 @@ function stampPanel({ park, user, csrf, today, myVisits, problem: allProblems })
 }
 
 export function parkPage({ park, user = null, csrf = '', today = '', myVisits = [], problem = null, stamped = null,
-  photos = [], summary = { count: 0, average: null }, reviews = [], mine = null, flash = null, theme = { motifs: [], areas: [] }, area = null,
+  photos = [], summary = { count: 0, average: null }, reviews = [], mine = null, flash = null, theme = { motifs: [], areas: [] }, area = null, palsHere = [],
   celebrate = null, activities = null }) {
   const hasPin = park.lat != null && park.lng != null;
   const scripts = [];
@@ -128,6 +130,11 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
       ${summary.count ? html`<span class="pill"><span class="stars" aria-hidden="true">★</span> ${summary.average.toFixed(1)}<span class="visually-hidden"> out of 5 average rating</span></span>` : ''}
     </div>
   </header>
+  ${palsHere.length ? html`<section class="card pals-here" aria-labelledby="palshere-h">
+    <h2 id="palshere-h" class="visually-hidden">Your pals were here</h2>
+    <p><strong>${palsSentence(palsHere)}.</strong></p>
+    <ul>${palsHere.slice(0, 8).map((p) => html`<li>${avatar(p, { size: 32 })} <a href="/u/${p.handle}">${p.display_name}</a> <span class="muted">${formatDate(p.last_on)}</span></li>`)}</ul>
+  </section>` : ''}
 
   ${flash ? html`<p class="notice" role="status">${flash}</p>` : ''}
   <div class="park-layout">

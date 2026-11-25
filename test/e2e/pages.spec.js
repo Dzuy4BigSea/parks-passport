@@ -38,7 +38,7 @@ test('signed-in pages, including admin', async ({ page }) => {
   db.close();
   for (const url of ['/', '/stamp', '/st-pete/passport', '/pals', '/account', `/u/${handle}?preview=1`, '/st-pete/parks?unvisited=1',
     '/admin', '/admin/parks', '/admin/parks/new', '/admin/import', '/admin/badges', '/admin/badges/new',
-    '/admin/moderation', '/admin/users', '/admin/email', '/admin/email/messages/magic_link', '/admin/email/messages/invite', '/admin/city']) {
+    '/admin/moderation', '/admin/users', '/admin/email', '/admin/email/messages/magic_link', '/admin/email/messages/invite', '/admin/city', '/admin/stats']) {
     await check(page, url);
   }
 });

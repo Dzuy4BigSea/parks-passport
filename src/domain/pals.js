@@ -168,7 +168,7 @@ export function removePal(db, userId, palId, { now = new Date() } = {}) {
 export const palIdsOf = (db, userId) => db.prepare(`SELECT user_b FROM pal_links WHERE user_a = ?
   UNION SELECT user_a FROM pal_links WHERE user_b = ?`).pluck().all(userId, userId);
 
-export const palsOf = (db, userId) => db.prepare(`SELECT u.id, u.display_name, u.handle, u.default_visibility
+export const palsOf = (db, userId) => db.prepare(`SELECT u.id, u.display_name, u.handle, u.default_visibility, u.avatar_key
   FROM users u WHERE u.id IN (SELECT user_b FROM pal_links WHERE user_a = ? UNION SELECT user_a FROM pal_links WHERE user_b = ?)
   ORDER BY u.display_name COLLATE NOCASE`).all(userId, userId);
 
@@ -183,7 +183,7 @@ export const palsAtParkOnDay = (db, userId, parkId, day) => db.prepare(`SELECT D
  * stamped, then points.
  */
 export function leaderboard(db, userId) {
-  return db.prepare(`SELECT u.id, u.display_name, u.handle,
+  return db.prepare(`SELECT u.id, u.display_name, u.handle, u.avatar_key,
       (SELECT COUNT(DISTINCT park_id) FROM visits v WHERE v.user_id = u.id) AS parks,
       (SELECT COALESCE(SUM(points), 0) FROM point_events pe WHERE pe.user_id = u.id) AS points
     FROM users u
@@ -218,11 +218,34 @@ export function palsFeed(db, userId, { page = 1 } = {}) {
     ORDER BY at DESC LIMIT @limit OFFSET @offset`).all({ me: userId, limit: FEED_PAGE_SIZE + 1, offset });
   const users = new Map();
   const userOf = (id) => {
-    if (!users.has(id)) users.set(id, db.prepare('SELECT display_name, handle FROM users WHERE id = ?').get(id));
+    if (!users.has(id)) users.set(id, db.prepare('SELECT id, display_name, handle, avatar_key, default_visibility FROM users WHERE id = ?').get(id));
     return users.get(id);
   };
   return {
     items: rows.slice(0, FEED_PAGE_SIZE).map((r) => ({ ...r, user: userOf(r.user_id) })),
     hasMore: rows.length > FEED_PAGE_SIZE,
   };
+}
+
+/**
+ * "Your pals were here": for each park in parkIds, the pals who stamped it, most recent first.
+ * Only pals who share their passport (pals or public) count, the same rule as the feed, so a
+ * private pal's visits never show. Returns Map<park_id, [{ id, display_name, handle, avatar_key,
+ * default_visibility, last_on }]>. No coordinates or other private fields.
+ */
+export function palsWhoStamped(db, userId, parkIds) {
+  const out = new Map();
+  if (!userId || !parkIds.length) return out;
+  const rows = db.prepare(`SELECT v.park_id, u.id, u.display_name, u.handle, u.avatar_key, u.default_visibility,
+      MAX(v.visited_on) AS last_on
+    FROM visits v JOIN users u ON u.id = v.user_id
+    WHERE v.park_id IN (${parkIds.map(() => '?').join(',')})
+      AND u.default_visibility IN ('pals', 'public')
+      AND u.id IN (SELECT user_b FROM pal_links WHERE user_a = ? UNION SELECT user_a FROM pal_links WHERE user_b = ?)
+    GROUP BY v.park_id, u.id ORDER BY last_on DESC, u.display_name COLLATE NOCASE`).all(...parkIds, userId, userId);
+  for (const r of rows) {
+    if (!out.has(r.park_id)) out.set(r.park_id, []);
+    out.get(r.park_id).push(r);
+  }
+  return out;
 }

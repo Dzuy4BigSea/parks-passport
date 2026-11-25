@@ -1,4 +1,5 @@
 import { html } from '../html.js';
+import { avatar, sharesWithPals } from '../avatar.js';
 import { ICONS } from '../icons.js';
 import { motifIcon } from '../motif.js';
 import { streakText } from '../nextup.js';
@@ -146,7 +147,7 @@ function palsCard(items, total) {
   return html`<section class="home-card pals-mini" aria-labelledby="palsmini-h">
   <h2 id="palsmini-h">Park Pals</h2>
   ${items.length ? html`<ul class="feed">${items.map((i) => html`<li class="feed-item"><span class="feed-icon" aria-hidden="true">${i.type === 'badge' ? (i.badge_art || '🏅') : i.type === 'photo' ? '📷' : '📍'}</span>
-    <p><strong>${i.user.display_name}</strong> ${i.type === 'stamp' ? html`stamped <a href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : i.type === 'photo' ? html`added a photo at <a href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : html`earned ${i.badge_name}`}</p></li>`)}</ul>
+    <p>${avatar(i.user, { size: 24, visible: sharesWithPals(i.user) })} <strong>${i.user.display_name}</strong> ${i.type === 'stamp' ? html`stamped <a href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : i.type === 'photo' ? html`added a photo at <a href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : html`earned ${i.badge_name}`}</p></li>`)}</ul>
     <p><a href="/pals">See all</a></p>`
     : html`<p>Exploring is better with friends. Share your invite link and race each other to ${total}.</p><p><a class="btn btn-small" href="/pals">Invite a Park Pal</a></p>`}
 </section>`;
@@ -199,7 +200,7 @@ ${dash.nearby.length ? html`<section class="home-near" aria-labelledby="near-h">
     <div class="actions"><button type="button" class="btn btn-small js-only" id="home-locate">${ICONS.pin}Use my location</button>
     <a class="btn btn-small btn-quiet" href="${cityPath(theme, '/parks')}?unvisited=1">See all</a></div></div>
   <p id="home-locate-status" class="notice" role="status" aria-live="polite"></p>
-  <ul class="park-list strip">${dash.nearby.map((p, i) => postcard(p, i, { theme, stamped: dash.stampedSet, stampDates: null, near: dash.nearFromYou ? dash.anchor : null, selected: [], extras: dash.extras }))}</ul>
+  <ul class="park-list strip">${dash.nearby.map((p, i) => postcard(p, i, { theme, stamped: dash.stampedSet, stampDates: null, near: dash.nearFromYou ? dash.anchor : null, selected: [], extras: dash.extras, palsHere: dash.palsHere }))}</ul>
 </section>` : ''}
 
 <div class="home-cards">

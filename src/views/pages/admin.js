@@ -37,6 +37,7 @@ const input = (name, label, value, { type = 'text', hint, error, required = fals
 export function adminHome({ counts }) {
   return page('Dashboard', html`<h1>Admin</h1>
 <ul class="admin-cards">
+  <li><a href="/admin/stats"><strong>Stats</strong><span>${counts.checkins7 ?? 0} check-ins this week · ${counts.users} members</span></a></li>
   <li><a href="/admin/parks"><strong>Parks</strong><span>${counts.active} active · ${counts.inactive} inactive</span></a></li>
   <li><a href="/admin/parks?filter=needs_pin"><strong>Pins to check</strong><span>${counts.needsPin} parks</span></a></li>
   <li><a href="/admin/import"><strong>Import parks</strong><span>CSV upload or seed file</span></a></li>
@@ -490,4 +491,39 @@ ${sendError ? html`<p class="notice" role="alert" tabindex="-1" data-announce>${
     <p class="hint">The preview goes to ${me.email}. Its button opens the home page, not a real sign-in link.</p>
   </section>
 </div>`);
+}
+
+// Admin › Stats: counts only (domain/stats.js). Bars are decorative; every number is in the table.
+const METHOD_NAMES = { gps: 'GPS', photo: 'Photo', honor: 'Honor system' };
+function barTable({ caption, rows, label, value, extra = null }) {
+  const max = Math.max(1, ...rows.map((r) => r[value]));
+  return html`<div class="table-wrap"><table class="stats-table">
+  <caption>${caption}</caption>
+  <thead><tr><th scope="col">${label.title}</th><th scope="col">Check-ins</th>${extra ? html`<th scope="col">${extra.title}</th>` : ''}</tr></thead>
+  <tbody>${rows.map((r) => html`<tr><th scope="row">${label.get(r)}</th>
+    <td><span class="stat-bar" style="--w:${Math.round((r[value] / max) * 100)}%" aria-hidden="true"></span>${r[value]}</td>
+    ${extra ? html`<td>${extra.get(r)}</td>` : ''}</tr>`)}</tbody>
+</table></div>`;
+}
+
+export function adminStats({ stats }) {
+  const t = stats.totals;
+  const tile = (n, label) => html`<li><strong>${n}</strong><span>${label}</span></li>`;
+  const short = (ymd) => new Date(`${ymd}T00:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+  return page('Stats', html`${crumb}<h1>Stats</h1>
+<p class="muted">Counts only: no names, emails or locations. Check-ins count when they were made (UTC days).</p>
+<ul class="stat-tiles">
+  ${tile(t.checkins7, 'check-ins in the last 7 days')}${tile(t.checkins30, 'check-ins in 30 days')}${tile(t.checkins, 'check-ins in all')}
+  ${tile(t.active7, 'members who stamped in 7 days')}${tile(t.active30, 'who stamped in 30 days')}${tile(t.members, `members (${t.newMembers7} new in 7 days, ${t.newMembers30} in 30 days)`)}
+  ${tile(t.stampers, 'members who ever stamped')}${tile(t.palLinks, 'Park Pal links')}${tile(t.photos, 'photos')}
+  ${tile(t.ratings, 'ratings')}${tile(t.activities, 'activities logged')}${tile(t.badgesEarned, 'badges earned')}
+</ul>
+${barTable({ caption: 'Check-ins per day, last 14 days', rows: stats.days, value: 'checkins', label: { title: 'Day', get: (r) => short(r.day) } })}
+${barTable({ caption: 'Check-ins per week, last 12 weeks', rows: stats.weeks, value: 'checkins', label: { title: 'Week of', get: (r) => short(r.week) }, extra: { title: 'New members', get: (r) => r.members } })}
+${barTable({ caption: 'By city (all time)', rows: stats.byCity, value: 'checkins', label: { title: 'City', get: (r) => r.city },
+    extra: { title: 'Last 30 days · members · parks stamped', get: (r) => `${r.checkins30 || 0} · ${r.members} · ${r.parks} of ${r.total_parks}` } })}
+${barTable({ caption: 'By method (all time)', rows: stats.byMethod, value: 'checkins', label: { title: 'Method', get: (r) => METHOD_NAMES[r.method] || r.method },
+    extra: { title: 'Last 30 days', get: (r) => r.checkins30 || 0 } })}
+${stats.topParks.length ? barTable({ caption: 'Top parks, last 30 days', rows: stats.topParks, value: 'checkins', label: { title: 'Park', get: (r) => `${r.name} (${r.city})` },
+    extra: { title: 'Members', get: (r) => r.members } }) : html`<p>No check-ins in the last 30 days.</p>`}`);
 }

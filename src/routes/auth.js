@@ -15,12 +15,28 @@ import {
   forgotPage, resetPage, accountPage, deleteConfirmPage, accountDeletedPage,
 } from '../views/pages/auth.js';
 
+import { createRateLimiter } from '../lib/rate-limit.js';
+import fs from 'node:fs';
+import { withUploads } from '../lib/uploads.js';
+import { storeAvatar, removeAvatar, avatarPath, AVATAR_KEY_RE } from '../lib/images.js';
+import { canViewOwner } from '../domain/visibility.js';
+import { html } from '../views/html.js';
+
 const str = (v, max = 300) => (typeof v === 'string' ? v.slice(0, max) : '');
+const HOUR = 60 * 60 * 1000;
 
 export default async function authRoutes(app) {
   const { db, mailer } = app;
   const now = () => app.now();
   const link = (path, token) => `${app.config.baseUrl}${path}?token=${encodeURIComponent(token)}`;
+  // Bot protection (SPEC Flow 1): per-connection limits on sign-ups and on sign-in and reset
+  // emails, which go out from our SendGrid account. Clock: wall time (the window is real time).
+  const signupLimit = createRateLimiter({ limit: 5, windowMs: HOUR });
+  const emailLimit = createRateLimiter({ limit: 5, windowMs: HOUR });
+  const tooMany = (reply, what) => reply.code(429).page({
+    title: 'Try again later',
+    body: html`<div class="narrow"><h1>Slow down a little</h1><p role="alert">Too many ${what} from this connection. Try again in an hour.</p></div>`,
+  });
   // Shared fields for the branded email templates (views/email.js).
   const brand = () => ({ baseUrl: app.config.baseUrl, tagline: app.theme().tagline });
 
@@ -71,6 +87,9 @@ export default async function authRoutes(app) {
   });
 
   app.post('/signup', async (req, reply) => {
+    // A hidden field people never see; bots that fill every field land on the home page, no account.
+    if (str(req.body.website)) return reply.redirect('/', 303);
+    if (!signupLimit.hit(req.ip)) return tooMany(reply, 'sign-ups');
     const values = { display_name: str(req.body.display_name, 100), email: str(req.body.email, 300) };
     const { user, errors } = await createUser(db, { ...values, password: str(req.body.password) }, { now: now() });
     if (errors) {
@@ -115,6 +134,7 @@ export default async function authRoutes(app) {
 
   // Magic link
   app.post('/login/magic', async (req, reply) => {
+    if (!emailLimit.hit(req.ip)) return tooMany(reply, 'sign-in emails');
     const user = findUserByEmail(db, str(req.body.magic_email));
     const next = str(req.body.next);
     if (user) {
@@ -145,6 +165,7 @@ export default async function authRoutes(app) {
   app.get('/forgot', async (req, reply) => reply.page(forgotPage({ csrf: req.csrfToken() })));
 
   app.post('/forgot', async (req, reply) => {
+    if (!emailLimit.hit(req.ip)) return tooMany(reply, 'reset emails');
     const user = findUserByEmail(db, str(req.body.email));
     if (user) {
       emailLink(user, 'password_reset', (token) => ({
@@ -194,8 +215,42 @@ export default async function authRoutes(app) {
     reply.page(accountPage({
       csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user),
       notice: req.query.done === 'visibility' ? `Saved. Your passport is now visible to ${VISIBILITY_SAVED[req.user.default_visibility]}.`
-        : req.query.done === 'editions' ? 'Saved your editions.' : null,
+        : req.query.done === 'editions' ? 'Saved your editions.'
+          : { avatar: 'Profile photo saved.', avatar_removed: 'Profile photo removed.' }[req.query.done] || null,
     })));
+
+  // Profile photo (SPEC Flow 8): one per member, seen by whoever can see their passport.
+  withUploads(app, (scope) => scope.post('/account/avatar', { preHandler: requireUser }, async (req, reply) => {
+    const file = Buffer.isBuffer(req.body.photo) && req.body.photo.length ? req.body.photo : null;
+    const stored = await storeAvatar(file, app.config.uploadsDir);
+    if (stored.error) {
+      return reply.code(422).page(accountPage({ csrf: req.csrfToken(), user: req.user, ideas: canUseIdeas(db, req.user), errors: { photo: stored.error } }));
+    }
+    // The key as it is now (another upload may have finished since this request began).
+    const old = db.prepare('SELECT avatar_key FROM users WHERE id = ?').pluck().get(req.user.id);
+    db.prepare('UPDATE users SET avatar_key = ? WHERE id = ?').run(stored.key, req.user.id);
+    await removeAvatar(app.config.uploadsDir, old);
+    return reply.redirect('/account?done=avatar#photo', 303);
+  }));
+  app.post('/account/avatar/delete', { preHandler: requireUser }, async (req, reply) => {
+    const old = db.prepare('SELECT avatar_key FROM users WHERE id = ?').pluck().get(req.user.id);
+    db.prepare('UPDATE users SET avatar_key = NULL WHERE id = ?').run(req.user.id);
+    await removeAvatar(app.config.uploadsDir, old);
+    return reply.redirect('/account?done=avatar_removed#photo', 303);
+  });
+  // Served only to people who can see the member's passport (404 otherwise, never 403). The key in
+  // the URL changes with every new photo, so it can be cached.
+  app.get('/avatars/:id/:file', async (req, reply) => {
+    const m = /^([a-f0-9]{32})\.jpg$/.exec(req.params.file);
+    const owner = m && /^\d+$/.test(req.params.id) ? findUserById(db, Number(req.params.id)) : null;
+    if (!owner || owner.avatar_key !== m[1] || !AVATAR_KEY_RE.test(m[1])
+      || !canViewOwner(db, req.user?.id ?? null, owner.id, owner.default_visibility)) return reply.callNotFound();
+    const file = avatarPath(app.config.uploadsDir, m[1]);
+    if (!fs.existsSync(file)) return reply.callNotFound();
+    // no-cache: browsers re-check each time, so a photo stops showing as soon as access ends.
+    return reply.type('image/jpeg').header('Cache-Control', 'private, no-cache').header('X-Content-Type-Options', 'nosniff')
+      .send(fs.createReadStream(file));
+  });
 
   const removeAccount = async (reply, userId) => {
     await app.beforeUserDelete(userId); // removes stored files (photos) before rows cascade

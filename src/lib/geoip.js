@@ -10,7 +10,9 @@ import maxmind from 'maxmind';
 // Loopback, private, link-local and unique-local addresses have no location.
 const PRIVATE = [/^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./, /^169\.254\./, /^::1$/, /^f[cd]/i, /^fe80:/i];
 
-export const isPublicIp = (ip) => net.isIP(ip) !== 0 && !PRIVATE.some((re) => re.test(ip));
+// IPv4 written as IPv6 (::ffff:1.2.3.4) is judged as IPv4.
+const plain = (ip) => String(ip).replace(/^::ffff:(?=\d+\.\d+\.\d+\.\d+$)/i, '');
+export const isPublicIp = (ip) => net.isIP(plain(ip)) !== 0 && !PRIVATE.some((re) => re.test(plain(ip)));
 
 /**
  * Opens the database. Returns { lookup(ip) -> { lat, lng } | null } or null when off.
