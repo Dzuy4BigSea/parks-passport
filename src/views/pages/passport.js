@@ -154,7 +154,7 @@ ${teamBadges.length ? html`<section aria-labelledby="team-h" id="team-badges" cl
   <ul class="badge-grid">${teamBadges.map((b) => html`<li class="badge earned">
     ${badgeArt(b.art)}
     <span class="badge-name">${b.name}</span>
-    <span class="badge-meta">With ${b.group_name || 'a group'} · ${formatDate(localDate(new Date(b.awarded_at)))}</span>
+    <span class="badge-meta">${b.group_name ? `With ${b.group_name} · ` : ''}${formatDate(localDate(new Date(b.awarded_at)))}</span>
     ${b.description ? html`<span class="badge-desc">${b.description}</span>` : ''}
   </li>`)}</ul>
 </section>` : ''}

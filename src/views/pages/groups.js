@@ -16,7 +16,8 @@ export function goalBar(goal, total) {
 }
 
 /** The group goal: under way (with each member's share), reached, or over; owners set the next one. */
-function goalSection({ csrf, group, goal, progress, templates, teamBadges, errors = {} }) {
+function goalSection({ csrf, group, goal, progress, templates, teamBadges, errors = {}, values = {} }) {
+  const picked = values.template || templates[0]?.key || 'custom';
   const owner = group.is_owner;
   const unit = goal ? METRICS[goal.metric] : '';
   const card = goal ? html`<div class="goal-card${goal.reached_at ? ' is-reached' : ''}">
@@ -31,16 +32,16 @@ function goalSection({ csrf, group, goal, progress, templates, teamBadges, error
 </div>` : html`<p>${owner ? 'No goal yet. Pick one below.' : 'No goal yet. The owner picks one.'}</p>`;
   const form = owner && !goal?.active ? html`<form method="post" action="/groups/${group.id}/goal" class="card-form" novalidate>
   ${csrfField(csrf)}
-  ${errorSummary(errors, { metric: 'Count', target: 'How many', days: 'Days' })}
+  ${errorSummary(errors, { template: 'Next goal', metric: 'Count', target: 'How many', days: 'Days', badge_id: 'Team badge' })}
   <fieldset class="radio-group"><legend>Next goal</legend>
-    ${templates.map((t, i) => html`<label class="check"><input type="radio" name="template" value="${t.key}"${i === 0 ? html` checked` : ''}> ${t.title}</label>`)}
-    <label class="check"><input type="radio" name="template" value="custom"> Our own goal:</label>
+    ${templates.map((t) => html`<label class="check"><input type="radio" name="template" value="${t.key}"${picked === t.key ? html` checked` : ''}> ${t.title}</label>`)}
+    <label class="check"><input type="radio" name="template" value="custom"${picked === 'custom' ? html` checked` : ''}> Our own goal (pick this to use the fields below):</label>
   </fieldset>
   <div class="inline-fields">
-    <div class="field"><label for="metric">Count</label><select id="metric" name="metric">${Object.entries(METRICS).map(([k, label]) => html`<option value="${k}">${label}</option>`)}</select></div>
-    ${field({ name: 'target', label: 'How many', type: 'number', value: '', error: errors.target, required: false })}
-    ${field({ name: 'days', label: 'Days', type: 'number', value: '30', error: errors.days, required: false })}
-    <div class="field"><label for="badge_id">Team badge</label><select id="badge_id" name="badge_id">${teamBadges.map((b) => html`<option value="${b.id}"${b.slug === 'team-effort' ? html` selected` : ''}>${b.name}</option>`)}</select></div>
+    <div class="field"><label for="metric">Count</label><select id="metric" name="metric">${Object.entries(METRICS).map(([k, label]) => html`<option value="${k}"${values.metric === k ? html` selected` : ''}>${label}</option>`)}</select></div>
+    ${field({ name: 'target', label: 'How many', type: 'number', value: values.target ?? '', error: errors.target, required: false })}
+    ${field({ name: 'days', label: 'Days', type: 'number', value: values.days ?? '30', error: errors.days, required: false })}
+    <div class="field"><label for="badge_id">Team badge</label><select id="badge_id" name="badge_id">${teamBadges.map((b) => html`<option value="${b.id}"${(values.badge_id ? String(values.badge_id) === String(b.id) : b.slug === 'team-effort') ? html` selected` : ''}>${b.name}</option>`)}</select></div>
   </div>
   <button type="submit" class="btn btn-pop">Start the goal</button>
 </form>` : '';
@@ -147,7 +148,7 @@ ${a.canCreate ? html`${errorSummary(errors, { name: 'Group name', emoji: 'Emoji'
 }
 
 export function groupPage({ csrf, group, board, me, requests = [], pals = [], notice: note = null, errors = {}, values = null, baseUrl = '',
-  goal = null, progress = { total: 0, shares: [] }, templates = [], teamBadges = [], goalErrors = {} }) {
+  goal = null, progress = { total: 0, shares: [] }, templates = [], teamBadges = [], goalErrors = {}, goalValues = {} }) {
   const owner = group.is_owner;
   const v = values || group;
   return {
@@ -169,7 +170,7 @@ ${notice(note)}
 </li>`)}</ol>
 </section>
 
-${goalSection({ csrf, group, goal, progress, templates, teamBadges, errors: goalErrors })}
+${goalSection({ csrf, group, goal, progress, templates, teamBadges, errors: goalErrors, values: goalValues })}
 
 <section aria-labelledby="invite-h">
 <h2 id="invite-h">Invite people</h2>

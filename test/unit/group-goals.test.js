@@ -85,6 +85,35 @@ test('a goal under way counts what members do; reaching it gives everyone the te
   assert.deepEqual(teamBadge('ana'), [{ slug: 'team-effort', note: 'Run Club' }]);
 });
 
+test('M36 QA: backdated stamps never count; disabled team badges aren\'t offered or given; the form keeps what was typed', async () => {
+  const { db, people, gid, stamp } = await world();
+  const { ana, ben } = people;
+  await ana.c.post(`/groups/${gid}/goal`, { template: 'custom', metric: 'checkins', target: '2', days: '7' });
+  // Honor stamps backdated to before the goal: not counted.
+  await ben.c.post('/st-pete/parks/a-park/stamp', { visited_on: '2026-05-01' });
+  await ben.c.post('/st-pete/parks/b-park/stamp', { visited_on: '2026-05-02' });
+  assert.equal(db.prepare("SELECT COUNT(*) FROM visits WHERE user_id = ? AND visited_on < '2026-06-01'").pluck().get(ben.id), 2); // saved, just before the goal
+  assert.match((await ana.c.get(`/groups/${gid}`)).body, /<strong>0<\/strong> of 2 check-ins/);
+  await stamp('ana', 'a-park');
+  await stamp('ben', 'c-park');
+  // Reached: the card shows the full total, not one short.
+  assert.match((await ana.c.get(`/groups/${gid}`)).body, /<strong>2<\/strong> of 2 check-ins[\s\S]*Reached/);
+
+  // A disabled team badge: its template isn't offered or accepted, and custom goals can't use it.
+  db.prepare("UPDATE badges SET enabled = 0 WHERE slug IN ('kickoff-crew', 'fifty-strong')").run();
+  const page = (await ana.c.get(`/groups/${gid}`)).body;
+  assert.doesNotMatch(page, /10 check-ins together this week/);
+  assert.equal((await ana.c.post(`/groups/${gid}/goal`, { template: 'kickoff' })).statusCode, 422);
+  const disabled = db.prepare("SELECT id FROM badges WHERE slug = 'fifty-strong'").pluck().get();
+  const bad = await ana.c.post(`/groups/${gid}/goal`, { template: 'custom', metric: 'parks', target: '0', days: '9', badge_id: String(disabled) });
+  assert.equal(bad.statusCode, 422);
+  assert.match(bad.body, /Choose a team badge/);
+  // What was typed comes back, with "Our own goal" still chosen.
+  assert.match(bad.body, /value="custom" checked/);
+  assert.match(bad.body, /<option value="parks" selected>/);
+  assert.match(bad.body, /id="days" name="days" type="number" value="9"/);
+});
+
 test('different parks count once for the group; minutes come from activity logs; owners can stop a goal', async () => {
   const { db, now, people, gid, stamp } = await world();
   const { ana, ben } = people;

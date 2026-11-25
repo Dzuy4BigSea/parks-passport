@@ -7,7 +7,7 @@ import {
   endGroup, memberBoard, requestsFor, invitablePals, isMember,
 } from '../domain/groups.js';
 import { groupsPage, groupPage, joinGroupPage } from '../views/pages/groups.js';
-import { currentGoal, goalProgress, setGoal, stopGoal, teamBadges, GOAL_TEMPLATES } from '../domain/group-goals.js';
+import { currentGoal, goalProgress, setGoal, stopGoal, teamBadges, availableTemplates } from '../domain/group-goals.js';
 import { submitIdea } from '../domain/ideas.js';
 
 const HOUR = 3600_000;
@@ -87,7 +87,7 @@ export default async function groupRoutes(app) {
   const memberGroup = (req) => groupForMember(db, id(req.params.id), req.user.id);
   const goalView = (group) => {
     const goal = currentGoal(db, group.id, { now: now() });
-    return { goal, progress: goal ? goalProgress(db, goal) : undefined, templates: GOAL_TEMPLATES, teamBadges: teamBadges(db) };
+    return { goal, progress: goal ? goalProgress(db, goal) : undefined, templates: availableTemplates(db), teamBadges: teamBadges(db) };
   };
   const showGroup = (req, group, extra = {}) => groupPage({
     csrf: req.csrfToken(), group, me: req.user, board: memberBoard(db, group.id),
@@ -169,9 +169,10 @@ export default async function groupRoutes(app) {
   app.post('/groups/:id/goal', { preHandler: requireUser }, async (req, reply) => {
     const group = ownedGroup(req);
     if (!group) return reply.callNotFound();
-    const result = setGoal(db, group, { template: str(req.body.template), metric: str(req.body.metric), target: str(req.body.target), days: str(req.body.days), badge_id: str(req.body.badge_id) }, { now: now() });
+    const form = { template: str(req.body.template), metric: str(req.body.metric), target: str(req.body.target), days: str(req.body.days), badge_id: str(req.body.badge_id) };
+    const result = setGoal(db, group, form, { now: now() });
     if (result.error) return reply.code(422).page(showGroup(req, group, { notice: 'Your group already has a goal under way. Stop it first to pick another.' }));
-    if (result.errors) return reply.code(422).page(showGroup(req, group, { goalErrors: result.errors }));
+    if (result.errors) return reply.code(422).page(showGroup(req, group, { goalErrors: result.errors, goalValues: form }));
     return reply.redirect(`/groups/${group.id}?done=goal#goal`, 303);
   });
   app.post('/groups/:id/goal/stop', { preHandler: requireUser }, async (req, reply) => {

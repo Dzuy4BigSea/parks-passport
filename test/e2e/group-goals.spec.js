@@ -22,7 +22,7 @@ test('an owner starts a goal; a check-in reaches it and the team badge shows; no
   await page.getByLabel('Emoji').fill('🎯');
   await page.getByRole('button', { name: 'Start the group' }).click();
 
-  await page.getByRole('radio', { name: 'Our own goal:' }).check();
+  await page.getByRole('radio', { name: /^Our own goal/ }).check();
   await page.getByLabel('How many').fill('1');
   await page.getByLabel('Days', { exact: true }).fill('7');
   await page.getByRole('button', { name: 'Start the goal' }).click();

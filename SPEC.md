@@ -693,9 +693,9 @@ Done when:
       check-ins this week, 50 check-ins in 30 days, 25 different parks this month, 500 active
       minutes in 30 days, 100 different parks in 90 days) or sets the group's own: what to count
       (check-ins, different parks, active minutes), how many (1 to 10,000), how many days (1 to
-      120) and which team badge. One goal at a time; the owner can stop it. Members can't set goals.
+      120) and which enabled team badge (goals whose badge is disabled aren't offered). One goal at a time; the owner can stop it. Members can't set goals.
 - [ ] **Progress:** what current members do from the goal's start counts (different parks count
-      once for the group). The group page shows the total as a bar and each member's share; the
+      once for the group; a stamp backdated to before the start never counts). The group page shows the total as a bar and each member's share; the
       home card shows each group's goal under way.
 - [ ] **Reaching it:** the moment a stamp or an activity reaches the goal, every member at that
       moment gets the goal's team badge and a notification. On their next page the badge is
