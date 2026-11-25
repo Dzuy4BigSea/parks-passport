@@ -1,0 +1,167 @@
+[
+  {
+    "slug": "trail-planner",
+    "name": "Trail Planner",
+    "art": "🗺️",
+    "kind": "hidden",
+    "hint": "Every adventure starts with a plan.",
+    "description": "Opened a park page to plan a visit.",
+    "rule_type": "milestone",
+    "rule_params": {
+      "action": "park_view"
+    }
+  },
+  {
+    "slug": "say-cheese",
+    "name": "Say Cheese",
+    "art": "📸",
+    "kind": "hidden",
+    "hint": "Put a face to the name.",
+    "description": "Added a profile photo.",
+    "rule_type": "milestone",
+    "rule_params": {
+      "action": "avatar"
+    }
+  },
+  {
+    "slug": "better-with-friends",
+    "name": "Better With Friends",
+    "art": "🤝",
+    "kind": "hidden",
+    "hint": "Exploring is better together.",
+    "description": "Made your first Park Pal.",
+    "rule_type": "milestone",
+    "rule_params": {
+      "action": "pal"
+    }
+  },
+  {
+    "slug": "critics-corner",
+    "name": "Critic's Corner",
+    "art": "⭐",
+    "kind": "hidden",
+    "hint": "Every park has a story. Tell yours.",
+    "description": "Rated your first park.",
+    "rule_type": "milestone",
+    "rule_params": {
+      "action": "rating"
+    }
+  },
+  {
+    "slug": "shutterbug",
+    "name": "Shutterbug",
+    "art": "📷",
+    "kind": "hidden",
+    "hint": "Snap something worth remembering.",
+    "description": "Shared your first park photo.",
+    "rule_type": "milestone",
+    "rule_params": {
+      "action": "photo"
+    }
+  },
+  {
+    "slug": "night-owl",
+    "name": "Night Owl",
+    "art": "🦉",
+    "kind": "hidden",
+    "hint": "Tomorrow's adventure, planned tonight.",
+    "description": "Looked for a park between 9 pm and 4 am.",
+    "rule_type": "milestone",
+    "rule_params": {
+      "action": "night_plan"
+    }
+  },
+  {
+    "slug": "golden-acorn",
+    "name": "Golden Acorn",
+    "art": "🌰",
+    "kind": "lucky",
+    "hint": "Found at random on a stamp. Keep exploring.",
+    "description": "A lucky find on one of your stamps.",
+    "rule_type": "lucky_drop",
+    "rule_params": {
+      "order": 1,
+      "chance": 0.45,
+      "floor": 0.03,
+      "half_life": 3
+    }
+  },
+  {
+    "slug": "shooting-star",
+    "name": "Shooting Star",
+    "art": "🌠",
+    "kind": "lucky",
+    "hint": "Found at random on a stamp. Keep exploring.",
+    "description": "A lucky find on one of your stamps.",
+    "rule_type": "lucky_drop",
+    "rule_params": {
+      "order": 2,
+      "chance": 0.45,
+      "floor": 0.03,
+      "half_life": 3
+    }
+  },
+  {
+    "slug": "rainbow-find",
+    "name": "Rainbow Find",
+    "art": "🌈",
+    "kind": "lucky",
+    "hint": "Found at random on a stamp. Keep exploring.",
+    "description": "A lucky find on one of your stamps.",
+    "rule_type": "lucky_drop",
+    "rule_params": {
+      "order": 3,
+      "chance": 0.45,
+      "floor": 0.03,
+      "half_life": 3
+    }
+  },
+  {
+    "slug": "lucky-penny",
+    "name": "Lucky Penny",
+    "art": "🪙",
+    "kind": "lucky",
+    "hint": "Found at random on a stamp. Keep exploring.",
+    "description": "A lucky find on one of your stamps.",
+    "rule_type": "lucky_drop",
+    "rule_params": {
+      "order": 4,
+      "chance": 0.45,
+      "floor": 0.03,
+      "half_life": 3
+    }
+  },
+  {
+    "slug": "forty-parks",
+    "name": "Forty Fields",
+    "art": "🌳",
+    "kind": "known",
+    "description": "Stamped 40 different parks, in any city.",
+    "rule_type": "parks_count",
+    "rule_params": {
+      "n": 40
+    }
+  },
+  {
+    "slug": "seventy-five-parks",
+    "name": "Seventy-Five Strong",
+    "art": "🏞️",
+    "kind": "known",
+    "description": "Stamped 75 different parks, in any city.",
+    "rule_type": "parks_count",
+    "rule_params": {
+      "n": 75
+    }
+  },
+  {
+    "slug": "century-club",
+    "name": "Century Club",
+    "art": "💯",
+    "kind": "known",
+    "description": "Stamped 100 different parks, in any city.",
+    "rule_type": "parks_count",
+    "rule_params": {
+      "n": 100
+    }
+  }
+]

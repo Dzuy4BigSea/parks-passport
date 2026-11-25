@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { markMilestone } from './milestones.js';
 import { awardBadges, revokeUnmetBadges } from './badges/index.js';
 
 const pair = (a, b) => (a < b ? [a, b] : [b, a]);
@@ -47,6 +48,7 @@ function makePals(db, userId, otherId, { now = new Date(), random = Math.random 
     return changes > 0;
   })();
   if (!linked) return false;
+  for (const id of [a, b]) markMilestone(db, id, 'pal', { now });
   for (const id of [a, b]) awardBadges(db, id, { type: 'pal', id: id === a ? b : a }, { now, random });
   return true;
 }

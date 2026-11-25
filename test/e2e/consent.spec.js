@@ -4,7 +4,7 @@ import { stubGtm } from './analytics.js';
 import { signUp } from './helpers.js';
 
 // No saved choice: these tests see the banner like a first-time visitor.
-test.use({ storageState: { cookies: [], origins: [] } });
+test.use({ storageState: { cookies: [], origins: [{ origin: 'http://127.0.0.1:8181', localStorage: [{ name: 'pp-celebrations', value: 'off' }] }] } });
 
 test.beforeEach(async ({ page }) => {
   await stubGtm(page);
@@ -94,7 +94,8 @@ test('dataLayer gets the spec events with exact keys and no personal data', asyn
   expect(await events()).toEqual([{ event: 'sign_up', method: 'password' }]);
 
   await page.goto('/st-pete/parks/woodlawn-park');
-  expect(await events()).toEqual([{ event: 'park_view', park_slug: 'woodlawn-park' }]);
+  // The first park page opened is also a surprise badge (M19), with no personal data in it.
+  expect(await events()).toEqual([{ event: 'park_view', park_slug: 'woodlawn-park' }, { event: 'badge_earned', badge_slug: 'trail-planner', kind: 'hidden' }]);
   await page.locator('#honor summary').click();
   await page.getByRole('button', { name: 'Stamp it' }).click();
   await expect(page.locator('.stamp-result')).toBeVisible();

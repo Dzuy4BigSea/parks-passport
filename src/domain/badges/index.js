@@ -40,8 +40,17 @@ export function buildContext(db, userId, { trigger = null, random = Math.random,
   const activityLogs = db.prepare(`SELECT a.slug, a.pillar, a.edition, a.category, v.park_id, l.logged_on, l.minutes, l.miles
     FROM activity_logs l JOIN activities a ON a.id = l.activity_id JOIN visits v ON v.id = l.visit_id
     WHERE l.user_id = ? ORDER BY l.logged_on, l.id`).all(userId);
+  // Reward schedule: first-time actions, and the next lucky drop in line (one roll per stamp).
+  const milestones = new Set(db.prepare('SELECT action FROM user_milestones WHERE user_id = ?').pluck().all(userId));
+  const openDrops = db.prepare(`SELECT b.rule_params FROM badges b WHERE b.enabled = 1 AND b.rule_type = 'lucky_drop'
+    AND NOT EXISTS (SELECT 1 FROM user_badges ub WHERE ub.badge_id = b.id AND ub.user_id = ?)`).pluck().all(userId)
+    .map((p) => { try { return JSON.parse(p).order; } catch { return null; } }).filter(Number.isInteger);
   return {
-    visits, parkCategories, activeParkIds, parkCity, activityLogs, trigger, random,
+    visits, parkCategories, activeParkIds, parkCity, activityLogs, trigger, random, milestones,
+    nextLuckyOrder: openDrops.length ? Math.min(...openDrops) : null,
+    luckyRoll: trigger?.type === 'visit' ? random() : 1,
+    // Stamps ever made (deleting a stamp doesn't lower it), and whether this stamp already dropped one.
+    lucky: { rolls: db.prepare('SELECT lucky_rolls FROM users WHERE id = ?').pluck().get(userId) || 0, dropped: false },
     palSameDay: palSameDay ?? hasPalSameDay(db, userId),
   };
 }

@@ -1,4 +1,5 @@
 import { html } from '../html.js';
+import { MILESTONES } from '../../domain/milestones.js';
 import { csrfField, errorSummary } from '../forms.js';
 import { CATEGORIES, categoryLabel } from '../../domain/categories.js';
 import { RULES } from '../../domain/badges/rules.js';
@@ -151,7 +152,8 @@ export function adminBadges({ badges }) {
 const PARAM_LABELS = {
   n: 'N (how many)', category: 'Amenity', start: 'From (local time)', end: 'Until (local time)', probability: 'Chance per stamp (0–1)',
   target: 'Which activities count', metric: 'Measure', total: 'Total (minutes or miles)', window_days: 'Within how many days (0 = all time)',
-  per_week: 'Days per week',
+  per_week: 'Days per week', action: 'First-time action', order: 'Order among lucky drops (1 = first)',
+  chance: 'Chance on a first stamp (0–1)', floor: 'Lowest chance (0–1)', half_life: 'Stamps until the chance halves',
 };
 const METRICS = [['minutes', 'Minutes'], ['miles', 'Miles']];
 const paramSelect = (k, options, value, error) => html`<div class="field param" data-param="${k}">
@@ -197,6 +199,7 @@ ${errorSummary(errors)}
     <p class="hint">Only the settings the chosen rule uses are saved.</p>
     ${allParams.map((k) => (k === 'target' ? paramSelect(k, targets.map((t) => [t.value, t.label]), params[k], errors[`param_${k}`])
       : k === 'metric' ? paramSelect(k, METRICS, params[k], errors[`param_${k}`])
+      : k === 'action' ? paramSelect(k, Object.entries(MILESTONES), params[k], errors[`param_${k}`])
       : k === 'category'
       ? html`<div class="field param" data-param="${k}">
           <label for="param_${k}">${PARAM_LABELS[k]}</label>
@@ -206,7 +209,8 @@ ${errorSummary(errors)}
       : html`<div class="param" data-param="${k}">${input(`param_${k}`, PARAM_LABELS[k], params[k], {
         type: k === 'start' || k === 'end' ? 'time' : 'number', error: errors[`param_${k}`],
         hint: k === 'n' ? 'For the weekly rules, the number of weeks.' : undefined,
-        attrs: k === 'probability' ? html`step="0.01" min="0.01" max="1"` : k === 'n' ? html`step="1" min="1" max="1000"`
+        attrs: k === 'probability' || k === 'chance' ? html`step="any" min="0.001" max="1"` : k === 'floor' ? html`step="any" min="0" max="1"`
+          : k === 'order' || k === 'half_life' ? html`step="1" min="1" max="1000"` : k === 'n' ? html`step="1" min="1" max="1000"`
           : k === 'total' ? html`step="0.1" min="0.1" max="10000"` : k === 'window_days' ? html`step="1" min="0" max="365"`
             : k === 'per_week' ? html`step="1" min="1" max="7"` : '',
       })}</div>`))}
@@ -214,7 +218,7 @@ ${errorSummary(errors)}
   <fieldset class="radio-group${errors.kind ? ' field-error' : ''}">
     <legend>Shows as</legend>
     ${errors.kind ? html`<p class="error-text">${errors.kind}</p>` : ''}
-    ${[['known', 'Known: name and progress shown'], ['hidden', 'Hidden: "?" with the hint until earned'], ['lucky', 'Lucky: awarded at random (lucky rule)']].map(([k, label]) => html`<label class="check"><input type="radio" name="kind" value="${k}"${b.kind === k ? html` checked` : ''}> ${label}</label>`)}
+    ${[['known', 'Known: name and progress shown'], ['hidden', 'Hidden: "?" with the hint until earned'], ['lucky', 'Lucky: awarded at random (random or lucky drop rule)']].map(([k, label]) => html`<label class="check"><input type="radio" name="kind" value="${k}"${b.kind === k ? html` checked` : ''}> ${label}</label>`)}
   </fieldset>
   <label class="check"><input type="checkbox" name="enabled" value="1"${enabled ? html` checked` : ''}> Enabled. Disabling stops new awards; members keep badges they earned.</label>
   <button type="submit" class="btn btn-primary">${isNew ? 'Add badge' : 'Save badge'}</button>

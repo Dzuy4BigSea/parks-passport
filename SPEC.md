@@ -166,6 +166,22 @@ Done when:
 - [ ] Seed badges ship with v1: at least 6 known, 3 hidden, 1 lucky and 1 social.
 - [ ] A new badge or level-up appears in an accessible announcement (`role="status"`) on the
       page after the action, and when shareable it offers "Share with Park Pals".
+- [ ] **Reward schedule** (mobile-game practice: early quick wins, variable-ratio surprises,
+      rising thresholds). Rewards always come from going out or using the app; nothing is paid for.
+  - **Surprise badges** (hidden, `milestone(action)`): Trail Planner (first park page opened),
+    Say Cheese (first profile photo), Better With Friends (first pal, both people), Critic's
+    Corner (first rating), Shutterbug (first photo, including a photo stamp) and Night Owl
+    (looking at parks between 9 pm and 4 am in that city's time). Each first-time action is
+    recorded once (action and time only) and the badge shows on that same page.
+  - **Lucky drops** (`lucky_drop(order, chance, floor, half_life)`): Golden Acorn, Shooting Star,
+    Rainbow Find and Lucky Penny. One roll per stamp, for the next undropped one in order, so at
+    most one per stamp. The chance is 45% on a first stamp, halves every 3 stamps and stays at
+    3% or more. Never taken back. The original 5% Lucky Clover stays.
+  - **The long climb:** levels Trailblazer 1600, Pathfinder 2500, Summit Seeker 3800, Wayfinder
+    5600 and Grand Ranger 8000 points after Park Legend; Forty Fields, Seventy-Five Strong and
+    Century Club for 40, 75 and 100 parks in any city.
+  - New badges ship in `seed/reward-badges.json` and are added by slug to existing databases.
+    Admins can create more with the two new rule types.
 
 ### Flow 8: Privacy, Park Pals and sharing
 As a member, I control who sees my activity and can connect with friends so that exploring
@@ -310,6 +326,21 @@ Done when:
       drafts that appear nowhere until approved. Every SVG, whether seeded, hand-entered or from AI, passes a strict
       allowlist sanitizer (shapes only; no scripts, styles, links, text or event handlers) or is
       rejected. Without `ANTHROPIC_API_KEY` the button is off. API errors show a fixed message.
+
+- [ ] **Game feel: celebrations** (silent: never any sound). Built on the server-rendered news, so
+      without JS, or with celebrations off, the page still says the same thing.
+  - **Badge reveal:** a new badge or level-up opens a full-screen, face-down card ("Badge
+    unlocked!", "Surprise badge!", "Lucky find!", "Level up!"). Tapping it flips it over with a
+    shine, rays, confetti and a short buzz on phones; several queue up ("1 of 3", Next). The card
+    is hidden until the tap.
+  - **Inspect a badge:** on a passport, every badge opens a big card that tilts toward the
+    finger or mouse, with a glare, and flips over to its story, how to earn it, or its clue.
+  - **Getting a passport:** right after sign-up, the passport cover swings open, the member's name
+    is stamped in with the city and date, confetti and Gary; the `?welcome=1` flag is then dropped
+    from the address.
+  - **Accessible:** each is a dialog with focus moved in and back, Tab kept inside, Escape to close,
+    and axe clean. Reduced motion shows the same cards without movement.
+  - **Account › On this device:** "Show celebrations" turns them off in this browser.
 
 ### Flow 12: Healthy activities (Paws and Kids editions)
 As a member, once I've stamped a park I can log healthy things I do there, so that each visit

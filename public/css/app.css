@@ -862,7 +862,8 @@ img.announce-art { padding: 0.4rem; }
 .table-wrap { overflow-x: auto; max-width: 100%; }
 .admin-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius-sm); }
 .admin-table th, .admin-table td { text-align: left; padding: 0.55rem; border-bottom: 1px solid var(--line); vertical-align: top; }
-.admin-table tr.disabled td { opacity: 0.7; }
+/* Disabled badges: a muted background, not faded text (faded text failed contrast). */
+.admin-table tr.disabled td { background: var(--sand, #f6f1e7); }
 .admin-table form { margin: 0; }
 .flag { display: inline-block; font-size: 0.8rem; font-weight: 700; color: var(--pink-ink); }
 .table-art { font-size: 1.25rem; }
@@ -1239,3 +1240,123 @@ html:not(.js) .js-only { display: none !important; }
 .stats-table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; }
 .stats-table th, .stats-table td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--line); }
 .stats-table thead th { font-size: 0.85rem; }
+
+/* ---------- Celebrations (SPEC Flow 11, "Game feel"): reveal, inspect, welcome. Silent. ---------- */
+html.fx-locked { overflow: hidden; }
+.fx-reveal, .fx-inspect, .fx-welcome { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; }
+.reveal-backdrop { position: absolute; inset: 0; background: radial-gradient(circle at 50% 40%, rgba(14, 42, 51, 0.9), rgba(10, 30, 37, 0.97)); animation: fx-fade 0.3s ease-out; }
+.reveal-stage, .inspect-stage, .welcome-stage { position: relative; display: grid; justify-items: center; gap: 0.9rem; text-align: center; color: #fffaf0; width: min(22rem, 100%); }
+.reveal-kicker { margin: 0; font: 800 1.6rem/1.1 var(--display, inherit); color: var(--sun, #ffc83d); text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25); animation: fx-pop 0.5s cubic-bezier(.2, 1.4, .4, 1); }
+.reveal-hint, .reveal-count { margin: 0; color: #e9f4f2; font-weight: 600; }
+
+/* The card: a face-down passport stamp that flips over. */
+.reveal-card { position: relative; width: 15rem; height: 19rem; padding: 0; border: 0; background: none; cursor: pointer; perspective: 1000px; color: inherit; font: inherit; }
+.reveal-card:focus-visible { outline: 4px solid var(--sun, #ffc83d); outline-offset: 6px; border-radius: 22px; }
+.reveal-flip { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 0.7s cubic-bezier(.3, 1.3, .5, 1); }
+.fx-reveal:not(.is-revealed) .reveal-flip { animation: fx-shake 1.6s ease-in-out infinite; }
+.fx-reveal.is-revealed .reveal-flip { transform: rotateY(180deg) scale(1.04); }
+.reveal-face { position: absolute; inset: 0; border-radius: 22px; display: grid; place-items: center; align-content: center; gap: 0.6rem; padding: 1.25rem;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.6); }
+.reveal-back { background: repeating-conic-gradient(from 0deg, #7c6cf2 0 15deg, #6a5ae0 15deg 30deg); border: 5px solid #fffaf0; }
+.fx-reveal[data-kind="lucky"] .reveal-back { background: repeating-conic-gradient(#00b3a4 0 15deg, #00968a 15deg 30deg); }
+.fx-reveal[data-kind="level"] .reveal-back { background: repeating-conic-gradient(#ff7a59 0 15deg, #f2633f 15deg 30deg); }
+.reveal-q { display: grid; place-items: center; width: 6rem; height: 6rem; border-radius: 50%; border: 5px dashed #fffaf0; font: 800 3.5rem/1 var(--display, inherit); color: #fffaf0; }
+.reveal-front { transform: rotateY(180deg); background: linear-gradient(160deg, var(--sun-tint, #fff5d6), #fffdf8 65%); border: 5px solid var(--sun, #ffc83d); color: var(--ink, #0e2a33); }
+.reveal-art { font-size: 5rem; line-height: 1; }
+.reveal-art img { width: 6rem; height: 6rem; }
+.fx-reveal.is-revealed .reveal-art { animation: badge-pop 0.7s 0.35s both cubic-bezier(.2, 1.4, .4, 1); }
+.reveal-name { font: 800 1.45rem/1.15 var(--display, inherit); }
+.reveal-desc { font-size: 0.95rem; color: var(--muted, #4a5f66); }
+.reveal-shine { position: absolute; inset: 0; border-radius: 22px; pointer-events: none; overflow: hidden; }
+.fx-reveal.is-revealed .reveal-shine::before { content: ""; position: absolute; top: -20%; bottom: -20%; width: 40%; left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.85), transparent); transform: skewX(-20deg); animation: fx-shine 0.9s 0.55s ease-out both; }
+.fx-reveal.is-revealed .reveal-stage::before { content: ""; position: absolute; z-index: -1; top: 2.5rem; left: 50%; width: 26rem; height: 26rem; margin-left: -13rem;
+  background: repeating-conic-gradient(rgba(255, 200, 61, 0.28) 0 10deg, transparent 10deg 20deg); border-radius: 50%; animation: fx-rays 8s linear infinite, fx-fade 0.6s ease-out; pointer-events: none; }
+.reveal-next { animation: fx-pop 0.45s 0.4s both cubic-bezier(.2, 1.4, .4, 1); }
+
+/* Inspect: a big card that tilts and flips. */
+.inspect-card { position: relative; width: min(17rem, 80vw); height: 22rem; perspective: 1000px; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.15s ease-out; transform-style: preserve-3d; animation: fx-pop 0.45s cubic-bezier(.2, 1.4, .4, 1); }
+.inspect-flip { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(.3, 1.3, .5, 1); }
+.inspect-card.is-flipped .inspect-flip { transform: rotateY(180deg); }
+.inspect-face { position: absolute; inset: 0; border-radius: 24px; padding: 1.5rem 1.25rem; display: grid; align-content: center; justify-items: center; gap: 0.6rem;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden; background: #fffdf8; color: var(--ink, #0e2a33); border: 5px solid var(--line, #e4d9c3);
+  box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.65); }
+.inspect-card.is-earned .inspect-face { border-color: var(--sun, #ffc83d); background: linear-gradient(160deg, var(--sun-tint, #fff5d6), #fffdf8 65%); }
+.inspect-card.is-mystery .inspect-front { background: repeating-linear-gradient(-45deg, #fffdf8, #fffdf8 12px, var(--sand, #f6f1e7) 12px, var(--sand, #f6f1e7) 24px); }
+.inspect-back { transform: rotateY(180deg); }
+.inspect-art { font-size: 5.5rem; line-height: 1; }
+.inspect-art img { width: 7rem; height: 7rem; }
+.inspect-card.is-known .inspect-art { filter: grayscale(1); opacity: 0.6; }
+.inspect-name { margin: 0; font: 800 1.5rem/1.15 var(--display, inherit); }
+.inspect-state { margin: 0; font-weight: 700; color: var(--aqua-ink, #00756c); }
+.inspect-face .bar { width: 100%; }
+.inspect-label { margin: 0; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.8rem; color: #c8155a; }
+.inspect-desc { margin: 0; font-size: 1.05rem; line-height: 1.45; }
+.inspect-glare { position: absolute; inset: 0; border-radius: 24px; pointer-events: none;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, 0.45), transparent 55%); mix-blend-mode: soft-light; }
+.inspect-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
+.badge { position: relative; }
+.badge-open { position: absolute; inset: 0; border: 0; background: none; border-radius: inherit; cursor: zoom-in; }
+.badge-open:focus-visible { outline: 3px solid var(--aqua-ink, #00756c); outline-offset: 2px; }
+
+/* Welcome: the passport cover swings open and the page gets stamped. */
+.welcome-book { position: relative; width: 15rem; height: 19rem; perspective: 1400px; }
+.welcome-page, .welcome-cover { position: absolute; inset: 0; border-radius: 6px 18px 18px 6px; display: grid; align-content: center; justify-items: center; gap: 0.4rem; padding: 1rem; }
+.welcome-page { background: #fffdf8; color: var(--ink, #0e2a33); box-shadow: inset 8px 0 12px -8px rgba(0, 0, 0, 0.25); }
+.welcome-cover { background: linear-gradient(150deg, #00756c, #0e4f57); color: #ffe7a3; border: 3px solid #ffe7a3; transform-origin: left center;
+  transition: transform 0.9s cubic-bezier(.5, 0, .3, 1); box-shadow: 0 24px 50px -20px rgba(0, 0, 0, 0.7); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.fx-welcome.is-open .welcome-cover { transform: rotateY(-165deg); }
+.welcome-crest { font-size: 3rem; }
+.welcome-cover-title { font: 800 1.35rem/1.1 var(--display, inherit); letter-spacing: 0.12em; }
+.welcome-cover-city { font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.welcome-label { margin: 0; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; color: var(--muted, #4a5f66); }
+.welcome-name { margin: 0; font: 800 1.6rem/1.1 var(--display, inherit); }
+.welcome-stamp { display: grid; justify-items: center; margin-top: 0.75rem; padding: 0.6rem 0.9rem; border: 4px double #c8155a; border-radius: 50%; color: #c8155a;
+  font-weight: 800; font-size: 0.7rem; letter-spacing: 0.08em; transform: rotate(-12deg) scale(2.4); opacity: 0; }
+.welcome-stamp strong { font-size: 1rem; }
+.fx-welcome.is-stamped .welcome-stamp { animation: fx-slam 0.45s cubic-bezier(.3, 1.4, .5, 1) forwards; }
+.welcome-title { margin: 0.25rem 0 0; font: 800 1.8rem/1.1 var(--display, inherit); color: #fffaf0; }
+.welcome-sub { margin: 0; color: #e9f4f2; }
+.welcome-gary { position: absolute; right: -1.5rem; bottom: -5rem; width: 7rem; height: auto; pointer-events: none; }
+
+/* Confetti. */
+.fx-burst { position: fixed; z-index: 1001; width: 0; height: 0; pointer-events: none; }
+.fx-burst span { position: absolute; width: 9px; height: 14px; border-radius: 2px; animation: fx-confetti 1.2s cubic-bezier(.2, .8, .3, 1) forwards; }
+
+@keyframes fx-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fx-pop { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes fx-shake { 0%, 70%, 100% { transform: rotate(0); } 76% { transform: rotate(-4deg) scale(1.02); } 82% { transform: rotate(4deg) scale(1.02); } 88% { transform: rotate(-2deg); } }
+@keyframes fx-shine { from { left: -60%; } to { left: 130%; } }
+@keyframes fx-rays { to { transform: rotate(360deg); } }
+@keyframes fx-slam { 0% { opacity: 0; transform: rotate(-12deg) scale(2.4); } 70% { opacity: 1; transform: rotate(-12deg) scale(0.92); } 100% { opacity: 1; transform: rotate(-12deg) scale(1); } }
+@keyframes fx-confetti { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 100% { transform: translate(var(--dx), calc(var(--dy) + 160px)) rotate(var(--r)); opacity: 0; } }
+
+/* Still versions: reduced motion (and inspect with celebrations off). Same content, no movement. */
+.is-still *, .is-still *::before, .is-still *::after { animation: none !important; transition: none !important; }
+.fx-welcome.is-still .welcome-stamp { opacity: 1; transform: rotate(-12deg); }
+@media (prefers-reduced-motion: reduce) {
+  .fx-reveal *, .fx-inspect *, .fx-welcome *, .fx-burst { animation: none !important; transition: none !important; }
+  .fx-welcome .welcome-stamp { opacity: 1; transform: rotate(-12deg); }
+}
+/* Face down: the badge's face is hidden from everyone until the tap (no peeking). */
+.fx-reveal:not(.is-revealed) .reveal-front { visibility: hidden; }
+/* The cloned badge art keeps its grid size otherwise: let it fill the big cards. */
+.inspect-art .badge-art { font-size: inherit; line-height: 1; display: inline-block; animation: none; }
+.inspect-art img.badge-art { width: 7rem; height: 7rem; }
+.reveal-art .announce-art { width: 8rem; height: 8rem; font-size: 4.5rem; display: grid; place-items: center; }
+.reveal-art img.announce-art { padding: 0.8rem; }
+
+/* Long badge names and descriptions (up to 60 and 200 characters): the card grows instead of
+   overflowing. Faces sit in one grid cell so the taller face sets the height. */
+.fx-reveal, .fx-inspect, .fx-welcome { overflow-y: auto; }
+.fx-reveal:focus, .fx-inspect:focus, .fx-welcome:focus { outline: none; }
+.reveal-card { height: auto; min-height: 19rem; }
+.reveal-flip { position: relative; inset: auto; display: grid; min-height: 19rem; }
+.reveal-face { position: relative; inset: auto; grid-area: 1 / 1; min-height: 19rem; }
+.reveal-art .announce-art { width: 5.5rem; height: 5.5rem; font-size: 3.2rem; }
+.reveal-name, .reveal-desc, .inspect-name, .inspect-desc, .welcome-name { overflow-wrap: anywhere; }
+.inspect-card { height: auto; min-height: 22rem; }
+.inspect-flip { position: relative; inset: auto; display: grid; min-height: 22rem; }
+.inspect-face { position: relative; inset: auto; grid-area: 1 / 1; }
+.welcome-gary { right: 0; }

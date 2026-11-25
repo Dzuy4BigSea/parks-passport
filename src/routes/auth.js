@@ -1,4 +1,5 @@
 import { requireUser, safeNext } from '../lib/auth.js';
+import { recordMilestone } from '../domain/milestones.js';
 import { magicLinkEmail, passwordResetEmail, deleteAccountEmail } from '../views/email.js';
 import { emailCopy } from '../domain/email-copy.js';
 import { inviteForToken, acceptInvites } from '../domain/invites.js';
@@ -99,7 +100,9 @@ export default async function authRoutes(app) {
     acceptInvites(db, user.email, user.id, { now: now() });
     startSession(req, reply, user.id);
     app.track(user.id, 'sign_up', { method: 'password' });
-    return reply.redirect(safeNext(req.body.next), 303);
+    // Straight to the passport: open it with a little ceremony (public/js/welcome.js).
+    const to = safeNext(req.body.next);
+    return reply.redirect(to === '/passport' ? '/passport?welcome=1' : to, 303);
   });
 
   // Log in with password
@@ -230,6 +233,7 @@ export default async function authRoutes(app) {
     const old = db.prepare('SELECT avatar_key FROM users WHERE id = ?').pluck().get(req.user.id);
     db.prepare('UPDATE users SET avatar_key = ? WHERE id = ?').run(stored.key, req.user.id);
     await removeAvatar(app.config.uploadsDir, old);
+    recordMilestone(db, req.user.id, 'avatar', { now: app.now(), random: app.random });
     return reply.redirect('/account?done=avatar#photo', 303);
   }));
   app.post('/account/avatar/delete', { preHandler: requireUser }, async (req, reply) => {

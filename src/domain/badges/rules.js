@@ -32,6 +32,9 @@ export const dayNumber = (ymd) => Math.floor(Date.UTC(+ymd.slice(0, 4), +ymd.sli
 const weekdayOf = (day) => (day + 4) % 7; // 0 = Sunday … 6 = Saturday
 export const mondayOf = (day) => day - ((weekdayOf(day) + 6) % 7);
 
+/** A lucky drop's chance on a member's nth stamp: chance, halving every half_life stamps, never below floor. */
+export const luckyChance = (n, { chance, floor = 0, half_life = 1 }) => Math.max(floor, chance * 0.5 ** ((n - 1) / half_life));
+
 export const RULES = {
   parks_count: {
     label: 'Stamp N different parks',
@@ -131,6 +134,29 @@ export const RULES = {
     permanent: true, // a lucky drop is never taken back
     // Only rolls when a stamp triggered the evaluation; never re-rolled on other events.
     evaluate: ({ probability }, ctx) => ({ earned: ctx.trigger?.type === 'visit' && ctx.random() < probability }),
+  },
+
+  // ---- Reward schedule (SPEC Flow 7): surprises early, rarer later ----
+
+  milestone: {
+    label: 'Do something for the first time (a surprise)',
+    params: { action: 'milestone' },
+    evaluate: ({ action }, ctx) => ({ earned: Boolean(ctx.milestones?.has(action)) }),
+  },
+
+  // Lucky drops in a fixed order, at most one per stamp (one roll per stamp, for the next unearned
+  // drop). The chance starts high and halves every half_life stamps, down to a floor: frequent
+  // for newcomers, an occasional surprise for regulars.
+  lucky_drop: {
+    label: 'Lucky drop on a stamp (likely early, rarer later; one per stamp, in order)',
+    params: { order: 'number', chance: 'chance', floor: 'chance', half_life: 'number' },
+    permanent: true,
+    evaluate: ({ order, chance, floor = 0, half_life = 1 }, ctx) => {
+      if (ctx.trigger?.type !== 'visit' || order !== ctx.nextLuckyOrder || ctx.lucky?.dropped) return { earned: false };
+      const earned = ctx.luckyRoll < luckyChance(Math.max(1, ctx.lucky?.rolls || ctx.visits.length), { chance, floor, half_life });
+      if (earned && ctx.lucky) ctx.lucky.dropped = true; // two drops sharing an order: still only one
+      return { earned };
+    },
   },
 
   // ---- Healthy activities (docs/healthy-activities.md) ----

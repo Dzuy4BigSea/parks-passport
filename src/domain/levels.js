@@ -7,6 +7,12 @@ export const LEVELS = [
   { name: 'Explorer', min: 150 },
   { name: 'Ranger', min: 400 },
   { name: 'Park Legend', min: 1000 },
+  // The long climb (SPEC Flow 7): each step about 1.5x the last.
+  { name: 'Trailblazer', min: 1600 },
+  { name: 'Pathfinder', min: 2500 },
+  { name: 'Summit Seeker', min: 3800 },
+  { name: 'Wayfinder', min: 5600 },
+  { name: 'Grand Ranger', min: 8000 },
 ];
 
 /**

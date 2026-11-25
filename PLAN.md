@@ -288,7 +288,30 @@ replace, remove and deletion, pal faces only for sharing pals, the filter, stats
 `test/e2e/cities.spec.js` (upload and pal faces at 375 px, axe clean), `/admin/stats` in the
 `pages.spec.js` sweep, and the existing suite.
 
-### M19 — Five more city packs (Flow 14)
+### M19 — Reward schedule: surprise badges, lucky drops, the long climb (Flow 7)
+- Migration 018 (`user_milestones`), `src/domain/milestones.js` (record, mark, Night Owl hours),
+  hooks on the park page and list, profile photo, new pals, ratings, photos and photo stamps.
+- `milestone` and `lucky_drop` rule types (`luckyChance`), the next drop and one roll per stamp in
+  the badge context, admin form support (`chance` and `milestone` settings).
+- `seed/reward-badges.json` (6 surprises, 4 lucky drops, 3 park milestones), 5 more levels.
+
+Checks: `test/unit/rewards.test.js` (odds schedule, each surprise once and announced on the same
+page, Night Owl by city time, one lucky drop per stamp in order, kept after deletes, admin
+validation), updated rule and level tests, and the existing suite.
+
+### M20 — Game feel: badge reveal, inspect, passport opening (Flow 11)
+- `public/js/fx.js` (on/off per device, reduced motion, confetti, buzz, dialog focus trap),
+  `reveal.js` (from the announcements, which now carry `data-kind`), `inspect.js` (passport badge
+  grid), `welcome.js` (`/passport?welcome=1` after sign-up), `prefs.js` (Account › On this device).
+- CSS under "Celebrations" in `public/css/app.css` (`fx-reveal`, `fx-inspect`, `fx-welcome`).
+- The e2e suite runs with celebrations off (`playwright.config.js` storage state);
+  `test/e2e/celebrations.spec.js` turns them on.
+
+Checks: `test/e2e/celebrations.spec.js` (passport opening, surprise reveal tapped open, inspect and
+flip, Escape returns focus, axe clean and no sideways scroll at 375 px, off switch, reduced motion),
+the sign-up redirect in `test/unit/auth.test.js`, the existing suite, and `npm run lighthouse`.
+
+### M21 — Five more city packs (Flow 14)
 Outcome: Cookeville, TN; Marple Township (Broomall), PA; Bend, OR; Indianapolis, IN and Trinidad, CO
 as city packs. No app code changes: each is `seed/cities/<key>/` (`city.json`, `parks.csv`,
 `badges.json`) plus `public/og/<key>.jpg`.

@@ -30,7 +30,7 @@ const run = (type, params, c) => RULES[type].evaluate(params, c);
 
 test('every spec rule type exists', () => {
   assert.deepEqual(RULE_TYPES.sort(), ['all_parks', 'category_count', 'lucky', 'pal_same_day', 'parks_count',
-    'same_park_count', 'time_of_day', 'weekend_parks', 'weekly_streak', 'cities_count',
+    'same_park_count', 'time_of_day', 'weekend_parks', 'weekly_streak', 'cities_count', 'milestone', 'lucky_drop',
     // Healthy activities (docs/healthy-activities.md)
     'activity_count', 'activity_parks', 'activity_sum', 'weekly_sum', 'weekly_days', 'pillar_variety', 'activity_categories'].sort());
 });
@@ -99,13 +99,14 @@ test('lucky rolls only on a stamp, with the injected random source', () => {
 });
 
 test('levels are derived from points with progress to the next', () => {
-  assert.deepEqual(LEVELS.map((l) => l.min), [0, 50, 150, 400, 1000]);
+  assert.deepEqual(LEVELS.map((l) => l.min), [0, 50, 150, 400, 1000, 1600, 2500, 3800, 5600, 8000]);
   assert.equal(levelFor(0).name, 'Day Tripper');
   assert.equal(levelFor(49).name, 'Day Tripper');
   const tf = levelFor(100);
   assert.deepEqual({ name: tf.name, toNext: tf.toNext, progress: tf.progress }, { name: 'Trail Finder', toNext: 50, progress: 0.5 });
-  const top = levelFor(5000);
-  assert.deepEqual({ name: top.name, next: top.next, progress: top.progress }, { name: 'Park Legend', next: null, progress: 1 });
+  assert.equal(levelFor(1200).name, 'Park Legend');
+  const top = levelFor(20000);
+  assert.deepEqual({ name: top.name, next: top.next, progress: top.progress }, { name: 'Grand Ranger', next: null, progress: 1 });
 });
 
 test('seed badges: at least 6 known, 3 hidden, 1 lucky and 1 social, all with valid rule types', () => {

@@ -20,7 +20,10 @@ export default defineConfig({
     trace: 'off',
     // Most tests start with cookies already rejected so the consent banner stays out of the way;
     // the consent specs clear this.
-    storageState: { cookies: [{ name: 'pp_consent', value: 'v1.a0.d0', domain: '127.0.0.1', path: '/', expires: -1, httpOnly: true, secure: false, sameSite: 'Lax' }], origins: [] },
+    // Celebrations (full-screen badge reveals) are off too, so they don't cover what tests click;
+    // test/e2e/celebrations.spec.js turns them on.
+    storageState: { cookies: [{ name: 'pp_consent', value: 'v1.a0.d0', domain: '127.0.0.1', path: '/', expires: -1, httpOnly: true, secure: false, sameSite: 'Lax' }],
+      origins: [{ origin: `http://127.0.0.1:${PORT}`, localStorage: [{ name: 'pp-celebrations', value: 'off' }] }] },
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {

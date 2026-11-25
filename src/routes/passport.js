@@ -28,6 +28,7 @@ export default async function passportRoutes(app) {
       badges, theme: city, cities: cityProgress(db, user.id, listCities(db)),
       next: nextUp(db, user.id, badges, { now: app.now(), timeZone: city.time_zone, cityId: city.id }),
       week: weekSummary(db, user.id, { now: app.now(), timeZone: city.time_zone }),
+      welcome: req.query.welcome === '1', // right after sign-up: the passport opening
     }));
   });
 }
