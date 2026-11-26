@@ -145,7 +145,7 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
         ? html`<span class="pill pill-stamped">✓ Stamped ${myVisits.length === 1 ? 'once' : `${myVisits.length} times`}</span>`
         : html`<span class="pill pill-points">New for you · +10 pts</span>`) : ''}
       ${user ? saveButton({ park, saved, csrf, back: parkPath(park), label: true }) : ''}
-      ${user ? html`<a class="pill pill-sunshine" href="/sunshine?city=${park.city_key}&amp;park=${encodeURIComponent(park.slug)}"><span aria-hidden="true">☀️</span> Say thanks</a>` : ''}
+      ${user ? html`<a class="pill pill-sunshine" href="/sunshine?city=${park.city_key}&amp;park=${encodeURIComponent(park.slug)}"><span aria-hidden="true">☀️</span> Drops of Sunshine</a>` : ''}
       ${summary.count ? html`<span class="pill"><span class="stars" aria-hidden="true">★</span> ${summary.average.toFixed(1)}<span class="visually-hidden"> out of 5 average rating</span></span>` : ''}
     </div>
   </header>
