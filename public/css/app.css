@@ -1870,3 +1870,12 @@ svg.gary-art { height: auto; }
 @keyframes c-legs { 50% { transform: translateX(1.5px); } }
 @keyframes c-glow { 50% { opacity: 0.1; } }
 @media (prefers-reduced-motion: reduce) { .critter { display: none; } }
+
+/* ---------- Home: "Your St. Pete" street map (public/js/home-map.js) ---------- */
+.home-map { position: relative; }
+.home-street-map { position: absolute; inset: 0.25rem 0 0.5rem; height: auto; min-height: 240px; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+.home-map.is-live .home-street-map { position: relative; inset: auto; margin: 0.25rem 0 0.5rem; opacity: 1; pointer-events: auto; }
+.hpin { border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.7rem; line-height: 1; }
+.hpin-todo { background: #9fb1ae; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(14, 42, 51, 0.25); }
+.hpin-next { background: var(--aqua-ink); border: 3px solid #fff; box-shadow: 0 0 0 1px var(--aqua-ink), 0 2px 5px rgba(0, 117, 108, 0.4); }
+.hpin-stamped { background: var(--pink); color: var(--ink); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--pink-ink), 0 2px 5px rgba(200, 21, 90, 0.35); }
