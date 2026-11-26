@@ -79,13 +79,18 @@ test('add a pal by friend code at 375px: request, accept, axe clean', async ({ p
   await page.setViewportSize({ width: 375, height: 800 });
   await signUp(page, { name: 'Coda' });
   await page.goto('/pals');
+  // The invite link leads; friend codes are folded away under it.
+  await expect(page.getByRole('heading', { name: 'Make new pals' })).toBeVisible();
+  await expect(page.locator('#invite-link')).toBeVisible();
+  await expect(page.getByLabel('Your friend code')).toBeHidden();
+  await page.getByText('Friend codes', { exact: true }).click();
   const code = await page.getByLabel('Your friend code').inputValue();
   expect(code).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
 
   const dee = await freshPage(browser, info);
   await dee.setViewportSize({ width: 375, height: 800 });
   await signUp(dee, { name: 'Dee' });
-  await dee.goto('/pals');
+  await dee.goto('/pals#add'); // a link to #add opens the friend codes
   await dee.getByLabel('Add a pal by code').fill(code.toLowerCase().replace('-', ' '));
   await dee.getByRole('button', { name: 'Send request' }).click();
   await expect(dee.getByRole('status').first()).toContainText('Request sent');
@@ -101,8 +106,9 @@ test('add a pal by friend code at 375px: request, accept, axe clean', async ({ p
   await expect(page.getByText("You're now Park Pals!")).toBeVisible();
   await expect(page.locator('.pal-list')).toContainText('Dee');
 
-  // A wrong code shows an inline error.
+  // A wrong code shows an inline error, with the friend codes left open.
   await dee.goto('/pals');
+  await dee.getByText('Friend codes', { exact: true }).click();
   await dee.getByLabel('Add a pal by code').fill('ZZZZ-ZZZZ');
   await dee.getByRole('button', { name: 'Send request' }).click();
   await expect(dee.getByRole('alert')).toContainText("doesn't match anyone");

@@ -133,8 +133,8 @@ test('a pal request can be accepted or declined right in the notification center
   const rid2 = db.prepare('SELECT id FROM pal_requests').pluck().get();
   assert.equal((await people.ana.c.post(`/pals/requests/${rid2}/decline`, { from: 'notifications' })).headers.location, '/notifications?done=declined');
   assert.match((await people.ana.c.get('/notifications')).body, /Answered\./);
-  // Answering from the Pals page still goes back there.
-  await people.boss.c.post('/pals/code', { code: await codeOf('ana') });
+  // Answering from the Pals page still goes back there. (Ana asks Boss: after her no, Boss can't ask again.)
+  await people.ana.c.post('/pals/code', { code: await codeOf('boss') });
   const rid3 = db.prepare('SELECT id FROM pal_requests').pluck().get();
-  assert.equal((await people.ana.c.post(`/pals/requests/${rid3}/accept`)).headers.location, '/pals?done=accepted');
+  assert.equal((await people.boss.c.post(`/pals/requests/${rid3}/accept`)).headers.location, '/pals?done=accepted');
 });

@@ -14,11 +14,16 @@ test.describe('on a phone', () => {
   test('a selfie for the profile photo and a camera shot for park photos fill the photo field', async ({ page }) => {
     await signUp(page);
     await page.goto('/account');
+    // Folded away until "Update pic" is tapped.
+    await expect(page.getByRole('button', { name: 'Take a selfie' })).toBeHidden();
+    await page.getByText('Update pic', { exact: true }).click();
     await expect(page.getByRole('button', { name: 'Take a selfie' })).toBeVisible();
     await expect(page.locator('input[capture="user"]')).toHaveCount(1);
     await page.locator('input[capture="user"]').setInputFiles({ name: 'selfie.jpg', mimeType: 'image/jpeg', buffer: await jpeg() });
     expect(await page.locator('#avatar-file').evaluate((i) => i.files[0]?.name)).toBe('selfie.jpg');
     await page.getByRole('button', { name: 'Upload photo' }).click();
+    await expect(page.getByText('Profile photo saved.')).toBeVisible();
+    await page.getByText('Update pic', { exact: true }).click();
     await expect(page.getByRole('button', { name: 'Replace photo' })).toBeVisible();
 
     await page.goto('/st-pete/parks/abercrombie-park');
@@ -40,6 +45,7 @@ test('profile photo: fit it in the circle, then only that square is uploaded; th
   const photo = await sharp({ create: { width: 800, height: 400, channels: 3, background: '#0000ff' } })
     .composite([{ input: await sharp({ create: { width: 400, height: 400, channels: 3, background: '#ff0000' } }).png().toBuffer(), left: 0, top: 0 }])
     .jpeg().toBuffer();
+  await page.getByText('Update pic', { exact: true }).click();
   await page.getByLabel('Choose a profile photo').setInputFiles({ name: 'wide.jpg', mimeType: 'image/jpeg', buffer: photo });
   const frame = page.locator('.crop-frame');
   await expect(frame).toBeVisible();
@@ -72,6 +78,7 @@ test('profile photo: fit it in the circle, then only that square is uploaded; th
   await page.waitForTimeout(300);
   expect(posts).toBe(1);
   await page.goto('/account');
+  await page.getByText('Update pic', { exact: true }).click();
   await expect(page.getByRole('button', { name: 'Replace photo' })).toBeVisible();
   // The browser sent a 512 px square, all red.
   const start = sent.indexOf(Buffer.from([0xff, 0xd8, 0xff]));

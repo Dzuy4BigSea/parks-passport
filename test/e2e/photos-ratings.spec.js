@@ -91,6 +91,7 @@ test('several photos at once; the uploader\'s face stays small in the credit', a
   await page.setViewportSize({ width: 375, height: 800 });
   await signUp(page, { name: 'Multi' });
   await page.goto('/account');
+  await page.getByText('Update pic', { exact: true }).click();
   await page.getByLabel('Choose a profile photo').setInputFiles({ name: 'me.jpg', mimeType: 'image/jpeg', buffer: await jpeg() });
   await page.getByRole('button', { name: 'Upload photo' }).click();
   await expect(page.locator('p.notice[role=status]')).toHaveText('Profile photo saved.');
