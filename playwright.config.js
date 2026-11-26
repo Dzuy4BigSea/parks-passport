@@ -19,6 +19,7 @@ const DATA_DIR = process.env.PP_E2E_DATA_DIR;
 
 export default defineConfig({
   testDir: 'test/e2e',
+  globalSetup: './test/e2e/global-setup.js',
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,

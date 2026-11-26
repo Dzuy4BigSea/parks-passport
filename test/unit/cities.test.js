@@ -34,7 +34,7 @@ async function member(app, email = 'sam@example.com') {
 
 test('city packs: every pack is valid, keys are free, parks are inside the city, motifs pass the sanitizer', () => {
   const keys = cityPackKeys();
-  assert.ok(['st-pete', 'westminster', 'asheville', 'cookeville', 'marple', 'bend', 'indianapolis', 'trinidad'].every((k) => keys.includes(k)));
+  assert.ok(['st-pete', 'westminster', 'asheville', 'cookeville', 'marple', 'bend', 'indianapolis', 'trinidad', 'clearwater'].every((k) => keys.includes(k)));
   for (const key of keys) {
     const pack = JSON.parse(fs.readFileSync(path.join(CITIES_DIR, key, 'city.json'), 'utf8'));
     assert.equal(pack.key, key);
@@ -58,9 +58,9 @@ test('seedCities loads both cities once; admin theme edits stay, the pack\'s cop
   assert.equal(count('SELECT COUNT(*) FROM parks WHERE city_id = ?', wm.id), 25);
   assert.equal(count('SELECT COUNT(*) FROM parks WHERE city_id = ?', cityByKey(db, 'st-pete').id), 102);
   assert.deepEqual(listCities(db).map((c) => c.key), // by sort
-    ['st-pete', 'westminster', 'asheville', 'cookeville', 'marple', 'bend', 'indianapolis', 'trinidad']);
+    ['st-pete', 'westminster', 'asheville', 'cookeville', 'marple', 'bend', 'indianapolis', 'trinidad', 'clearwater']);
   const parksIn = (key) => count('SELECT COUNT(*) FROM parks WHERE city_id = ?', cityByKey(db, key).id);
-  assert.deepEqual(['asheville', 'cookeville', 'marple', 'bend', 'indianapolis', 'trinidad'].map(parksIn), [68, 10, 10, 75, 166, 10]);
+  assert.deepEqual(['asheville', 'cookeville', 'marple', 'bend', 'indianapolis', 'trinidad', 'clearwater'].map(parksIn), [68, 10, 10, 75, 166, 10, 81]);
   assert.equal(cityByKey(db, 'indianapolis').time_zone, 'America/Indianapolis');
   db.prepare("UPDATE city_themes SET tagline = 'Edited', copy = '{}' WHERE key = 'westminster'").run();
   const again = seedCities(db);
