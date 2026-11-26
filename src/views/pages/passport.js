@@ -76,11 +76,14 @@ function badgeCard(b) {
 </li>`;
 }
 
-// One tab per city: its stamped count. Own passport: /<city>/passport; someone else's: ?city=.
+// A tab for each city with a stamp in this passport, plus the city being viewed (so you always
+// see where you are), with its stamped count. No tabs for a one-city passport. Other cities are a
+// switch away in the footer. Own passport: /<city>/passport; someone else's: ?city=.
 function cityTabs(cities, theme, href) {
-  if (!cities || cities.length < 2) return '';
+  const shown = (cities || []).filter(({ city, stamped }) => stamped > 0 || city.key === theme.key);
+  if (shown.length < 2) return '';
   return html`<nav class="city-tabs" aria-label="Cities in this passport"><ul>
-  ${cities.map(({ city, stamped, total }) => html`<li><a href="${href(city)}"${city.key === theme.key ? html` aria-current="page"` : ''}>
+  ${shown.map(({ city, stamped, total }) => html`<li><a href="${href(city)}"${city.key === theme.key ? html` aria-current="page"` : ''}>
     <span class="city-tab-name">${city.copy.short}</span> <span class="city-tab-count">${stamped}<span class="visually-hidden"> of </span><span aria-hidden="true">/</span>${total}</span></a></li>`)}
 </ul></nav>`;
 }

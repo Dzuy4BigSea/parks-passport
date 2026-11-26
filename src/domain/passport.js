@@ -13,8 +13,8 @@ export function passportData(db, userId, { cityId = null } = {}) {
 }
 
 /**
- * The user's progress in every active city: [{ city, stamped, total }], cities they've stamped in
- * first. Drives the passport's city tabs and the cross-city summary.
+ * The user's progress in every active city: [{ city, stamped, total }], in city order. Drives the
+ * passport's city tabs (which show only the cities with stamps) and the cross-city summary.
  */
 export function cityProgress(db, userId, cities) {
   const rows = new Map(db.prepare(`SELECT p.city_id, COUNT(DISTINCT p.id) AS total,

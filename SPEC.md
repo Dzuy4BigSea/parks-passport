@@ -492,9 +492,10 @@ Done when:
       it out, stores or logs it (the server's ordinary request log is unchanged). Private
       addresses have no location. Without the file, there is no suggestion.
 - [ ] **One passport, many cities:** points, levels, the streak, Park Pals and most badges count
-      every city. `/<city>/passport` shows that city's stamps, collections and map, with a tab per
-      city ("Westminster 3/25"); history lists every city's visits and names the city once there
-      are two. Public passports (`/u/:handle?city=`) work the same way, read-only.
+      every city. `/<city>/passport` shows that city's stamps, collections and map, with a tab for
+      each city the member has stamped in, plus the city being viewed ("Westminster 3/25"); no
+      tabs when that's only one city. History lists every city's visits and names the city once
+      there are two. Public passports (`/u/:handle?city=`) work the same way, read-only.
 - [ ] **Time zones:** "today" for a stamp, a same-day photo or an activity is today where the park
       is, and `time_of_day` badges read the park's local clock (6 am at a Westminster park is
       Early Bird; the same moment in St. Pete is 9 am).

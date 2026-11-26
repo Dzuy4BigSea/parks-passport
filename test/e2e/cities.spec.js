@@ -26,7 +26,7 @@ test('Westminster pages: landing, parks and a park, axe clean and no sideways sc
 test.describe('at Sigler Park', () => {
   test.use({ geolocation: AT_SIGLER, permissions: ['geolocation'] });
 
-  test('a member stamps a Westminster park by GPS; the passport has a tab for each city', async ({ page }) => {
+  test('a member stamps a Westminster park by GPS; the passport shows tabs only for cities with stamps', async ({ page }) => {
     await signUp(page);
     await page.goto('/westminster/parks/sigler-park');
     await page.getByRole('button', { name: 'Check in here' }).click();
@@ -35,10 +35,16 @@ test.describe('at Sigler Park', () => {
     await page.goto('/passport');
     await expect(page).toHaveURL(/\/westminster\/passport$/);
     await expect(page.locator('.passport-count')).toHaveText('1 of 25 parks stamped');
+    // Only one city stamped: no tabs.
     const tabs = page.getByRole('navigation', { name: 'Cities in this passport' });
-    await expect(tabs.getByRole('link', { name: /Westminster/ })).toHaveAttribute('aria-current', 'page');
-    await tabs.getByRole('link', { name: /St\. Pete/ }).click();
+    await expect(tabs).toHaveCount(0);
+    // Looking at another city's passport: that city and the stamped one.
+    await page.goto('/st-pete/passport');
     await expect(page.locator('.passport-count')).toHaveText('0 of 102 parks stamped');
+    await expect(tabs.getByRole('link')).toHaveText([/St\. Pete/, /Westminster/]);
+    await expect(tabs.getByRole('link', { name: /St\. Pete/ })).toHaveAttribute('aria-current', 'page');
+    await tabs.getByRole('link', { name: /Westminster/ }).click();
+    await expect(page.locator('.passport-count')).toHaveText('1 of 25 parks stamped');
     await expectNoAxeViolations(page);
   });
 });
