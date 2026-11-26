@@ -4,6 +4,7 @@
 import { createBadgeEngine, addMissingBadges as addMissing } from '../../gamification/index.js';
 import { RULES, badgeEdition } from './rules.js';
 import { notify } from '../notifications.js';
+import { checkGroupGoals } from '../group-goals.js';
 import { DEFAULT_TIME_ZONE } from '../time.js';
 
 export { seedBadgesIfEmpty } from '../../gamification/index.js';
@@ -17,6 +18,8 @@ export function addMissingBadges(db, list, { now = new Date(), cityId = null } =
   const added = addMissing(db, list, { now });
   const limit = db.prepare('UPDATE badges SET limited_count = ? WHERE slug = ?');
   for (const b of list) if (!had.has(b.slug) && b.limited_count) limit.run(b.limited_count, b.slug);
+  const team = db.prepare('UPDATE badges SET is_group = 1 WHERE slug = ?');
+  for (const b of list) if (!had.has(b.slug) && b.is_group) team.run(b.slug);
   if (cityId != null) {
     const set = db.prepare('UPDATE badges SET city_id = ? WHERE slug = ?');
     for (const b of list) if (!had.has(b.slug)) set.run(cityId, b.slug);
@@ -97,13 +100,14 @@ export const { evaluateRule } = engine;
 /** Awards every enabled badge the member now qualifies for; returns the new ones (each at most once). Each goes in the notification center. */
 export function awardBadges(db, userId, trigger, opts = {}) {
   const awarded = engine.awardBadges(db, userId, trigger, opts);
+  if (trigger?.type === 'visit' || trigger?.type === 'activity') checkGroupGoals(db, userId, { now: opts.now });
   for (const b of awarded) notify(db, userId, { kind: 'badge', text: `You earned ${b.name}.`, link: '/passport#badges' }, { now: opts.now });
   return awarded;
 }
 
 /** Badges awarded but not yet announced, with a gift's note and giver; marks them announced. */
 export function takeUnseenBadges(db, userId, { now = new Date() } = {}) {
-  const rows = db.prepare(`SELECT b.*, ub.serial, ub.note AS award_note, CASE WHEN ub.source_type = 'grant' THEN COALESCE(ub.from_name, g.display_name) END AS given_by
+  const rows = db.prepare(`SELECT b.*, ub.serial, ub.times, CASE WHEN ub.source_type = 'group' THEN ub.note END AS team, CASE WHEN ub.source_type = 'grant' THEN ub.note END AS award_note, CASE WHEN ub.source_type = 'grant' THEN COALESCE(ub.from_name, g.display_name) END AS given_by
     FROM user_badges ub JOIN badges b ON b.id = ub.badge_id LEFT JOIN users g ON g.id = ub.source_id
     WHERE ub.user_id = ? AND ub.seen_at IS NULL ORDER BY ub.awarded_at, b.sort`).all(userId);
   if (rows.length) db.prepare('UPDATE user_badges SET seen_at = ? WHERE user_id = ? AND seen_at IS NULL').run(now.toISOString(), userId);
@@ -125,7 +129,7 @@ const cleanFrom = (v) => String(v || '').replace(/\s+/g, ' ').trim();
 export function grantBadge(db, { admin, userId, badgeId, note = '', fromName = '' }, { now = new Date() } = {}) {
   const member = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
   const badge = db.prepare('SELECT * FROM badges WHERE id = ?').get(badgeId);
-  if (!member || !badge) return { error: 'not_found' };
+  if (!member || !badge || badge.is_group) return { error: 'not_found' }; // team badges are earned together
   const text = String(note || '').replace(/\s+/g, ' ').trim();
   if (text.length > NOTE_MAX) return { error: 'note' };
   const from = cleanFrom(fromName) || DEFAULT_FROM;
@@ -191,5 +195,5 @@ export const { revokeUnmetBadges } = engine;
  */
 export function badgeBoard(db, userId, options = {}) {
   const serials = new Map(db.prepare('SELECT badge_id, serial FROM user_badges WHERE user_id = ? AND serial IS NOT NULL').raw().all(userId));
-  return engine.badgeBoard(db, userId, options).map((b) => (serials.has(b.id) ? { ...b, serial: serials.get(b.id) } : b));
+  return engine.badgeBoard(db, userId, options).filter((b) => !b.is_group).map((b) => (serials.has(b.id) ? { ...b, serial: serials.get(b.id) } : b));
 }

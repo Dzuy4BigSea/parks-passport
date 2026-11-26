@@ -163,7 +163,7 @@ ${job?.status === 'error' ? html`<p class="notice" role="alert">${job.error}</p>
 <nav class="tabs" aria-label="Filter ideas">${tabs.map(([s, label]) => html`<a href="/admin/ideas${s ? `?status=${s}` : ''}"${s === status ? html` aria-current="page"` : ''}>${label}${s ? ` (${counts[s] || 0})` : ''}</a>`)}</nav>
 <datalist id="open-ideas">${openIdeas.map((o) => html`<option value="${o.id}">${o.name || o.pitch}</option>`)}</datalist>
 ${ideas.length ? html`<ul class="idea-list">${ideas.map((i) => html`<li class="idea-card" id="idea-${i.id}">
-  <p class="idea-line"><span class="muted">#${i.id}</span> ${i.art ? html`<span aria-hidden="true">${i.art}</span> ` : ''}<strong>${i.name || 'Untitled'}</strong>: earn it when you ${i.pitch}</p>
+  <p class="idea-line"><span class="muted">#${i.id}</span> ${i.kind && i.kind !== 'badge' ? html`<span class="flag">${i.kind === 'group_goal' ? 'Group goal' : 'Team badge'}</span> ` : ''}${i.art ? html`<span aria-hidden="true">${i.art}</span> ` : ''}<strong>${i.name || 'Untitled'}</strong>: ${i.kind && i.kind !== 'badge' ? '' : 'earn it when you '}${i.pitch}</p>
   <p class="muted">${i.author} · ${dateOf(i.created_at)} · ${STATUSES[i.status]}${i.status === 'combined' && i.merged_into ? html` into #${i.merged_into}` : ''}${i.combined_count ? ` · ${i.combined_count} combined into this` : ''}${i.rule_type ? ` · ${ruleLabel(i.rule_type)}` : ''}</p>
   ${suggestionBox(i, csrf)}
   ${triageForm(i, csrf, status)}

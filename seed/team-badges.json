@@ -1,0 +1,14 @@
+[
+  { "slug": "team-effort", "name": "Team Effort", "art": "🤝", "kind": "known", "is_group": 1,
+    "description": "Reached a goal your group set for itself, together.", "rule_type": "manual", "rule_params": {} },
+  { "slug": "kickoff-crew", "name": "Kickoff Crew", "art": "🚀", "kind": "known", "is_group": 1,
+    "description": "Your group checked in 10 times in one week.", "rule_type": "manual", "rule_params": {} },
+  { "slug": "fifty-strong", "name": "Fifty Strong", "art": "💪", "kind": "known", "is_group": 1,
+    "description": "Your group checked in 50 times in 30 days.", "rule_type": "manual", "rule_params": {} },
+  { "slug": "park-crawl-crew", "name": "Park Crawl Crew", "art": "🗺️", "kind": "known", "is_group": 1,
+    "description": "Your group stamped 25 different parks in 30 days.", "rule_type": "manual", "rule_params": {} },
+  { "slug": "move-together", "name": "Move Together", "art": "🏃", "kind": "known", "is_group": 1,
+    "description": "Your group logged 500 active minutes in parks in 30 days.", "rule_type": "manual", "rule_params": {} },
+  { "slug": "every-corner", "name": "Every Corner", "art": "🧭", "kind": "known", "is_group": 1,
+    "description": "Your group stamped 100 different parks in 90 days.", "rule_type": "manual", "rule_params": {} }
+]

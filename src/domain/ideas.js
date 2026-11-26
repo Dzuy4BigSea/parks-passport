@@ -41,8 +41,9 @@ export function submitIdea(db, user, form, { now = new Date() } = {}) {
   }
   if (Object.keys(errors).length) return { errors, values };
   const ts = now.toISOString();
-  const id = Number(db.prepare(`INSERT INTO badge_ideas (user_id, name, pitch, art, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?)`).run(user.id, values.name, values.pitch, values.art, ts, ts).lastInsertRowid);
+  const kind = ['group_goal', 'group_badge'].includes(form.kind) ? form.kind : 'badge';
+  const id = Number(db.prepare(`INSERT INTO badge_ideas (user_id, name, pitch, art, kind, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)`).run(user.id, values.name, values.pitch, values.art, kind, ts, ts).lastInsertRowid);
   return { idea: ideaById(db, id) };
 }
 
@@ -164,6 +165,7 @@ export function badgePrefill(idea) {
     name, slug: slugify(name), description: `Earn it when you ${idea.pitch.replace(/^(earn it )?when you /i, '')}`.slice(0, 200),
     hint: '', art: idea.art || '', rule_type: ruleType, kind: ruleType === 'lucky' ? 'lucky' : 'known', enabled: '',
   };
+  if (idea.kind === 'group_badge') Object.assign(values, { is_group: '1', rule_type: 'manual', kind: 'known' });
   // Claude's parameters only when they're for the same rule type the super admin chose.
   if (idea.ai?.rule_type === ruleType) for (const [k, v] of Object.entries(idea.ai.rule_params || {})) values[`param_${k}`] = String(v);
   return values;
@@ -185,7 +187,8 @@ export function exportBrief(db, { now = new Date() } = {}) {
   const needs = kept.filter((i) => !fits.includes(i));
 
   const item = (i) => {
-    const lines = [`### ${quote(i.name || i.ai?.name || 'Untitled')} ${i.art ? i.art : ''}`.trim(), '', `- **Earn it when you:** ${quote(i.pitch)}`];
+    const lines = [`### ${quote(i.name || i.ai?.name || 'Untitled')} ${i.art ? i.art : ''}`.trim(), '',
+      i.kind === 'group_goal' ? `- **Group goal (Flow 24):** ${quote(i.pitch)}` : i.kind === 'group_badge' ? `- **Team badge (Flow 24):** ${quote(i.pitch)}` : `- **Earn it when you:** ${quote(i.pitch)}`];
     for (const c of folded.filter((f) => f.merged_into === i.id)) lines.push(`- **Combined with:** ${quote(c.name ? `${c.name}: ${c.pitch}` : c.pitch)}`);
     if (i.rule_type && i.rule_type !== NEW_RULE) lines.push(`- **Rule type:** \`${i.rule_type}\`${i.ai?.rule_type === i.rule_type && i.ai.rule_params ? ` with \`${JSON.stringify(i.ai.rule_params)}\`` : ''}`);
     if (i.ai?.new_rule) lines.push(`- **Suggested new rule:** ${quote(i.ai.new_rule)}`);
