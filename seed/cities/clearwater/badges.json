@@ -1,0 +1,9 @@
+[
+  { "slug": "half-of-clearwater", "name": "Half of Clearwater", "art": "🐬", "kind": "known",
+    "description": "Stamped 41 different Clearwater parks.", "rule_type": "parks_count", "rule_params": { "n": 41 } },
+  { "slug": "every-clearwater-park", "name": "Every Clearwater Park", "art": "🏆", "kind": "known",
+    "description": "Stamped every park in Clearwater.", "rule_type": "all_parks", "rule_params": {} },
+  { "slug": "sandy-toes", "name": "Sandy Toes", "art": "🏖️", "kind": "hidden",
+    "hint": "Bay to beach: find the sand.",
+    "description": "Stamped 3 Clearwater parks on the beach.", "rule_type": "category_count", "rule_params": { "category": "beach", "n": 3 } }
+]

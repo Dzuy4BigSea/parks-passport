@@ -1,0 +1,117 @@
+{
+  "key": "clearwater",
+  "name": "Clearwater",
+  "tagline": "Bay to Beach",
+  "sort": 8,
+  "listed": true,
+  "time_zone": "America/New_York",
+  "bounds": {
+    "minLat": 27.9,
+    "maxLat": 28.08,
+    "minLng": -82.86,
+    "maxLng": -82.64,
+    "center": {
+      "lat": 27.9659,
+      "lng": -82.8001
+    }
+  },
+  "copy": {
+    "short": "Clearwater",
+    "place": "Clearwater, Florida",
+    "official": "the City of Clearwater",
+    "gary": "I've been wandering Clearwater parks and I still find something new on most visits, like the sunset crowd at Pier 60 or a quiet boardwalk at Moccasin Lake Nature Park.",
+    "description": "Check in at every Clearwater, Florida park you visit, collect stamps and badges, rate your favorites and explore with your Park Pals.",
+    "search_examples": "Pier 60, Crest Lake, Kapok…",
+    "made_for": "Clearwater, from the bay to the beach"
+  },
+  "accent": "#0077B6",
+  "accent_2": "#F4A261",
+  "areas": [
+    {
+      "slug": "beach",
+      "name": "Clearwater Beach & Island Estates",
+      "lat": 27.982,
+      "lng": -82.826
+    },
+    {
+      "slug": "sand-key",
+      "name": "Sand Key",
+      "lat": 27.952,
+      "lng": -82.83
+    },
+    {
+      "slug": "downtown",
+      "name": "Downtown & North Greenwood",
+      "lat": 27.972,
+      "lng": -82.795
+    },
+    {
+      "slug": "south",
+      "name": "South Clearwater",
+      "lat": 27.948,
+      "lng": -82.775
+    },
+    {
+      "slug": "central",
+      "name": "Central Clearwater",
+      "lat": 27.97,
+      "lng": -82.75
+    },
+    {
+      "slug": "east",
+      "name": "East Clearwater & the Bayside",
+      "lat": 27.965,
+      "lng": -82.715
+    },
+    {
+      "slug": "countryside",
+      "name": "Countryside",
+      "lat": 28.03,
+      "lng": -82.715
+    }
+  ],
+  "motifs": [
+    {
+      "slug": "pier-60-sunset",
+      "name": "Sunsets at Pier 60",
+      "blurb": "Every evening a crowd gathers at Pier 60 on Clearwater Beach to watch the sun drop into the Gulf, with street performers and artists along the way.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 28h40\"/><circle cx=\"24\" cy=\"28\" r=\"9\"/><path d=\"M10 34h28M14 39h20\"/><path d=\"M6 42h4v-8M38 42h4v-8M10 34v8M38 34v8\"/><path d=\"M24 12v-4M14 16l-3-3M34 16l3-3\"/></svg>"
+    },
+    {
+      "slug": "white-sand",
+      "name": "Clearwater Beach",
+      "blurb": "Clearwater Beach’s soft white sand is regularly named one of the best beaches in the country.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M8 40c6-3 26-3 32 0\"/><path d=\"M24 40V14\"/><path d=\"M24 14c-8 0-14 4-16 9h32c-2-5-8-9-16-9z\"/><path d=\"M24 14V10\"/><circle cx=\"38\" cy=\"10\" r=\"4\"/></svg>"
+    },
+    {
+      "slug": "dolphin",
+      "name": "Winter the dolphin",
+      "blurb": "Clearwater Marine Aquarium was home to Winter, the dolphin with a prosthetic tail whose story became the movie Dolphin Tale.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M6 30c4-10 14-16 26-14 4 1 7 3 9 6l-5 1c-2-2-5-3-8-3\"/><path d=\"M6 30c8 2 16 2 22-2\"/><path d=\"M20 16l-3-6 8 5\"/><path d=\"M28 28l2 8-6-5\"/><circle cx=\"35\" cy=\"21\" r=\"1\"/><path d=\"M4 40c4 0 4-2 8-2s4 2 8 2 4-2 8-2 4 2 8 2 4-2 8-2\"/></svg>"
+    },
+    {
+      "slug": "causeway",
+      "name": "The Memorial Causeway",
+      "blurb": "The tall arch of the Clearwater Memorial Causeway Bridge carries you from downtown over the bay to the beach.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 34h40\"/><path d=\"M8 34c4-14 28-14 32 0\"/><path d=\"M14 34v-7M20 34v-11M24 34V22M28 34v-11M34 34v-7\"/><path d=\"M4 40c4 0 4-2 8-2s4 2 8 2 4-2 8-2 4 2 8 2 4-2 8-2\"/></svg>"
+    },
+    {
+      "slug": "coachman-park",
+      "name": "Coachman Park",
+      "blurb": "Downtown’s Coachman Park, on the bluff over Clearwater Harbor, has a waterfront amphitheater, The BayCare Sound, for concerts and festivals.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 40h40\"/><path d=\"M8 40c0-12 7-20 16-20s16 8 16 20\"/><path d=\"M14 40c0-8 4-13 10-13s10 5 10 13\"/><path d=\"M24 20v-6\"/><path d=\"M20 10l4-4 4 4\"/><path d=\"M30 12l2-3 2 3\"/></svg>"
+    },
+    {
+      "slug": "spring-training",
+      "name": "Spring training",
+      "blurb": "Every February and March the Philadelphia Phillies play spring training games at BayCare Ballpark.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><circle cx=\"18\" cy=\"30\" r=\"12\"/><path d=\"M10 21c3 3 4 6 4 9s-1 6-4 9\"/><path d=\"M26 21c-3 3-4 6-4 9s1 6 4 9\"/><path d=\"M30 18l14-14\"/><path d=\"M40 4l4 4\"/></svg>"
+    },
+    {
+      "slug": "pelican",
+      "name": "Brown pelicans",
+      "blurb": "Brown pelicans glide along the shore and perch on the docks and piers, waiting for a fisherman to share.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M10 30c0-8 6-12 12-12 4 0 6 2 6 5\"/><path d=\"M28 23l14 4-14 3\"/><path d=\"M28 30c-2 6-8 8-14 6\"/><circle cx=\"24\" cy=\"20\" r=\"1\"/><path d=\"M16 36v6M22 36v6\"/><path d=\"M10 30c-3 2-5 6-4 10\"/></svg>"
+    }
+  ]
+}

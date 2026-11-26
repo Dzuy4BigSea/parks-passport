@@ -491,3 +491,13 @@ counting check-ins and different parks and minutes, members only, reaching it gi
 badge with the group's name, announcement, passport section, kept after leaving and ending,
 stop, suggestions, admin section and validation, levels I to V), `test/e2e/group-goals.spec.js` (start a goal,
 reach it with a GPS check-in, Team badges; axe and no sideways scroll at 375 px), and the existing suite.
+
+### M37 — Clearwater, FL city pack (Flow 14)
+- `seed/cities/clearwater/` (81 places: parks, beaches, trails and sports grounds from Clearwater
+  Parks & Recreation's "Find My Neighborhood Park"; golf courses left out), `public/og/clearwater.jpg`.
+- `scripts/seed-clearwater.js` reads the list in Playwright's Chromium (the site blocks plain HTTP
+  clients); pins from OSM by name and the Census by address (the address wins when they're more
+  than 500 m apart), else OSM by address.
+
+Checks: `test/unit/cities.test.js` (pack valid, parks inside its bounds, city order and park
+count), and the Clearwater pages at 375 px.

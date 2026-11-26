@@ -14,7 +14,8 @@ HTML, SQLite at `/data/app.db`.
 - Seed parks: `npm run seed:scrape` (dev only; writes `seed/cities/st-pete/parks.csv`). Westminster:
   `node scripts/seed-westminster.js <saved City page.html>`. Asheville: `node scripts/seed-asheville.js`.
   Cookeville and Marple: `node scripts/seed-civicplus.js <cookeville|marple>`. Bend, Indianapolis,
-  Trinidad: `node scripts/seed-bend.js`, `seed-indy.js`, `seed-trinidad.js` (behind a proxy, add
+  Trinidad: `node scripts/seed-bend.js`, `seed-indy.js`, `seed-trinidad.js`. Clearwater: `node scripts/seed-clearwater.js`
+  (a real browser: the site blocks plain clients) (behind a proxy, add
   `NODE_USE_ENV_PROXY=1`). Each city is a pack in `seed/cities/<key>/` (SPEC Flow 14); its share
   image is `node scripts/make-og-image.js <key>`.
 - Budgets (CI `budgets` job): `npm run lighthouse` (mobile Performance ≥ 90), `npm run check:memory`
