@@ -8,20 +8,24 @@ const goHref = (ad, where) => `/go/ad/${ad.id}?from=${where}`;
 function slide(s, href) {
   const img = html`<picture>
     ${s.animated ? html`<source srcset="/ad-art/${s.image_key}.still.webp" media="(prefers-reduced-motion: reduce)">` : ''}
-    <img src="/ad-art/${s.image_key}.webp" alt="${s.alt}" width="300" height="250" loading="lazy" decoding="async">
+    <img src="/ad-art/${s.image_key}.webp" alt="${s.alt}" width="300" height="250" loading="lazy" decoding="async"${s.animated ? html` data-still="/ad-art/${s.image_key}.still.webp"` : ''}>
   </picture>`;
   return href ? html`<a href="${href}" rel="noopener sponsored">${img}</a>` : img;
 }
 
-/** The images: one, or a slider (Previous, Pause and Next appear with JS; without it, swipe). */
+/**
+ * The images: one, or a slider (Previous, Pause and Next appear with JS; without it, swipe). Pause
+ * also stills animated images, so a lone animated image gets a Pause button too.
+ */
 export function adSlides(ad, href = null) {
   const many = ad.slides.length > 1;
-  return html`<div class="ad-slider"${many ? html` data-slider` : ''}>
+  const moving = many || ad.slides.some((s) => s.animated);
+  return html`<div class="ad-slider"${moving ? html` data-slider` : ''}>
   <ul class="ad-slides"${many ? html` aria-label="${ad.slides.length} images"` : ''}>${ad.slides.map((s, i) => html`<li${many ? html` aria-label="${i + 1} of ${ad.slides.length}"` : ''}>${slide(s, href)}</li>`)}</ul>
-  ${many ? html`<div class="ad-controls" hidden>
-    <button type="button" class="ad-prev" aria-label="Previous image">‹</button>
-    <button type="button" class="ad-pause" aria-label="Pause slides" aria-pressed="false">❚❚</button>
-    <button type="button" class="ad-next" aria-label="Next image">›</button>
+  ${moving ? html`<div class="ad-controls" hidden>
+    ${many ? html`<button type="button" class="ad-prev" aria-label="Previous image">‹</button>` : ''}
+    <button type="button" class="ad-pause" aria-label="Pause" aria-pressed="false">❚❚</button>
+    ${many ? html`<button type="button" class="ad-next" aria-label="Next image">›</button>` : ''}
   </div>` : ''}
 </div>`;
 }

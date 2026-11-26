@@ -69,10 +69,11 @@ test('hidden unless on and within its dates (city time); state names for admin',
   db.prepare('UPDATE ads SET active = 0').run();
   assert.equal(adForPark(db, a, stPete, { now: new Date('2026-06-10T12:00:00Z') }), null);
   assert.equal(adState(adById(db, id), '2026-06-10'), 'Off');
-  // A paused nonprofit's ads don't show either.
+  // A paused nonprofit's ads don't show either, and admin says so.
   db.prepare('UPDATE ads SET active = 1').run();
   db.prepare("UPDATE nonprofits SET status = 'paused'").run();
   assert.equal(adForPark(db, a, stPete, { now: new Date('2026-06-10T12:00:00Z') }), null);
+  assert.equal(adState(adById(db, id), '2026-06-10'), 'Paused');
 });
 
 test('targeting: cities, categories, neighborhoods and hand-picked parks', async () => {
@@ -156,7 +157,7 @@ test('passport: the ad at the bottom of your own passport, never on /u pages', a
 });
 
 test('activity tip: shows on the activity once stamped today; opening it is the counted view', async () => {
-  const { db, people, make, park, stPete, now } = await world();
+  const { app, db, people, make, park, stPete, now } = await world();
   const a = park('a-park');
   seedActivities(db, [{ slug: 'meditate', name: 'Meditate', pillar: 'calm', measure: 'minutes', points: 3 }]);
   const act = db.prepare("SELECT * FROM activities WHERE slug = 'meditate'").get();
@@ -164,6 +165,9 @@ test('activity tip: shows on the activity once stamped today; opening it is the 
   assert.equal(tipsFor(db, a, stPete, { now: now() }).get(act.id).id, id);
   const before = (await people.ana.c.get('/st-pete/parks/a-park')).body;
   assert.doesNotMatch(before, /Tips from Calm Sangha/); // locked until today's stamp
+  // Only where the link shows: not signed out, not before today's stamp (and no view counted).
+  assert.equal((await client(app).get(`/tips/${id}?park=${a.id}`)).statusCode, 404);
+  assert.equal((await people.ana.c.get(`/tips/${id}?park=${a.id}`)).statusCode, 404);
   await people.ana.c.post('/st-pete/parks/a-park/stamp', {});
   const after = (await people.ana.c.get('/st-pete/parks/a-park')).body;
   assert.match(after, new RegExp(`href="/tips/${id}\\?park=${a.id}" data-tip>`));
@@ -213,6 +217,15 @@ test('admin: members get 404; an admin makes an ad, adds an image (resized to 60
   // Deleting removes the files.
   await c.post(`/admin/ads/${id}/delete`, {});
   assert.equal(fs.existsSync(adImagePath(app.config.uploadsDir, slide.image_key)), false);
+  // So does deleting the nonprofit (its ads go with it).
+  const again = await c.post('/admin/ads/new', { name: 'Again', nonprofit_id: String(np), placement: 'park', starts_on: '2026-06-01', ends_on: '2026-06-30', all_cities: '1', park_scope: 'all' });
+  const id2 = Number(/\/admin\/ads\/(\d+)/.exec(again.headers.location)[1]);
+  await c.postMultipart(`/admin/ads/${id2}/slides`, { alt: 'Teal' }, { image: { buffer: png, filename: 'a.png', type: 'image/png' } });
+  const key2 = adById(db, id2).slides[0].image_key;
+  assert.equal(fs.existsSync(adImagePath(app.config.uploadsDir, key2)), true);
+  await c.post(`/admin/nonprofits/${np}/delete`, {});
+  assert.equal(adById(db, id2), null);
+  assert.equal(fs.existsSync(adImagePath(app.config.uploadsDir, key2)), false);
 });
 
 test('animated GIF stays animated, with a still first frame', async () => {

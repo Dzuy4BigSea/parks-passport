@@ -72,9 +72,10 @@ test('an admin makes a two-image ad for one park; it shows at the bottom and sli
   await expect(ad.locator('li.is-current img')).toHaveAttribute('alt', 'Teal: breathe in');
   await ad.getByRole('button', { name: 'Next image' }).click();
   await expect(ad.locator('li.is-current img')).toHaveAttribute('alt', 'Pink: breathe out');
-  const pause = ad.getByRole('button', { name: 'Pause slides' });
+  const pause = ad.getByRole('button', { name: 'Pause' });
+  await expect(pause).toHaveAttribute('aria-pressed', 'false');
   await pause.click();
-  await expect(ad.getByRole('button', { name: 'Play slides' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(pause).toHaveAttribute('aria-pressed', 'true');
   await expect(ad.locator('li.is-current a')).toHaveAttribute('href', /^\/go\/ad\/\d+\?from=\d+$/);
   await expectNoAxeViolations(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);

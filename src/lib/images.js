@@ -218,7 +218,7 @@ async function storeAdImageNow(buffer, uploadsDir) {
   await fs.mkdir(path.dirname(file), { recursive: true });
   const opts = { ...SHARP_OPTS, limitInputPixels: false };
   try {
-    await sharp(buffer, { ...opts, animated }).resize(AD_W, AD_H, { fit: 'cover' }).webp({ quality: 82, loop: 0 }).toFile(file);
+    await sharp(buffer, { ...opts, animated }).resize(AD_W, AD_H, { fit: 'cover' }).webp({ quality: 82 }).toFile(file);
     if (animated) await sharp(buffer, { ...opts, pages: 1 }).resize(AD_W, AD_H, { fit: 'cover' }).webp({ quality: 82 }).toFile(still);
   } catch {
     await fs.rm(file, { force: true });

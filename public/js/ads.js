@@ -1,6 +1,7 @@
 // Nonprofit ads and activity tips (SPEC Flow 25).
 // Slider: advances every 6 s with Previous, Pause and Next; never moves by itself with reduced
-// motion; pauses while hovered or focused. Without JS the slides scroll sideways.
+// motion; pauses while hovered or focused. Pause also stills animated images (their first frame).
+// Without JS the slides scroll sideways.
 // Tips: "Tips from …" opens a pop-up with the tip (fetched from /tips/:id?embed=1, which counts the
 // view); Escape or Close shuts it. Without JS the link opens the tip's page.
 import { openDialog, el, reducedMotion } from './fx.js';
@@ -11,7 +12,8 @@ export function startSlider(root) {
   const track = root.querySelector('.ad-slides');
   const slides = [...track.children];
   const controls = root.querySelector('.ad-controls');
-  if (slides.length < 2 || !controls) return;
+  if (!controls) return;
+  const many = slides.length > 1;
   controls.hidden = false;
   root.classList.add('is-js');
   const pauseBtn = controls.querySelector('.ad-pause');
@@ -27,14 +29,18 @@ export function startSlider(root) {
       for (const a of s.querySelectorAll('a')) a.tabIndex = on ? 0 : -1;
     });
   };
+  // One fixed name ("Pause") with a pressed state; the icon shows what a press does next.
   const setPaused = (p) => {
     paused = p;
     pauseBtn.setAttribute('aria-pressed', String(p));
-    pauseBtn.setAttribute('aria-label', p ? 'Play slides' : 'Pause slides');
     pauseBtn.textContent = p ? '▶' : '❚❚';
+    for (const img of root.querySelectorAll('img[data-still]')) {
+      img.dataset.moving ||= img.getAttribute('src');
+      img.src = p ? img.dataset.still : img.dataset.moving;
+    }
   };
-  controls.querySelector('.ad-prev').addEventListener('click', () => show(index - 1));
-  controls.querySelector('.ad-next').addEventListener('click', () => show(index + 1));
+  controls.querySelector('.ad-prev')?.addEventListener('click', () => show(index - 1));
+  controls.querySelector('.ad-next')?.addEventListener('click', () => show(index + 1));
   pauseBtn.addEventListener('click', () => setPaused(!paused));
   root.addEventListener('pointerenter', () => { hold = true; });
   root.addEventListener('pointerleave', () => { hold = false; });
@@ -42,6 +48,7 @@ export function startSlider(root) {
   root.addEventListener('focusout', () => { hold = false; });
   setPaused(paused);
   show(0);
+  if (!many) return;
   const timer = setInterval(() => {
     if (!root.isConnected) { clearInterval(timer); return; }
     if (!paused && !hold && !document.hidden) show(index + 1);

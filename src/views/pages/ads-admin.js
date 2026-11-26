@@ -7,7 +7,7 @@ import { formatDate } from '../../domain/time.js';
 import { tipContent } from '../ads.js';
 
 const crumb = html`<p class="breadcrumb"><a href="/admin">Admin</a> › <a href="/admin/ads">Ads</a></p>`;
-const STATE_CLASS = { Running: 'is-running', Scheduled: 'is-scheduled', Ended: 'is-ended', Off: 'is-off' };
+const STATE_CLASS = { Running: 'is-running', Scheduled: 'is-scheduled', Ended: 'is-ended', Off: 'is-off', Paused: 'is-off' };
 const day = (d) => formatDate(d);
 
 export function adminAdsPage({ ads }) {

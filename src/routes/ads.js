@@ -9,6 +9,8 @@ import { storeAdImage, removeAdImage, adImagePath } from '../lib/images.js';
 import { tipContent } from '../views/ads.js';
 import { adminAdsPage, adminAdForm, tipPage } from '../views/pages/ads-admin.js';
 import { parkPath } from '../views/urls.js';
+import { activitiesForPark, visitToday } from '../domain/activities.js';
+import { localDate } from '../domain/time.js';
 
 // Nonprofit ads and activity tips (SPEC Flow 25).
 export default async function adRoutes(app) {
@@ -48,13 +50,17 @@ export default async function adRoutes(app) {
   });
 
   // A tip: the pop-up's content (?embed=1, fetched by public/js/ads.js) or a page without JS.
+  // Only where its link shows: a member who stamped this park today and has the activity here.
   // Opening it is the view that's counted.
   app.get('/tips/:id', async (req, reply) => {
     const ad = idOf(req.params.id) ? adById(db, idOf(req.params.id)) : null;
     const park = parkOf(idOf(req.query.park));
     const theme = park && cityById(db, park.city_id);
-    if (!ad || ad.placement !== 'activity' || !park || !adShowsAt(db, ad, { park, theme, now: now() })) return reply.callNotFound();
-    if (!isBot(req.headers['user-agent'])) recordAdView(db, ad.id, park.id, { now: now() });
+    const user = req.user;
+    if (!ad || ad.placement !== 'activity' || !park || !user || !adShowsAt(db, ad, { park, theme, now: now() })) return reply.callNotFound();
+    if (!visitToday(db, user.id, park.id, localDate(now(), theme.time_zone))
+      || !activitiesForPark(db, user, park).some((a) => a.id === ad.activity_id)) return reply.callNotFound();
+    if (req.method === 'GET' && !isBot(req.headers['user-agent'])) recordAdView(db, ad.id, park.id, { now: now() });
     if (req.query.embed === '1') {
       return reply.type('text/html; charset=utf-8').header('Cache-Control', 'no-store').send(String(tipContent(ad, park)));
     }
@@ -75,12 +81,12 @@ export default async function adRoutes(app) {
         parksByCity: Object.fromEntries(cities.map((c) => [c.id, db.prepare('SELECT id, name FROM parks WHERE city_id = ? AND active = 1 ORDER BY name COLLATE NOCASE').all(c.id)])),
       };
     };
-    const form = (req, extra) => adminAdForm({ csrf: req.csrfToken(), ...options(), today: todayHere(), ...extra });
-    const todayHere = () => now().toISOString().slice(0, 10);
+    // New ads default to today in the current city (not the UTC day).
+    const form = (req, extra) => adminAdForm({ csrf: req.csrfToken(), ...options(), today: localDate(now(), req.city?.time_zone), ...extra });
     const adOf = (req) => (idOf(req.params.id) ? adById(db, idOf(req.params.id)) : null);
 
     admin.get('/ads', async (req, reply) => reply.page(adminAdsPage({
-      ads: adsForAdmin(db, { now: now(), timeZone: listCities(db)[0]?.time_zone }),
+      ads: adsForAdmin(db, { now: now(), timeZone: req.city?.time_zone }),
     })));
     admin.get('/ads/new', async (req, reply) => reply.page(form(req, { isNew: true })));
     admin.post('/ads/new', async (req, reply) => {

@@ -24,9 +24,10 @@ const one = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max
 const many = (v) => [].concat(v ?? []).map(String).filter(Boolean);
 const validDate = (s) => DATE.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).toISOString().startsWith(s);
 
-/** The state an admin sees: Off, Scheduled, Running or Ended (by today's date). */
+/** The state an admin sees: Off, Paused (its nonprofit is), Scheduled, Running or Ended (by today's date). */
 export function adState(ad, today) {
   if (!ad.active) return 'Off';
+  if (ad.nonprofit_status && ad.nonprofit_status !== 'active') return 'Paused';
   if (today < ad.starts_on) return 'Scheduled';
   if (today > ad.ends_on) return 'Ended';
   return 'Running';
@@ -247,7 +248,7 @@ export function adsForAdmin(db, { now = new Date(), timeZone } = {}) {
   const since = dayOf(new Date(now.getTime() - 29 * 86400e3));
   const today = localDate(now, timeZone);
   const sum = (col, recent) => `COALESCE((SELECT SUM(${col}) FROM ad_stats s WHERE s.ad_id = a.id${recent ? ' AND s.day >= @since' : ''}), 0)`;
-  return db.prepare(`SELECT a.*, n.name AS nonprofit_name, ac.name AS activity_name,
+  return db.prepare(`SELECT a.*, n.name AS nonprofit_name, n.status AS nonprofit_status, ac.name AS activity_name,
       (SELECT COUNT(*) FROM ad_slides s WHERE s.ad_id = a.id) AS slide_count,
       (SELECT image_key FROM ad_slides s WHERE s.ad_id = a.id ORDER BY sort, id LIMIT 1) AS first_key,
       (SELECT GROUP_CONCAT(c.name, ', ') FROM ad_cities x JOIN city_themes c ON c.id = x.city_id WHERE x.ad_id = a.id) AS city_names,

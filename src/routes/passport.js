@@ -30,7 +30,7 @@ export default async function passportRoutes(app) {
     const badges = badgeBoard(db, user.id, { cityId: city.id });
     // A nonprofit ad at the bottom (SPEC Flow 25); own passport only, never /u/:handle.
     const ad = adForPassport(db, city, { now: app.now(), random: app.random });
-    if (ad && !isBot(req.headers['user-agent'])) recordAdView(db, ad.id, 0, { now: app.now() });
+    if (ad && req.method === 'GET' && !isBot(req.headers['user-agent'])) recordAdView(db, ad.id, 0, { now: app.now() });
     return reply.page(passportPage({
       ad,
       ...passportData(db, user.id, { cityId: city.id }), user, csrf: req.csrfToken(), points, level: levelFor(points),
