@@ -146,7 +146,7 @@ function palsCard(items, total) {
   return html`<section class="home-card pals-mini" aria-labelledby="palsmini-h">
   <h2 id="palsmini-h">Park Pals</h2>
   ${items.length ? html`<ul class="feed">${items.map((i) => html`<li class="feed-item"><span class="feed-icon" aria-hidden="true">${i.type === 'badge' ? (i.badge_art || '🏅') : i.type === 'photo' ? '📷' : '📍'}</span>
-    <p>${avatar(i.user, { size: 24, visible: sharesWithPals(i.user) })} <strong>${i.user.display_name}</strong> ${i.type === 'stamp' ? html`stamped <a href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : i.type === 'photo' ? html`added a photo at <a href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : html`earned ${i.badge_name}`}</p></li>`)}</ul>
+    <p>${avatar(i.user, { size: 24, visible: sharesWithPals(i.user) })} <strong>${i.user.display_name}</strong> ${i.type === 'stamp' ? html`stamped <a class="park-name" href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : i.type === 'photo' ? html`added a photo at <a class="park-name" href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : html`earned ${i.badge_name}`}</p></li>`)}</ul>
     <p><a href="/pals">See all</a></p>`
     : html`<p>Exploring is better with friends. Share your invite link and race each other to ${total}.</p><p><a class="btn btn-small" href="/pals">Invite a Park Pal</a></p>`}
 </section>`;

@@ -12,12 +12,12 @@ function feedItem(item) {
   const when = formatDate(localDate(new Date(item.at)));
   if (item.type === 'stamp') {
     return html`<li class="feed-item"><span class="feed-icon" aria-hidden="true">✓</span>
-  <p>${who} stamped <a href="${parkPath({ city_key: item.city_key, slug: item.park_slug })}">${item.park_name}</a>
+  <p>${who} stamped <a class="park-name" href="${parkPath({ city_key: item.city_key, slug: item.park_slug })}">${item.park_name}</a>
   <span class="muted">${formatDate(item.visited_on)} · ${METHOD_LABELS[item.method]}</span></p></li>`;
   }
   if (item.type === 'photo') {
     return html`<li class="feed-item feed-photo"><a href="/photos/${item.photo_id}/full"><img src="/photos/${item.photo_id}/thumb" alt="${item.caption || `Photo of ${item.park_name}`}" width="72" height="72" loading="lazy"></a>
-  <p>${who} added a photo of <a href="${parkPath({ city_key: item.city_key, slug: item.park_slug })}">${item.park_name}</a> <span class="muted">${when}</span></p></li>`;
+  <p>${who} added a photo of <a class="park-name" href="${parkPath({ city_key: item.city_key, slug: item.park_slug })}">${item.park_name}</a> <span class="muted">${when}</span></p></li>`;
   }
   return html`<li class="feed-item">${badgeArt(item.badge_art, 'feed-icon')}
   <p>${who} earned the <strong>${item.badge_name}</strong> badge <span class="muted">${when}</span></p></li>`;

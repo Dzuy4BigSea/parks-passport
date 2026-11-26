@@ -27,7 +27,7 @@ export function stampFinderPage({ csrf, problem = null }) {
   <noscript><p>Finding your park needs location and JavaScript. You can still <a href="/parks">pick your park from the list</a> and stamp it there.</p></noscript>
   <p class="muted">We use your location once to find the park. Nobody else ever sees it.</p>
   ${problem?.nearby?.length ? html`<h2>Closest parks</h2>
-  <ul class="finder-list">${problem.nearby.map((p) => html`<li><a href="${parkPath(p, '#stamp-h')}"><span>${p.name}</span><span class="distance">${formatMiles(p.distance_m)}</span></a></li>`)}</ul>
+  <ul class="finder-list">${problem.nearby.map((p) => html`<li><a href="${parkPath(p, '#stamp-h')}"><span class="park-name">${p.name}</span><span class="distance">${formatMiles(p.distance_m)}</span></a></li>`)}</ul>
   <p class="muted">Open a park to stamp it on the honor system.</p>` : ''}
   <p><a href="/parks">Browse all parks</a></p>
 </section>`,
