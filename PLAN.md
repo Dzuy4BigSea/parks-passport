@@ -478,7 +478,7 @@ home card), `test/e2e/groups.spec.js` (start, ask with the code, approve, home c
 sideways scroll at 375 px), and the existing suite.
 
 ### M36 — Group goals and team badges (Flow 24)
-- Migration 030 (`group_goals`, `badges.is_group`, `badge_ideas.kind`), `src/domain/group-goals.js`
+- Migration 031 (`group_goals`, `badges.is_group`, `badge_ideas.kind`), `src/domain/group-goals.js`
   (set, stop, progress, reach and award, team badges), `seed/group-goals.json` and
   `seed/team-badges.json`. Goals are checked after stamps and activity logs (`awardBadges`).
 - The group page's goal section and owner form, the home card's goal bar, the passport's Team

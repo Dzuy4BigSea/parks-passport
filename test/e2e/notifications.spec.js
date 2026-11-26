@@ -32,6 +32,8 @@ test('an admin gives a badge; it pops up for the member with the note, and the b
   const { email } = await signUp(member, { name: 'Gift Ee' });
   await member.getByRole('button', { name: 'Start exploring' }).click();
   const memberId = db.prepare('SELECT id FROM users WHERE email = ?').pluck().get(email);
+  // Sign-up's own notices (an Early Bird number, while copies last) are read, so the bell counts just the gift.
+  db.prepare("UPDATE notifications SET read_at = '2026-01-01T00:00:00Z' WHERE user_id = ?").run(memberId);
   db.close();
 
   await page.goto(`/admin/users/${memberId}/badges`);
@@ -52,7 +54,7 @@ test('an admin gives a badge; it pops up for the member with the note, and the b
   await reveal.getByRole('button', { name: /Tap to reveal/ }).click();
   await expect(reveal.locator('.reveal-name')).toHaveText('Cleanup Crew');
   await expect(reveal.locator('.reveal-desc')).toHaveText('Helped at a park cleanup.');
-  await expect(reveal.locator('.reveal-note')).toHaveText('From Ada Admin: “Thanks for helping at the cleanup!”');
+  await expect(reveal.locator('.reveal-note')).toHaveText('From Parks Passport: “Thanks for helping at the cleanup!”');
   await expectNoAxeViolations(member);
   await reveal.getByRole('button', { name: 'Awesome!' }).click();
 
@@ -61,7 +63,7 @@ test('an admin gives a badge; it pops up for the member with the note, and the b
   await expect(bell).toHaveAccessibleName('Notifications, 1 unread');
   await bell.click();
   await expect(member.getByRole('heading', { level: 1 })).toHaveText('Notifications');
-  await expect(member.locator('.notification.is-new')).toContainText('Ada Admin gave you the Cleanup Crew badge');
+  await expect(member.locator('.notification.is-new')).toContainText('Parks Passport gave you the Cleanup Crew badge');
   await expectNoAxeViolations(member);
   expect(await member.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await member.reload();

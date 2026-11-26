@@ -1,7 +1,7 @@
 import { html } from '../html.js';
 import { cityPath } from '../urls.js';
 import { avatar } from '../avatar.js';
-import { csrfField, errorSummary, field } from '../forms.js';
+import { csrfField, errorSummary, field, PHOTO_ACCEPT } from '../forms.js';
 import { visibilityForm } from './pals.js';
 
 const nextField = (next) => (next ? html`<input type="hidden" name="next" value="${next}">` : '');
@@ -148,7 +148,7 @@ function profilePhoto({ csrf, user, error }) {
   <form method="post" action="/account/avatar" class="inline-form photo-form" enctype="multipart/form-data">
     ${csrfField(csrf)}
     <label for="avatar-file" class="visually-hidden">Choose a profile photo</label>
-    <input type="file" id="avatar-file" name="photo" accept="image/jpeg,image/png,image/webp" required${error ? html` aria-describedby="photo-error" aria-invalid="true"` : ''}>
+    <input type="file" id="avatar-file" name="photo" accept="${PHOTO_ACCEPT}" data-camera="user" data-crop="circle" required${error ? html` aria-describedby="photo-error" aria-invalid="true"` : ''}>
     <button type="submit" class="btn btn-small">${user.avatar_key ? 'Replace photo' : 'Upload photo'}</button>
   </form>
   ${user.avatar_key ? html`<form method="post" action="/account/avatar/delete" class="inline-form">${csrfField(csrf)}<button type="submit" class="btn btn-quiet btn-small">Remove photo</button></form>` : ''}
@@ -177,7 +177,7 @@ export function accountPage({ csrf, user, errors = {}, notice, ideas = false, va
   return {
     title: 'Account',
     current: 'account',
-    scripts: ['/js/prefs.js'],
+    scripts: ['/js/prefs.js', '/js/upload-check.js'],
     body: html`<div class="narrow">
 <h1>Account</h1>
 ${notice ? html`<p class="notice" role="status">${notice}</p>` : ''}

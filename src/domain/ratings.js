@@ -58,7 +58,7 @@ export function ratingSummary(db, parkId) {
 
 // Reviews whose comment the viewer may read (non-empty, not hidden unless own).
 export function visibleReviews(db, viewer, parkId) {
-  const rows = db.prepare(`SELECT r.*, u.display_name, u.handle FROM ratings r JOIN users u ON u.id = r.user_id
+  const rows = db.prepare(`SELECT r.*, u.display_name, u.handle, u.avatar_key, u.default_visibility FROM ratings r JOIN users u ON u.id = r.user_id
     WHERE r.park_id = ? AND r.comment != '' ORDER BY r.updated_at DESC`).all(parkId);
   return rows.filter((r) => {
     if (viewer?.is_admin) return true;

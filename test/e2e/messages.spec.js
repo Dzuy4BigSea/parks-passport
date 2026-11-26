@@ -72,7 +72,7 @@ test('write, preview and send a message with a badge; the member sees it, then t
   // With celebrations off (as this suite runs), the badge is announced in the page, not flipped.
   await expect(member.getByRole('dialog')).toHaveCount(0);
   await expect(member.locator('.announcements')).toContainText('New badge: Two-City Explorer');
-  await expect(member.locator('.announcements .gift-note')).toHaveText('From Max Admin: “Thank you for being an early adopter!”');
+  await expect(member.locator('.announcements .gift-note')).toHaveText('From Parks Passport: “Thank you for being an early adopter!”');
 
   // Once only.
   await member.goto('/st-pete/parks');

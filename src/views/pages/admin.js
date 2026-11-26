@@ -326,6 +326,7 @@ ${invites.length ? html`<div class="table-wrap"><table class="admin-table">
   ${giveError ? html`<p class="error-text" role="alert">${giveError}</p>` : ''}
   <div class="field"><label for="give_badge">Badge</label>
     <select id="give_badge" name="badge_id" required><option value="">Choose…</option>${badges.map((b) => html`<option value="${b.id}"${String(giveValues.badge_id) === String(b.id) ? html` selected` : ''}>${badgeOption(b)}</option>`)}</select></div>
+  ${input('from_name', 'From', giveValues.from_name ?? 'Parks Passport', { hint: 'Who the badge says it\u2019s from. Up to 40 characters.', attrs: html`maxlength="40"` })}
   ${input('note', 'Note (optional)', giveValues.note, { hint: 'Shown with the badge. Up to 140 characters.', attrs: html`maxlength="140"` })}
   <p class="hint">It pops up the next time each of them opens the app. Limited editions are numbered in the order the members joined. Anyone who already has the badge is skipped.</p>
   <button type="submit" class="btn btn-pop">Give to ticked members</button>
@@ -597,6 +598,7 @@ ${available.length ? html`<form method="post" action="/admin/users/${member.id}/
   ${csrfField(csrf)}
   <div class="field"><label for="badge_id">Badge</label>
     <select id="badge_id" name="badge_id" required><option value="">Choose…</option>${available.map((b) => html`<option value="${b.id}"${String(values.badge_id) === String(b.id) ? html` selected` : ''}>${badgeOption(b)}</option>`)}</select></div>
+  ${input('from_name', 'From', values.from_name ?? 'Parks Passport', { hint: 'Who the badge says it\u2019s from. Up to 40 characters.', attrs: html`maxlength="40"` })}
   ${input('note', 'Note (optional)', values.note, { hint: 'Shown with the badge, e.g. "Thanks for helping at the park cleanup!" Up to 140 characters.', attrs: html`maxlength="140"` })}
   <p class="hint">${member.display_name} sees it pop up the next time they open Parks Passport, and in their notifications. Badges you give are never taken away by the rules.</p>
   <button type="submit" class="btn btn-pop">Give badge</button>

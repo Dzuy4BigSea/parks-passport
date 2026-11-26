@@ -31,11 +31,11 @@ function requestsSection({ requests, csrf }) {
   return html`<section aria-labelledby="req-h" id="requests">
   <h2 id="req-h">Pal requests</h2>
   ${incoming.length ? html`<ul class="pal-list">${incoming.map((r) => html`<li>
-    <span><strong>${r.display_name}</strong> <span class="muted">@${r.handle}</span> wants to be Park Pals</span>
+    <span class="pal-who">${avatar({ id: r.user_id, display_name: r.display_name, avatar_key: r.avatar_key }, { size: 36, visible: r.face })} <span><strong>${r.display_name}</strong> <span class="muted">@${r.handle}</span> wants to be Park Pals</span></span>
     <span class="request-actions">${button(r, 'accept', 'Accept', 'btn-primary')}${button(r, 'decline', 'Decline', 'btn-quiet')}</span>
   </li>`)}</ul>` : ''}
   ${outgoing.length ? html`<h3>Waiting for an answer</h3><ul class="pal-list">${outgoing.map((r) => html`<li>
-    <span>${r.display_name} <span class="muted">@${r.handle}</span></span>
+    <span class="pal-who">${avatar({ id: r.user_id, display_name: r.display_name, avatar_key: r.avatar_key }, { size: 36, visible: r.face })} ${r.display_name} <span class="muted">@${r.handle}</span></span>
     ${button(r, 'cancel', 'Cancel request', 'btn-quiet')}
   </li>`)}</ul>` : ''}
 </section>`;
@@ -160,7 +160,7 @@ export function invitePage({ inviter, user, csrf, token, state }) {
   return {
     title: `${inviter.display_name} invited you`,
     body: html`<div class="narrow">
-<h1>${inviter.display_name} invited you to be Park Pals</h1>
+<div class="cover-name">${avatar(inviter, { size: 56, visible: inviter.face })}<h1>${inviter.display_name} invited you to be Park Pals</h1></div>
 ${action}
 </div>`,
   };

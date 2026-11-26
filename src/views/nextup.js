@@ -4,6 +4,7 @@ import { badgeArt } from './badge-art.js';
 import { formatMiles } from '../domain/geo.js';
 import { parkPath } from './urls.js';
 import { formatDate } from '../domain/time.js';
+import { avatar, sharesWithPals } from './avatar.js';
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 // "2 more parks" from a badge's unit ("parks", "visits", "weeks", "parks in a weekend").
@@ -23,7 +24,9 @@ function palsCard(pals) {
     : pals.count
       ? { title: plural(pals.count, 'Park Pal'), meta: 'No pal stamps yet. Invite another pal?' }
       : { title: 'Invite a Park Pal', meta: "Explore together and see each other's stamps." };
-  return html`<li class="reveal" style="--i:3"><a href="/pals"><span class="icon">${ICONS.pals}</span><span>
+  // The pal's face when the card is about their stamp (the feed only holds pals who share).
+  const icon = pals.latest ? avatar(pals.latest.user, { size: 48, visible: sharesWithPals(pals.latest.user) }) : ICONS.pals;
+  return html`<li class="reveal" style="--i:3"><a href="/pals"><span class="icon">${icon}</span><span>
     <span class="label">Park Pals</span><strong>${title}</strong><span class="meta">${meta}</span></span></a></li>`;
 }
 
