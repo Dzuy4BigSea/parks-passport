@@ -58,6 +58,7 @@ function makePals(db, userId, otherId, { now = new Date(), random = Math.random 
     const { changes } = db.prepare('INSERT OR IGNORE INTO pal_links (user_a, user_b, created_at) VALUES (?, ?, ?)')
       .run(a, b, now.toISOString());
     db.prepare('DELETE FROM pal_requests WHERE (from_user = ? AND to_user = ?) OR (from_user = ? AND to_user = ?)').run(a, b, b, a);
+    db.prepare('DELETE FROM pal_declines WHERE (from_user = ? AND to_user = ?) OR (from_user = ? AND to_user = ?)').run(a, b, b, a);
     return changes > 0;
   })();
   if (!linked) return false;
@@ -92,11 +93,11 @@ export function normalizeCode(input) {
 // The user's friend code, created on first use.
 export function friendCodeFor(db, userId, { now = new Date() } = {}) {
   const row = db.prepare('SELECT code FROM pal_codes WHERE user_id = ?').get(userId);
-  return row ? row.code : regenerateFriendCode(db, userId, { now });
+  return row ? row.code : createFriendCode(db, userId, { now });
 }
 
-// Replaces the user's friend code; the old one stops working. Retries the rare collision.
-export function regenerateFriendCode(db, userId, { now = new Date() } = {}) {
+// Gives the user their friend code, which then never changes. Retries the rare collision.
+function createFriendCode(db, userId, { now = new Date() } = {}) {
   for (;;) {
     const code = newCode();
     if (db.prepare('SELECT 1 FROM pal_codes WHERE code = ? AND user_id != ?').get(code, userId)) continue;
@@ -133,6 +134,8 @@ export function requestByCode(db, user, input, { now = new Date(), random = Math
     return { paired: true, to };
   }
   if (db.prepare('SELECT 1 FROM pal_requests WHERE from_user = ? AND to_user = ?').get(user.id, to.id)) return { error: 'pending', to };
+  // They declined me before: no new request or notification, and no hint that they said no.
+  if (db.prepare('SELECT 1 FROM pal_declines WHERE from_user = ? AND to_user = ?').get(user.id, to.id)) return { error: 'pending', to };
   // Counted from a log that cancel, decline and accept never shorten.
   const dayAgo = new Date(now.getTime() - 86400e3).toISOString();
   db.prepare('DELETE FROM pal_request_sends WHERE at < ?').run(dayAgo);
@@ -140,6 +143,7 @@ export function requestByCode(db, user, input, { now = new Date(), random = Math
     return { error: 'daily' };
   }
   db.transaction(() => {
+    db.prepare('DELETE FROM pal_declines WHERE from_user = ? AND to_user = ?').run(to.id, user.id); // I've changed my mind about them
     db.prepare('INSERT INTO pal_requests (from_user, to_user, created_at) VALUES (?, ?, ?)').run(user.id, to.id, now.toISOString());
     db.prepare('INSERT INTO pal_request_sends (user_id, at) VALUES (?, ?)').run(user.id, now.toISOString());
     notify(db, to.id, { kind: 'pal_request', text: '{actor} wants to be Park Pals.', link: '/pals#requests', actorId: user.id }, { now });
@@ -165,7 +169,12 @@ export function answerRequest(db, userId, requestId, accept, { now = new Date(),
     WHERE r.id = ? AND r.to_user = ?`).get(requestId, userId);
   if (!r) return null;
   if (accept) makePals(db, userId, r.from_user, { now, random });
-  else db.prepare('DELETE FROM pal_requests WHERE id = ?').run(r.id);
+  else {
+    db.transaction(() => {
+      db.prepare('DELETE FROM pal_requests WHERE id = ?').run(r.id);
+      db.prepare('INSERT OR REPLACE INTO pal_declines (from_user, to_user, declined_at) VALUES (?, ?, ?)').run(r.from_user, userId, now.toISOString());
+    })();
+  }
   return { ok: true, from: r.display_name };
 }
 

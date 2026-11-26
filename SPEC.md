@@ -219,8 +219,8 @@ Done when:
 - [ ] A link that no longer works (regenerated, renewed after removing a pal, or cut short when
       pasted) shows "This invite link doesn't work anymore" with what to do next (status 404).
 - [ ] **Friend codes:** the Pals page shows my friend code (8 characters shown as `XXXX-XXXX`,
-      no look-alike characters such as 0/O or 1/I/L), with Copy and "New code" (the old one stops
-      working). Typing a friend's code (any case, spaces or dash optional) under "Add a pal by
+      no look-alike characters such as 0/O or 1/I/L), with Copy. The code never changes. Once I decline someone's request, their
+      later requests to me are quietly dropped. Typing a friend's code (any case, spaces or dash optional) under "Add a pal by
       code" sends them a **pal request**. It doesn't make us pals until they accept.
 - [ ] **Pal requests:** the Pals page lists requests to me (Accept / Decline) and requests I
       sent (Cancel). Accepting makes us pals both ways and checks badges, like an invite link.

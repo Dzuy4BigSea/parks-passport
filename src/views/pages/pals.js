@@ -60,10 +60,6 @@ function codeSection({ csrf, friendCode, codeError, codeValue }) {
     </div>
     <button type="submit" class="btn btn-primary">Send request</button>
   </form>
-  <form method="post" action="/pals/code/regenerate" class="inline-form">
-    ${csrfField(csrf)}
-    <button type="submit" class="btn btn-quiet">Make a new code (the old one stops working)</button>
-  </form>
 </section>`;
 }
 
@@ -91,10 +87,14 @@ ${codeSection({ csrf, friendCode, codeError, codeValue })}
     <input id="invite-link" type="text" readonly value="${inviteUrl}">
     <button type="button" class="btn" data-copy="#invite-link" hidden>Copy link</button>
   </div>
-  <form method="post" action="/pals/invite/regenerate" class="inline-form">
-    ${csrfField(csrf)}
-    <button type="submit" class="btn btn-quiet">Make a new link (the old one stops working)</button>
-  </form>
+  <details class="link-reset">
+    <summary>Link shared with the wrong people?</summary>
+    <p>Anyone who opens your link can become your pal. Make a new one and the old link stops working. Your pals stay your pals.</p>
+    <form method="post" action="/pals/invite/regenerate" class="inline-form">
+      ${csrfField(csrf)}
+      <button type="submit" class="btn btn-quiet">Make a new link</button>
+    </form>
+  </details>
 </section>
 
 <section aria-labelledby="board-h">

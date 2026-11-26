@@ -2,7 +2,7 @@ import { requireUser, safeNext } from '../lib/auth.js';
 import { myGroups } from '../domain/groups.js';
 import {
   inviteTokenFor, regenerateInvite, inviterForToken, acceptInvite, removePal, palsOf, leaderboard, palsFeed,
-  friendCodeFor, regenerateFriendCode, formatCode, requestByCode, palRequests, answerRequest, cancelRequest, CODE_LIMITS,
+  friendCodeFor, formatCode, requestByCode, palRequests, answerRequest, cancelRequest, CODE_LIMITS,
 } from '../domain/pals.js';
 import { areFriends, canViewOwner, withFaces, VISIBILITY } from '../domain/visibility.js';
 import { badgeBoard } from '../domain/badges/index.js';
@@ -26,9 +26,8 @@ export default async function palRoutes(app) {
     accepted: "You're now Park Pals!",
     regenerated: 'New invite link made. The old one no longer works.',
     removed: 'Pal removed. Your invite link was renewed, so the old one no longer works.',
-    code: 'New friend code made. The old one no longer works.',
     requested: "Request sent. You'll be Park Pals when they accept.",
-    declined: 'Request declined. If they keep asking, make a new friend code below.',
+    declined: "Request declined. They won't be able to send you another.",
     cancelled: 'Request cancelled.',
     group_invited: 'Group invite sent. They\u2019ll see it in their notifications.',
     group_already: 'They\u2019re already in that group, or already invited.',
@@ -68,10 +67,6 @@ export default async function palRoutes(app) {
     }
     if (result.paired) app.track(req.user.id, 'pal_accepted');
     return reply.redirect(`/pals?done=${result.paired ? 'accepted' : 'requested'}`, 303);
-  });
-  app.post('/pals/code/regenerate', { preHandler: requireUser }, async (req, reply) => {
-    regenerateFriendCode(db, req.user.id, { now: now() });
-    return reply.redirect('/pals?done=code', 303);
   });
   const requestId = (req) => (/^\d+$/.test(req.params.id) ? Number(req.params.id) : 0);
   for (const action of ['accept', 'decline']) {

@@ -327,7 +327,7 @@ test('friend code: 8 characters with no look-alikes; typing it sends a request; 
   assert.match(again.body, /already Park Pals with ana/);
 });
 
-test('pal requests: decline and cancel; self, repeat, mutual request; a new code kills the old one', async () => {
+test('pal requests: decline (and asking again after a no) and cancel; self, repeat, mutual request; codes never change', async () => {
   const { db, people } = await world();
   const ana = await codeOf('ana', people);
   const ben = await codeOf('ben', people);
@@ -339,6 +339,20 @@ test('pal requests: decline and cancel; self, repeat, mutual request; a new code
   assert.equal((await people.ana.c.post(`/pals/requests/${id}/decline`)).headers.location, '/pals?done=declined');
   assert.doesNotMatch((await people.cat.c.get('/pals')).body, /Waiting for an answer/); // just gone
   assert.equal(db.prepare('SELECT COUNT(*) FROM pal_links').pluck().get(), 0);
+  // Declined: asking again is quietly dropped (no request, no notification, no hint of the no).
+  const pings = () => db.prepare("SELECT COUNT(*) FROM notifications WHERE kind = 'pal_request'").pluck().get();
+  const before = pings();
+  assert.match((await people.cat.c.post('/pals/code', { code: ana })).body, /You already asked ana/);
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_requests').pluck().get(), 0);
+  assert.equal(pings(), before);
+  // Until ana asks cat herself: then it's a normal request again, and accepting makes pals.
+  await people.ana.c.post('/pals/code', { code: await codeOf('cat', people) });
+  const back = db.prepare('SELECT id FROM pal_requests WHERE from_user = (SELECT id FROM users WHERE display_name = ?)').pluck().get('ana');
+  assert.ok(back);
+  await people.cat.c.post(`/pals/requests/${back}/accept`);
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_links').pluck().get(), 1);
+  assert.equal(db.prepare('SELECT COUNT(*) FROM pal_declines').pluck().get(), 0);
+  db.prepare('DELETE FROM pal_links').run();
 
   await people.cat.c.post('/pals/code', { code: ben });
   const rid = db.prepare('SELECT id FROM pal_requests').pluck().get();
@@ -357,9 +371,9 @@ test('pal requests: decline and cancel; self, repeat, mutual request; a new code
   await people.cat.c.post(`${link}/accept`);
   assert.equal(db.prepare('SELECT COUNT(*) FROM pal_requests').pluck().get(), 0);
 
-  await people.ana.c.post('/pals/code/regenerate');
-  assert.notEqual(await codeOf('ana', people), ana);
-  assert.match((await people.cat.c.post('/pals/code', { code: ana })).body, /doesn(&#39;|')t match anyone/);
+  // Friend codes never change: there's no way to make a new one.
+  assert.equal((await people.ana.c.post('/pals/code/regenerate')).statusCode, 404);
+  assert.equal(await codeOf('ana', people), ana);
 });
 
 test("pal codes can't be guessed: 10 wrong codes an hour, 20 requests a day", async () => {

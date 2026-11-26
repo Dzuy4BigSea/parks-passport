@@ -1879,3 +1879,6 @@ svg.gary-art { height: auto; }
 .hpin-todo { background: #9fb1ae; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(14, 42, 51, 0.25); }
 .hpin-next { background: var(--aqua-ink); border: 3px solid #fff; box-shadow: 0 0 0 1px var(--aqua-ink), 0 2px 5px rgba(0, 117, 108, 0.4); }
 .hpin-stamped { background: var(--pink); color: var(--ink); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--pink-ink), 0 2px 5px rgba(200, 21, 90, 0.35); }
+.link-reset { margin: 0.25rem 0 0; font-size: 0.95rem; }
+.link-reset summary { cursor: pointer; color: var(--muted); min-height: 32px; display: flex; align-items: center; }
+.link-reset p { margin: 0.25rem 0 0.5rem; color: var(--muted); }
