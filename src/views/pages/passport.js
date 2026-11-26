@@ -36,8 +36,8 @@ function collectionSection(g, theme, open) {
   return html`<details class="collection${done ? ' is-complete' : ''}"${open ? html` open` : ''}>
   <summary class="collection-head">
     <span class="ring ring-sm" style="--p:${pct}" aria-hidden="true"><strong>${g.stamped}</strong></span>
-    <span class="collection-title"><h3 id="col-${g.slug}">${g.name}</h3>
-    <span class="collection-sub">${done ? 'Collection complete! 🎉' : `${g.stamped} of ${g.total} stamped · ${g.total - g.stamped} to discover`}</span></span>
+    <h3 id="col-${g.slug}">${g.name}</h3>
+    <span class="collection-sub">${done ? 'Collection complete! 🎉' : `${g.stamped} of ${g.total} stamped · ${g.total - g.stamped} to discover`}</span>
   </summary>
   <ul class="stamp-grid">${g.parks.map((p, i) => stampTile(p, theme, i))}</ul>
 </details>`;
@@ -144,7 +144,7 @@ ${welcome ? html`<span id="welcome-data" hidden data-name="${user.display_name}"
 ${cityTabs(cities, theme, cityHref)}
 ${next ? nextUpCards(next, { city: theme }) : ''}
 
-<nav class="pp-jump" aria-label="Passport sections"><a href="#stamps-h">Stamps</a><a href="#badges">Badges <span class="pp-jump-count">${earned.length}</span></a><a href="#map-h">Map</a><a href="#history-h">History</a></nav>
+<nav class="pp-jump" aria-label="Passport sections"><a href="#stamps-h">Stamps</a><a href="#badges">Badges <span class="pp-jump-count"><span class="visually-hidden">, </span>${earned.length}<span class="visually-hidden"> earned</span></span></a><a href="#map-h">Map</a><a href="#history-h">History</a></nav>
 
 <section aria-labelledby="stamps-h" class="pp-stamps">
   <h2 id="stamps-h">Stamps</h2>

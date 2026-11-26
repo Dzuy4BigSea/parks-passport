@@ -53,5 +53,7 @@ test('badges: earned and the 3 closest up front; the rest behind See all', () =>
   assert.deepEqual([...front.matchAll(/class="badge-name">([^<]+)</g)].map((m) => m[1]), ['Got', 'Most', 'Half', 'Little']);
   assert.match(rest, /See all 6 badges/);
   assert.deepEqual([...rest.matchAll(/class="badge-name">([^<]+)</g)].map((m) => m[1]), ['None', 'Hidden badge']);
-  assert.match(body, /Badges <span class="pp-jump-count">1<\/span>/);
+  assert.match(body, /Badges <span class="pp-jump-count"><span class="visually-hidden">, <\/span>1<span class="visually-hidden"> earned<\/span><\/span>/);
+  // The heading sits straight in the summary (no wrapper a heading can't live in).
+  assert.match(body, /<summary class="collection-head">\s*<span class="ring ring-sm"[^>]*>.*?<\/span>\s*<h3 id="col-/);
 });

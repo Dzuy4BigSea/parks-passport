@@ -131,3 +131,21 @@ test('announcements and stamp results get focus so screen readers read them', as
   await page.reload(); // announcement shown once; the stamp result (?stamped=) remains
   await expect(page.locator('.stamp-result')).toBeFocused();
 });
+
+for (const width of [375, 1440]) {
+  test(`the jump bar stays under the header, and "Badges" lands with its heading in view (${width}px)`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await signUp(page);
+    await page.goto('/st-pete/passport');
+    await page.mouse.wheel(0, 2500);
+    await page.waitForTimeout(300);
+    const header = await page.locator('.site-header').boundingBox();
+    const bar = await page.locator('.pp-jump').boundingBox();
+    expect(bar.y).toBeGreaterThanOrEqual(header.y + header.height - 1);
+    await page.locator('.pp-jump').getByRole('link', { name: /Badges/ }).click();
+    await page.waitForTimeout(400);
+    const heading = await page.locator('#badges-h').boundingBox();
+    const barNow = await page.locator('.pp-jump').boundingBox();
+    expect(heading.y).toBeGreaterThanOrEqual(barNow.y + barNow.height - 1);
+  });
+}

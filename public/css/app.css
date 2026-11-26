@@ -753,20 +753,6 @@ img.announce-art { padding: 0.4rem; }
 .announce-more a { color: var(--ink); font-weight: 800; }
 
 /* ---------- Passport ---------- */
-.passport-cover {
-  position: relative; overflow: hidden; isolation: isolate; display: grid; gap: 1rem;
-  grid-template-columns: 1fr auto; align-items: center;
-  background: var(--ink); color: #fff; border-radius: 28px; padding: 1.4rem; margin-bottom: 1rem; box-shadow: var(--shadow-lift);
-}
-.passport-cover::before {
-  content: ""; position: absolute; inset: 0; z-index: -1;
-  background: radial-gradient(28rem 18rem at 120% -20%, color-mix(in srgb, var(--aqua) 60%, transparent), transparent 60%),
-    radial-gradient(22rem 16rem at -20% 130%, color-mix(in srgb, var(--pink) 50%, transparent), transparent 60%);
-}
-.cover-pattern { position: absolute; inset: 0; z-index: -1; display: flex; flex-wrap: wrap; gap: 26px; padding: 14px; opacity: 0.07; color: #fff; overflow: hidden; }
-.cover-pattern .motif { width: 44px; height: 44px; }
-.passport-cover h1 { color: #fff; margin: 0.25rem 0 0.5rem; font-size: clamp(1.8rem, 6vw, 2.6rem); }
-.passport-cover .eyebrow { color: var(--sun); }
 .passport-count { font-size: 1.05rem; margin: 0 0 0.5rem; }
 .level { grid-column: 1 / -1; }
 .level p { margin: 0.25rem 0; }
@@ -785,7 +771,6 @@ img.announce-art { padding: 0.4rem; }
 .collection { margin-top: 1.5rem; }
 .collection-head { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.65rem; }
 .collection-head h3 { margin: 0; font-size: 1.15rem; }
-.collection-head p { margin: 0; color: var(--muted); font-size: 0.88rem; }
 .collection.is-complete .ring-sm { --fill: var(--pink); }
 .stamp-grid {
   list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem;
@@ -799,7 +784,6 @@ img.announce-art { padding: 0.4rem; }
 .stamp a:hover { border-color: var(--ink); background: var(--surface); transform: translateY(-2px); }
 .stamp-name { font-weight: 700; font-size: 0.82rem; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; }
 .stamp-date { font-size: 0.74rem; }
-.stamp .seal { display: none; }
 .stamp.is-stamped a {
   border: 0; background: var(--surface); color: var(--pink-ink); box-shadow: var(--shadow); padding-top: 0.75rem;
 }
@@ -811,7 +795,6 @@ img.announce-art { padding: 0.4rem; }
 .stamp.is-stamped:nth-child(3n+2) .seal { transform: rotate(8deg); border-color: var(--aqua); background: var(--aqua-tint); }
 .stamp.is-stamped:nth-child(3n+3) .seal { transform: rotate(-4deg); border-color: var(--violet); background: var(--violet-tint); }
 .stamp .seal .motif { width: 28px; height: 28px; }
-.stamp.is-stamped .stamp-date { font-weight: 800; }
 
 .map-legend { display: flex; gap: 0.5rem 1rem; align-items: center; flex-wrap: wrap; margin: 0 0 0.5rem; }
 .legend-stamped, .legend-unstamped, .pin {
@@ -1020,7 +1003,7 @@ img.feed-icon { width: 2rem; height: 2rem; }
    Pre-treated grayscale WebPs (domain/city-photos.js), colored here with blend modes and faded
    with masks so they add atmosphere without becoming content. Each sits on its own layer
    (::after, z-index -1) under the text. Absent for cities without photos. */
-.hero::after, .park-header::after, .passport-cover::after, .stamp-result::after, .finder::before {
+.hero::after, .park-header::after, .stamp-result::after, .finder::before {
   content: none; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background-position: center; background-size: cover; background-repeat: no-repeat;
 }
@@ -1037,10 +1020,6 @@ img.feed-icon { width: 2rem; height: 2rem; }
   -webkit-mask-image: linear-gradient(90deg, transparent 35%, #000 100%); mask-image: linear-gradient(90deg, transparent 35%, #000 100%);
 }
 /* Dark surfaces: screen lifts the photo's light areas out of the ink. */
-.passport-cover::after {
-  content: ""; background-image: var(--photo-cover, none); opacity: 0.17; mix-blend-mode: screen;
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.35) 100%); mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.35) 100%);
-}
 .dash-progress::after { background-image: var(--photo-card, none); background-position: center 35%; }
 .stamp-result::after { content: ""; background-image: var(--photo-texture, none); opacity: 0.16; mix-blend-mode: screen; }
 .finder { position: relative; isolation: isolate; }
@@ -1747,7 +1726,8 @@ svg.gary-art { height: auto; }
 
 /* Jump to a section: chips that stay in reach while scrolling. */
 .pp-jump {
-  position: sticky; top: 0.5rem; z-index: 20; display: flex; gap: 0.4rem; overflow-x: auto; margin: 1.25rem 0 0.5rem;
+  /* Under the sticky site header (3.75rem row + 1px border), never over it. */
+  position: sticky; top: calc(3.75rem + 1px + 0.5rem); z-index: 19; display: flex; gap: 0.4rem; overflow-x: auto; margin: 1.25rem 0 0.5rem;
   padding: 0.35rem; border-radius: 999px; background: rgba(255, 253, 248, 0.92); border: 1px solid #e4d9c3;
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 8px 20px -16px rgba(14, 42, 51, 0.5);
 }
@@ -1758,8 +1738,8 @@ svg.gary-art { height: auto; }
 .pp-jump a:hover { background: var(--sand-2); }
 .pp-jump-count { display: inline-grid; place-items: center; min-width: 1.4rem; height: 1.4rem; padding: 0 0.3rem; border-radius: 999px;
   background: var(--pink-ink); color: #fff; font-size: 0.75rem; }
-.pp-stamps > h2, .pp-badges > h2 { scroll-margin-top: 4.5rem; }
-#map-h, #history-h { scroll-margin-top: 4.5rem; }
+/* Jump targets land below the header and the bar. */
+#stamps-h, #badges, #badges-h, #map-h, #history-h { scroll-margin-top: 8.5rem; }
 
 /* Each neighborhood is a ruled page that folds. */
 .pp-stamps .collection {
@@ -1774,8 +1754,11 @@ svg.gary-art { height: auto; }
   transform: rotate(45deg); transition: transform 0.2s;
 }
 .pp-stamps .collection[open] > .collection-head::after { transform: rotate(-135deg); }
-.collection-title { display: grid; gap: 0.1rem; }
-.collection-title h3 { margin: 0; font-size: 1.1rem; }
+.pp-stamps .collection-head { display: grid; grid-template-columns: auto 1fr auto; column-gap: 0.85rem; row-gap: 0.1rem; }
+.pp-stamps .collection-head .ring-sm { grid-row: 1 / span 2; }
+.pp-stamps .collection-head h3 { grid-column: 2; margin: 0; font-size: 1.1rem; align-self: end; }
+.pp-stamps .collection-head .collection-sub { grid-column: 2; align-self: start; }
+.pp-stamps .collection-head::after { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
 .collection-sub { color: var(--muted); font-size: 0.86rem; }
 .pp-stamps .ring-sm { --ring-hole: #fffdf8; --track: var(--sand-2); --fill: var(--aqua); color: var(--ink); }
 .pp-stamps .stamp-grid { padding: 0.25rem 0.5rem 1rem; gap: 0.75rem 0.25rem; grid-template-columns: repeat(auto-fill, minmax(4.9rem, 1fr)); }
