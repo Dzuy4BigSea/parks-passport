@@ -1882,3 +1882,14 @@ svg.gary-art { height: auto; }
 .link-reset { margin: 0.25rem 0 0; font-size: 0.95rem; }
 .link-reset summary { cursor: pointer; color: var(--muted); min-height: 32px; display: flex; align-items: center; }
 .link-reset p { margin: 0.25rem 0 0.5rem; color: var(--muted); }
+/* Pals: "Make new pals" stays one short box (the invite link), friend codes fold away below it. */
+.make-pals h2 { margin-top: 0; }
+.make-pals > p { margin: 0 0 0.6rem; }
+.make-pals .more-ways { margin-top: 0.75rem; border-top: 1px dashed var(--line); padding-top: 0.5rem; }
+.make-pals .more-ways > summary { cursor: pointer; font-weight: 700; min-height: 40px; display: flex; align-items: center; color: var(--aqua-ink); }
+.make-pals .more-ways[open] > summary { margin-bottom: 0.25rem; }
+.make-pals .more-ways .copy-row { margin-bottom: 0.75rem; }
+.make-pals .more-ways > summary { list-style: none; justify-content: space-between; }
+.make-pals .more-ways > summary::-webkit-details-marker { display: none; }
+.make-pals .more-ways > summary::after { content: ""; width: 9px; height: 9px; margin-right: 4px; border: solid currentColor; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); transition: transform 0.2s var(--ease-out); }
+.make-pals .more-ways[open] > summary::after { transform: rotate(-135deg); }

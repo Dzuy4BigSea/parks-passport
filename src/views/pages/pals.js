@@ -41,25 +41,45 @@ function requestsSection({ requests, csrf }) {
 </section>`;
 }
 
-function codeSection({ csrf, friendCode, codeError, codeValue }) {
-  return html`<section aria-labelledby="code-h" class="card-form" id="add">
-  <h2 id="code-h">Friend codes</h2>
-  <p>Share your code, or type a friend's. A code sends a request; you're Park Pals once they accept.</p>
+// "Make new pals": the invite link up front (the easy way), with friend codes folded away below
+// so the box stays short and the pals' activity is close by. Opens on a code error or at /pals#add.
+function makePalsSection({ csrf, inviteUrl, friendCode, codeError, codeValue }) {
+  return html`<section aria-labelledby="make-h" class="card-form make-pals">
+  <h2 id="make-h">Make new pals</h2>
+  <p>Send your invite link to a friend. When they open it and accept, you're Park Pals.</p>
   <div class="copy-row">
-    <label for="my-code">Your friend code</label>
-    <input id="my-code" type="text" readonly value="${friendCode}" class="friend-code">
-    <button type="button" class="btn" data-copy="#my-code" hidden>Copy code</button>
+    <label for="invite-link" class="visually-hidden">Your invite link</label>
+    <input id="invite-link" type="text" readonly value="${inviteUrl}">
+    <button type="button" class="btn btn-primary" data-share="#invite-link" hidden>Share link</button>
+    <button type="button" class="btn" data-copy="#invite-link" hidden>Copy link</button>
   </div>
-  <form method="post" action="/pals/code" class="add-code" novalidate>
-    ${csrfField(csrf)}
-    <div class="field${codeError ? ' field-error' : ''}">
-      <label for="code">Add a pal by code</label>
-      ${codeError ? html`<p class="error-text" id="code-error" role="alert" tabindex="-1" data-announce>${codeError}</p>` : ''}
-      <input id="code" name="code" type="text" class="friend-code" value="${codeValue ?? ''}" placeholder="ABCD-EFGH" maxlength="20"
-        autocomplete="off" autocapitalize="characters" spellcheck="false"${codeError ? html` aria-invalid="true" aria-describedby="code-error"` : ''}>
+  <details class="more-ways" id="add"${codeError ? html` open` : ''}>
+    <summary>Friend codes</summary>
+    <p class="hint">Share your code, or type a friend's. A code sends a request; you're Park Pals once they accept.</p>
+    <div class="copy-row">
+      <label for="my-code">Your friend code</label>
+      <input id="my-code" type="text" readonly value="${friendCode}" class="friend-code">
+      <button type="button" class="btn" data-copy="#my-code" hidden>Copy code</button>
     </div>
-    <button type="submit" class="btn btn-primary">Send request</button>
-  </form>
+    <form method="post" action="/pals/code" class="add-code" novalidate>
+      ${csrfField(csrf)}
+      <div class="field${codeError ? ' field-error' : ''}">
+        <label for="code">Add a pal by code</label>
+        ${codeError ? html`<p class="error-text" id="code-error" role="alert" tabindex="-1" data-announce>${codeError}</p>` : ''}
+        <input id="code" name="code" type="text" class="friend-code" value="${codeValue ?? ''}" placeholder="ABCD-EFGH" maxlength="20"
+          autocomplete="off" autocapitalize="characters" spellcheck="false"${codeError ? html` aria-invalid="true" aria-describedby="code-error"` : ''}>
+      </div>
+      <button type="submit" class="btn btn-primary">Send request</button>
+    </form>
+    <details class="link-reset">
+      <summary>Invite link shared with the wrong people?</summary>
+      <p>Anyone who opens your link can become your pal. Make a new one and the old link stops working. Your pals stay your pals.</p>
+      <form method="post" action="/pals/invite/regenerate" class="inline-form">
+        ${csrfField(csrf)}
+        <button type="submit" class="btn btn-quiet">Make a new link</button>
+      </form>
+    </details>
+  </details>
 </section>`;
 }
 
@@ -77,25 +97,7 @@ ${user.default_visibility === 'private' ? html`<p class="notice">Your passport i
 
 ${requestsSection({ requests, csrf })}
 
-${codeSection({ csrf, friendCode, codeError, codeValue })}
-
-<section aria-labelledby="invite-h" class="card-form">
-  <h2 id="invite-h">Invite a pal</h2>
-  <p>Send this link to a friend. When they open it and accept, you'll be Park Pals.</p>
-  <div class="copy-row">
-    <label for="invite-link" class="visually-hidden">Your invite link</label>
-    <input id="invite-link" type="text" readonly value="${inviteUrl}">
-    <button type="button" class="btn" data-copy="#invite-link" hidden>Copy link</button>
-  </div>
-  <details class="link-reset">
-    <summary>Link shared with the wrong people?</summary>
-    <p>Anyone who opens your link can become your pal. Make a new one and the old link stops working. Your pals stay your pals.</p>
-    <form method="post" action="/pals/invite/regenerate" class="inline-form">
-      ${csrfField(csrf)}
-      <button type="submit" class="btn btn-quiet">Make a new link</button>
-    </form>
-  </details>
-</section>
+${makePalsSection({ csrf, inviteUrl, friendCode, codeError, codeValue })}
 
 <section aria-labelledby="board-h">
   <h2 id="board-h">Leaderboard</h2>
