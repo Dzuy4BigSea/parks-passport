@@ -165,3 +165,12 @@ test('Admin › Gary: admins approve, hide and edit outfits; members get 404', a
   assert.deepEqual({ ...row }, { name: 'Trail boss', unlock_badges: '["ten-parks"]', starter: 0 });
   assert.equal((await people.boss.c.post('/admin/gary/nope', { name: 'x' })).statusCode, 404);
 });
+
+test("Gary's wardrobe is a tap away: from his chat panel and from the home page Gary; not when signed out", async () => {
+  const { app, people } = await world();
+  const page = (await people.ana.c.get('/st-pete/parks')).body;
+  assert.match(page, /class="gary-dress-link"><a href="\/account\/gary">/);
+  const home = (await people.ana.c.get('/st-pete')).body;
+  assert.match(home, /<a class="gary-dress" href="\/account\/gary"/);
+  assert.doesNotMatch((await client(app).get('/st-pete/parks')).body, /gary-dress-link/);
+});
