@@ -657,7 +657,7 @@ Done when:
 - [ ] **Account › Gary's wardrobe**: I pick an outfit, or "Dress for the weather" (the default).
       My choice shows on Gary in the lower right and on my home page.
 - [ ] **Weather:** "Dress for the weather" uses today's weather in the city I'm viewing (its
-      center, never my location): rain, snow, cold (≤ 45 °F), hot (≥ 85 °F) or mild, from
+      center, never my location): rain, snow, freezing (< 30 °F; cold-weather outfits stand in if I have no freezing one), cold (≤ 45 °F), hot (≥ 85 °F) or mild, from
       Open-Meteo (no key), cached for an hour per city. Gary wears the first approved outfit I
       have that suits it, else Classic. If the weather service fails or is slow (2 s), Gary
       wears Classic and nothing breaks.

@@ -61,7 +61,7 @@ test('members only see approved outfits: 3 starters, Early Bird for founding exp
   assert.deepEqual(owned(), ['classic', 'sun-hat', 'rain-slicker']);
   give(people.ana.id, 'early-bird-100');
   give(people.ana.id, 'four-week-streak');
-  assert.deepEqual(owned(), ['classic', 'sun-hat', 'rain-slicker', 'early-bird', 'winter-parka']);
+  assert.deepEqual(owned(), ['classic', 'sun-hat', 'rain-slicker', 'early-bird', 'winter-parka', 'ski', 'santa']);
   setOutfitStatus(db, 'winter-parka', 'hidden');
   assert.ok(!owned().includes('winter-parka'));
   assert.equal(setOutfitStatus(db, 'classic', 'hidden'), false); // Classic always stays
@@ -72,6 +72,8 @@ test('weather: codes and temperatures map to rain, snow, cold, hot and mild; Gar
   assert.equal(conditionFrom({ code: 95, tempF: 80 }), 'rain');
   assert.equal(conditionFrom({ code: 73, tempF: 20 }), 'snow');
   assert.equal(conditionFrom({ code: 1, tempF: 45 }), 'cold');
+  assert.equal(conditionFrom({ code: 0, tempF: 29 }), 'freezing');
+  assert.equal(conditionFrom({ code: 0, tempF: 30 }), 'cold');
   assert.equal(conditionFrom({ code: 0, tempF: 85 }), 'hot');
   assert.equal(conditionFrom({ code: 2, tempF: 70 }), 'mild');
 
@@ -82,9 +84,12 @@ test('weather: codes and temperatures map to rain, snow, cold, hot and mild; Gar
   assert.equal(wear('rain'), 'rain-slicker');
   assert.equal(wear('hot'), 'sun-hat');
   assert.equal(wear('snow'), 'classic'); // no parka yet
+  give(people.ana.id, 'ten-parks');
+  assert.equal(wear('freezing'), 'lumberjack'); // no freezing gear yet: cold gear stands in
   assert.equal(wear(null), 'classic'); // weather unknown
   give(people.ana.id, 'four-week-streak');
   assert.equal(wear('snow'), 'winter-parka');
+  assert.equal(wear('freezing'), 'ski'); // made for below 30 °F, so it beats the parka
   // A chosen outfit wins over the weather, until it's no longer owned.
   assert.ok(chooseOutfit(db, people.ana.id, 'sun-hat'));
   assert.equal(wear('snow'), 'sun-hat');
@@ -154,7 +159,7 @@ test('Admin › Gary: admins approve, hide and edit outfits; members get 404', a
   assert.equal((await people.ana.c.get('/admin/gary')).statusCode, 404);
   assert.equal((await people.ana.c.post('/admin/gary/sun-hat/status', { status: 'approved' })).statusCode, 404);
   const page = (await people.boss.c.get('/admin/gary')).body;
-  assert.match(page, /1 approved · 13 drafts · 0 hidden/);
+  assert.match(page, /1 approved · 24 drafts · 0 hidden/);
   assert.match(page, /role="img" aria-label="Gary in the Early Bird outfit"/);
   await people.boss.c.post('/admin/gary/sun-hat/status', { status: 'approved' });
   assert.equal(db.prepare("SELECT status FROM gary_outfits WHERE slug = 'sun-hat'").pluck().get(), 'approved');

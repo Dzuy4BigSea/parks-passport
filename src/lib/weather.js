@@ -4,12 +4,13 @@
 // hour shows Classic Gary and the next one the weather outfit. Errors and slow answers (2 s) just
 // leave the cache as it was.
 
-export const CONDITIONS = { rain: 'rainy', snow: 'snowy', cold: 'cold', hot: 'hot', mild: 'mild' };
+export const CONDITIONS = { rain: 'rainy', snow: 'snowy', cold: 'cold', freezing: 'freezing', hot: 'hot', mild: 'mild' };
 
-/** Open-Meteo's WMO weather code and the temperature (°F) -> rain | snow | cold | hot | mild. */
+/** Open-Meteo's WMO weather code and the temperature (°F) -> rain | snow | freezing (< 30) | cold | hot | mild. */
 export function conditionFrom({ code, tempF }) {
   if ([71, 73, 75, 77, 85, 86].includes(code)) return 'snow';
   if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95) return 'rain';
+  if (tempF < 30) return 'freezing';
   if (tempF <= 45) return 'cold';
   if (tempF >= 85) return 'hot';
   return 'mild';
