@@ -94,7 +94,7 @@ const aria = (on) => (on ? html` aria-current="page"` : '');
 // <details> works without JS; public/js/gary.js adds Escape, a tap outside and the talk-back chat.
 // Founding explorers (Flow 16) can talk back: their message is feedback for the team, and Gary
 // replies with a thank-you (from the server, so it works without JS too).
-function garyButton({ csrf, path, canTalk, random, gary }) {
+function garyButton({ csrf, path, canTalk, random, gary, signedIn = false }) {
   const page = String(path || '/').split(/[?#]/)[0];
   const { tip, signOff } = garyTipFor(page, random);
   return html`<details class="gary-help" data-gary>
@@ -103,6 +103,7 @@ function garyButton({ csrf, path, canTalk, random, gary }) {
     <ol class="gary-chat" data-gary-chat>
       <li class="gary-msg is-gary"><span class="gary-name">Gary</span><p>${tip} <strong>${signOff}</strong></p></li>
     </ol>
+    ${signedIn ? html`<p class="gary-dress-link"><a href="/account/gary"><span aria-hidden="true">🧢</span> Change Gary’s outfit</a></p>` : ''}
     ${canTalk ? html`<button type="button" class="btn btn-small gary-talk-open" data-gary-talk-open hidden>Talk to Gary</button>
     <form method="post" action="/feedback" class="gary-talk feedback-form" data-gary-talk>
       <input type="hidden" name="_csrf" value="${csrf}"><input type="hidden" name="page" value="${page}">
@@ -233,7 +234,7 @@ ${showConsentBanner ? consentBanner(csrf, path) : ''}
     </div>
   </div>
 </footer>
-${garyButton({ csrf, path, random, gary, canTalk: feedback && current !== 'feedback' })}
+${garyButton({ csrf, path, random, gary, signedIn: Boolean(user), canTalk: feedback && current !== 'feedback' })}
 ${user ? tabBar(current, base) : ''}
 </body>
 </html>`;

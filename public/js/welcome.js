@@ -23,7 +23,9 @@ if (data && celebrationsOn()) {
   const book = el('div', { class: 'welcome-book' }, page, cover);
   const title = el('h2', { id: 'welcome-title', class: 'welcome-title' }, `Welcome, ${name.split(/\s+/)[0]}!`);
   const go = el('button', { type: 'button', class: 'btn btn-pop btn-big' }, 'Start exploring');
-  const gary = el('img', { class: 'welcome-gary', src: '/brand/gary.svg', alt: '', width: '160', height: '160' });
+  // Tap Gary to dress him (Account › Gary's wardrobe).
+  const gary = el('a', { class: 'welcome-gary', href: '/account/gary', title: 'Change Gary’s outfit' },
+    el('img', { src: '/brand/gary.svg', alt: 'Change Gary’s outfit', width: '160', height: '160' }));
   const dialog = el('div', { class: 'fx-welcome', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'welcome-title' },
     el('div', { class: 'reveal-backdrop' }),
     el('div', { class: 'welcome-stage' }, book, title,
