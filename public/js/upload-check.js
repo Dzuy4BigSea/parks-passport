@@ -152,6 +152,69 @@ for (const input of document.querySelectorAll('input[type="file"][data-crop="cir
   });
 }
 
+// Several photos at once (data-multiple="N", the park's Add a photo form). Each one goes up as its
+// own ordinary upload, one after another, so the server only ever holds one file per request.
+// Without JS the picker takes one photo, as before.
+for (const input of document.querySelectorAll('input[type="file"][data-multiple]')) {
+  const form = input.form;
+  const max = Number(input.dataset.multiple) || 10;
+  input.multiple = true;
+  const status = document.createElement('p');
+  status.className = 'hint multi-status';
+  status.setAttribute('role', 'status');
+  const tip = `You can pick up to ${max} at once.`;
+  status.textContent = tip;
+  input.after(status);
+  input.addEventListener('change', () => {
+    const n = input.files?.length || 0;
+    const tooBig = [...(input.files || [])].some((f) => f.size > MAX);
+    input.setCustomValidity(n > max ? `Choose up to ${max} photos at a time.`
+      : tooBig ? `${n > 1 ? 'One of those photos is' : 'That photo is'} over 10 MB. Choose a smaller one.` : '');
+    if (input.validationMessage) input.reportValidity();
+    status.textContent = n > 1 && !input.validationMessage ? `${n} photos chosen. The caption and who can see them apply to each one.` : n > 1 ? '' : tip;
+  });
+  form.addEventListener('submit', async (e) => {
+    const files = [...(input.files || [])];
+    if (files.length < 2 || form.dataset.busy) return; // one photo: the normal form post
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    form.dataset.busy = '1';
+    const btn = e.submitter || form.querySelector('button[type="submit"]');
+    btn?.setAttribute('aria-disabled', 'true');
+    btn?.classList.add('is-busy');
+    let done = 0;
+    for (const [i, file] of files.entries()) {
+      if (btn) btn.textContent = `Uploading ${i + 1} of ${files.length}…`;
+      const data = new FormData(form);
+      data.set(input.name, file, file.name);
+      let res;
+      for (let attempt = 0; attempt < 4; attempt += 1) { // "busy, try again" (503): wait and retry
+        res = await fetch(form.action, { method: 'POST', body: data, credentials: 'same-origin' }).catch(() => null);
+        if (res?.status !== 503) break;
+        await new Promise((r) => { setTimeout(r, 5000); });
+      }
+      if (!res?.ok) {
+        // Show the server's own message (e.g. "That isn't a photo we can read"), then stop.
+        const text = res ? new DOMParser().parseFromString(await res.text(), 'text/html').querySelector('[role="alert"]')?.textContent?.trim() : '';
+        status.textContent = `${done ? `${done} uploaded. ` : ''}Photo ${i + 1} (${file.name}) didn't upload: ${text || 'check your connection and try again.'}`;
+        status.classList.add('error');
+        delete form.dataset.busy;
+        btn?.removeAttribute('aria-disabled');
+        btn?.classList.remove('is-busy');
+        if (btn) btn.textContent = 'Upload photos';
+        if (done) setTimeout(() => window.location.reload(), 4000);
+        return;
+      }
+      done += 1;
+    }
+    const url = new URL(form.action, window.location.href);
+    url.pathname = url.pathname.replace(/\/photos$/, '');
+    url.search = `?photo=added&count=${done}`;
+    url.hash = 'photos';
+    window.location.assign(url);
+  });
+}
+
 // Photo uploads take a moment: say so, and ignore a second tap until the page changes.
 for (const form of new Set([...document.querySelectorAll('input[type="file"][name="photo"]')].map((i) => i.form))) {
   form.addEventListener('submit', (e) => {

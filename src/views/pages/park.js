@@ -254,7 +254,7 @@ function photosSection({ park, user, csrf, photos, problem }) {
     <div class="field">
       <label for="photo">Add a photo</label>
       <p class="hint" id="photo-hint">JPEG, PNG, WebP or HEIC, up to 10 MB. Location data in the file is removed.</p>
-      <input type="file" id="photo" name="photo" accept="${ACCEPT}" required aria-describedby="photo-hint" data-camera="environment">
+      <input type="file" id="photo" name="photo" accept="${ACCEPT}" required aria-describedby="photo-hint" data-camera="environment" data-multiple="10">
     </div>
     <div class="field">
       <label for="caption">Caption (optional)</label>
