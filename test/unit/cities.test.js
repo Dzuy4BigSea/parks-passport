@@ -183,6 +183,11 @@ test('city badges count only their city; Two-City Explorer needs stamps in two c
   assert.match(sp, /1 of 102 parks stamped/);
   assert.match(sp, /class="city-tabs"/);
   assert.match(sp, /href="\/westminster\/passport"/);
+  // Tabs only for cities with stamps (plus the one being viewed): not Asheville, Bend, ...
+  const tabs = sp.match(/<nav class="city-tabs"[\s\S]*?<\/nav>/)[0];
+  assert.deepEqual([...tabs.matchAll(/class="city-tab-name">([^<]+)</g)].map((m) => m[1]), ['St. Pete', 'Westminster']);
+  const bend = (await sam.get('/bend/passport')).body.match(/<nav class="city-tabs"[\s\S]*?<\/nav>/)[0];
+  assert.deepEqual([...bend.matchAll(/class="city-tab-name">([^<]+)</g)].map((m) => m[1]), ['St. Pete', 'Westminster', 'Bend']);
   assert.match(sp, /Westminster · /); // history says which city once there are two
 });
 
