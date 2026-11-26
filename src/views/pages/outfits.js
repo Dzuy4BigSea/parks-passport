@@ -5,7 +5,7 @@ import { garySvg } from '../gary-art.js';
 import { STATUSES, CLASSIC } from '../../domain/outfits.js';
 import { CONDITIONS } from '../../lib/weather.js';
 
-const WEATHER_LABELS = { rain: '🌧️ Rain', snow: '❄️ Snow', cold: '🧣 Cold', hot: '☀️ Hot', mild: '🌤️ Mild' };
+const WEATHER_LABELS = { rain: '🌧️ Rain', snow: '❄️ Snow', freezing: '🥶 Freezing (below 30°F)', cold: '🧣 Cold', hot: '☀️ Hot', mild: '🌤️ Mild' };
 const weatherText = (list) => (list.length ? list.map((w) => WEATHER_LABELS[w]).join(', ') : 'Any day');
 
 /** "Today in Bend: snowy, 28°F" (or nothing if the weather isn't known yet). */

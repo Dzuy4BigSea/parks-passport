@@ -4,7 +4,7 @@ import fs from 'node:fs';
 
 const json = (s, fallback) => { try { const v = JSON.parse(s); return v ?? fallback; } catch { return fallback; } };
 export const STATUSES = { draft: 'Draft', approved: 'Approved', hidden: 'Hidden' };
-export const WEATHER = ['rain', 'snow', 'cold', 'hot', 'mild'];
+export const WEATHER = ['rain', 'snow', 'freezing', 'cold', 'hot', 'mild'];
 export const CLASSIC = 'classic';
 
 const parse = (row) => row && ({
@@ -51,8 +51,11 @@ export function outfitFor(db, user, weather) {
   const chosen = user?.gary_outfit && owned.find((o) => o.slug === user.gary_outfit);
   if (chosen) return { outfit: chosen, auto: false, weather };
   const condition = weather?.condition;
-  // Special outfits before the starters, so a parka beats Classic on a snowy day.
-  const fits = condition ? owned.filter((o) => o.weather.includes(condition)).sort((a, b) => Number(a.starter) - Number(b.starter) || a.sort - b.sort) : [];
+  // Outfits made for today first (so arctic gear beats a parka below 30 °F), then specials before
+  // starters, so a parka beats Classic on a snowy day.
+  // Below 30 °F with no freezing gear yet, cold-weather gear will do.
+  const suits = (o) => o.weather.includes(condition) || (condition === 'freezing' && o.weather.includes('cold'));
+  const fits = condition ? owned.filter(suits).sort((a, b) => Number(!a.weather.includes(condition)) - Number(!b.weather.includes(condition)) || Number(a.starter) - Number(b.starter) || a.sort - b.sort) : [];
   return { outfit: fits[0] || classic, auto: true, weather };
 }
 

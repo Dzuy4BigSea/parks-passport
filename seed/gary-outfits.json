@@ -87,5 +87,89 @@
     "weather": [], "unlock_badges": ["golden-acorn"],
     "art": {
       "hat": "<path d=\"M70 99 C70 50 170 50 170 99 Q120 89 70 99 Z\" fill=\"#b07a2a\"/><g stroke=\"#7a4f16\" stroke-width=\"2\" fill=\"none\"><path d=\"M80 80 Q120 70 160 80\"/><path d=\"M78 91 Q120 81 162 91\"/><path d=\"M90 66 Q120 58 150 66\"/></g><path d=\"M118 52 q2 -12 10 -14\" stroke=\"#5c3616\" stroke-width=\"4\" stroke-linecap=\"round\" fill=\"none\"/><circle cx=\"140\" cy=\"62\" r=\"3\" fill=\"#ffd166\"/>"
+    } },
+  { "slug": "turkey", "name": "Thanksgiving turkey", "blurb": "Full turkey: a gobbler hood, a wattle and a fan of tail feathers. Gobble gobble.",
+    "weather": [], "unlock_badges": ["weekend-warrior"],
+    "art": {
+      "shirt": {"main":"#8a5a2b","dark":"#5c3616","sleeve":"#7a4f24"},
+      "body": "<g><ellipse cx=\"34\" cy=\"214\" rx=\"11\" ry=\"34\" transform=\"rotate(-38 34 214)\" fill=\"#ff7a00\"/><ellipse cx=\"24\" cy=\"244\" rx=\"11\" ry=\"32\" transform=\"rotate(-62 24 244)\" fill=\"#c8155a\"/><ellipse cx=\"30\" cy=\"272\" rx=\"10\" ry=\"28\" transform=\"rotate(-84 30 272)\" fill=\"#ffc83d\"/><ellipse cx=\"216\" cy=\"238\" rx=\"11\" ry=\"32\" transform=\"rotate(62 216 238)\" fill=\"#ff7a00\"/><ellipse cx=\"212\" cy=\"268\" rx=\"10\" ry=\"28\" transform=\"rotate(84 212 268)\" fill=\"#c8155a\"/></g><path d=\"M100 222 Q120 214 140 222 L136 278 L104 278 Z\" fill=\"#c9a06a\"/><g stroke=\"#8a5a2b\" stroke-width=\"2\" fill=\"none\"><path d=\"M106 236 q14 8 28 0\"/><path d=\"M106 252 q14 8 28 0\"/></g>",
+      "hat": "<path d=\"M68 104 C62 40 178 40 172 104 Q120 92 68 104 Z\" fill=\"#7a4f24\"/><circle cx=\"104\" cy=\"58\" r=\"7\" fill=\"#fffaf0\"/><circle cx=\"136\" cy=\"58\" r=\"7\" fill=\"#fffaf0\"/><circle cx=\"105\" cy=\"59\" r=\"3.5\" fill=\"#0e2a33\"/><circle cx=\"137\" cy=\"59\" r=\"3.5\" fill=\"#0e2a33\"/><path d=\"M112 64 L128 64 L120 80 Z\" fill=\"#ffb000\"/><path d=\"M126 72 q10 6 6 22 q-10 0 -8 -14 Z\" fill=\"#e8243c\"/><g fill=\"#ff7a00\"><path d=\"M96 40 q-4 -18 8 -22 q-2 12 0 22Z\"/><path d=\"M116 36 q0 -20 10 -22 q-4 12 -2 22Z\"/><path d=\"M134 40 q6 -18 16 -16 q-8 8 -8 18Z\"/></g>"
+    } },
+  { "slug": "ski", "name": "Ski day", "blurb": "A puffy ski jacket, a pom-pom beanie and goggles up top. First chair, anyone?",
+    "weather": ["snow","freezing"], "unlock_badges": ["four-week-streak"],
+    "art": {
+      "shirt": {"main":"#1f6fd1","dark":"#164f99","sleeve":"#1a62bd"},
+      "body": "<path d=\"M96 184 L144 184 L140 200 L100 200 Z\" fill=\"#164f99\"/><path d=\"M120 200 V280\" stroke=\"#ffc83d\" stroke-width=\"3\"/><g stroke=\"#ffc83d\" stroke-width=\"5\"><path d=\"M36 236 L66 236\"/><path d=\"M174 232 L204 232\"/></g><rect x=\"148\" y=\"250\" width=\"22\" height=\"14\" rx=\"3\" fill=\"#ffc83d\"/><path d=\"M152 257 h14\" stroke=\"#164f99\" stroke-width=\"2\"/>",
+      "hat": "<path d=\"M70 98 C68 46 172 46 170 98 Z\" fill=\"#ff4d88\"/><path d=\"M74 72 Q120 62 166 72\" stroke=\"#fffaf0\" stroke-width=\"6\" fill=\"none\"/><circle cx=\"120\" cy=\"40\" r=\"12\" fill=\"#fffaf0\"/><rect x=\"78\" y=\"80\" width=\"84\" height=\"22\" rx=\"11\" fill=\"#0e2a33\"/><rect x=\"84\" y=\"84\" width=\"72\" height=\"14\" rx=\"7\" fill=\"#ff9f1c\"/><path d=\"M90 88 h20\" stroke=\"#fffaf0\" stroke-width=\"2\" opacity=\"0.7\"/>",
+      "face": "<circle cx=\"93\" cy=\"138\" r=\"9\" fill=\"#ff4d88\" opacity=\"0.35\"/><circle cx=\"147\" cy=\"138\" r=\"9\" fill=\"#ff4d88\" opacity=\"0.35\"/>"
+    } },
+  { "slug": "snow-day", "name": "Snow day", "blurb": "A quilted snowsuit, mittens on a string and a trapper hat. Snow angels mandatory.",
+    "weather": ["snow","cold"], "unlock_badges": ["five-parks"],
+    "art": {
+      "shirt": {"main":"#7b4fd1","dark":"#5636a0","sleeve":"#6d44c0"},
+      "body": "<g stroke=\"#5636a0\" stroke-width=\"3\" fill=\"none\"><path d=\"M38 228 Q120 216 202 228\"/><path d=\"M33 254 Q120 242 207 254\"/></g><path d=\"M100 184 Q120 196 140 184 L140 196 Q120 206 100 196 Z\" fill=\"#ffc83d\"/><ellipse cx=\"46\" cy=\"276\" rx=\"13\" ry=\"11\" fill=\"#ff4d88\"/><path d=\"M46 266 Q60 230 96 210\" stroke=\"#fffaf0\" stroke-width=\"2\" fill=\"none\"/>",
+      "hat": "<path d=\"M72 98 C70 48 170 48 168 98 Z\" fill=\"#00756c\"/><path d=\"M66 92 Q120 80 174 92 L172 104 Q120 92 68 104 Z\" fill=\"#f4efe6\"/><path d=\"M66 96 Q58 120 70 140 Q80 136 82 104 Z\" fill=\"#f4efe6\"/><path d=\"M174 96 Q182 120 170 140 Q160 136 158 104 Z\" fill=\"#f4efe6\"/><circle cx=\"120\" cy=\"50\" r=\"6\" fill=\"#f4efe6\"/>",
+      "face": "<circle cx=\"93\" cy=\"138\" r=\"9\" fill=\"#ff4d88\" opacity=\"0.35\"/><circle cx=\"147\" cy=\"138\" r=\"9\" fill=\"#ff4d88\" opacity=\"0.35\"/>"
+    } },
+  { "slug": "hiking", "name": "Trail hiker", "blurb": "A bucket hat, a daypack and a trail map. Every switchback has a view.",
+    "weather": ["cold","mild"], "unlock_badges": ["dog-days"],
+    "art": {
+      "shirt": {"main":"#3f7f4f","dark":"#2a5a37","sleeve":"#377145"},
+      "body": "<path d=\"M86 188 L72 280 M154 188 L168 280\" stroke=\"#e8590c\" stroke-width=\"10\" stroke-linecap=\"round\"/><path d=\"M80 236 H160\" stroke=\"#0e2a33\" stroke-width=\"4\"/><rect x=\"112\" y=\"230\" width=\"16\" height=\"12\" rx=\"3\" fill=\"#0e2a33\"/><rect x=\"90\" y=\"250\" width=\"26\" height=\"20\" rx=\"2\" fill=\"#fffaf0\" transform=\"rotate(-8 103 260)\"/><path d=\"M94 258 q6 -6 10 2 t10 -2\" stroke=\"#00b3a4\" stroke-width=\"2\" fill=\"none\"/>",
+      "hat": "<path d=\"M58 104 Q120 86 182 104 Q186 112 176 114 Q120 100 64 114 Q54 112 58 104 Z\" fill=\"#b9a36b\"/><path d=\"M78 100 C78 56 162 56 162 100 Z\" fill=\"#cdb87f\"/><path d=\"M78 92 Q120 84 162 92\" stroke=\"#3f7f4f\" stroke-width=\"5\" fill=\"none\"/>"
+    } },
+  { "slug": "arctic", "name": "Arctic expedition", "blurb": "A fur-ringed expedition parka and a scarf over the nose, for days below 30°F.",
+    "weather": ["freezing"], "unlock_badges": ["regular"],
+    "art": {
+      "shirt": {"main":"#e8590c","dark":"#b3440a","sleeve":"#d9520b"},
+      "body": "<g stroke=\"#b3440a\" stroke-width=\"3\" fill=\"none\"><path d=\"M38 230 Q120 218 202 230\"/><path d=\"M33 256 Q120 244 207 256\"/></g><path d=\"M120 196 V280\" stroke=\"#0e2a33\" stroke-width=\"3\"/><g fill=\"#fffaf0\" opacity=\"0.9\"><path d=\"M14 150 l4 0 M16 148 l0 4\"/><circle cx=\"16\" cy=\"150\" r=\"2.5\"/><circle cx=\"222\" cy=\"160\" r=\"2.5\"/><circle cx=\"8\" cy=\"200\" r=\"2\"/><circle cx=\"230\" cy=\"214\" r=\"2\"/></g>",
+      "hat": "<path d=\"M60 120 C52 28 188 28 180 120 C180 60 60 60 60 120 Z\" fill=\"#e8590c\"/><ellipse cx=\"120\" cy=\"118\" rx=\"52\" ry=\"60\" fill=\"none\" stroke=\"#f4efe6\" stroke-width=\"14\"/><g stroke=\"#d8cfc0\" stroke-width=\"2\"><path d=\"M68 90 l-8 -4 M74 70 l-6 -6 M90 56 l-4 -8 M120 52 v-8 M150 56 l4 -8 M166 70 l6 -6 M172 90 l8 -4\"/></g>",
+      "face": "<path d=\"M74 136 Q120 126 166 136 L162 168 Q120 180 78 168 Z\" fill=\"#00b3a4\"/><g stroke=\"#00756c\" stroke-width=\"3\"><path d=\"M80 148 Q120 140 160 148\"/><path d=\"M82 160 Q120 152 158 160\"/></g><circle cx=\"88\" cy=\"128\" r=\"6\" fill=\"#ff4d88\" opacity=\"0.4\"/><circle cx=\"152\" cy=\"128\" r=\"6\" fill=\"#ff4d88\" opacity=\"0.4\"/>"
+    } },
+  { "slug": "sunburnt", "name": "Too much sun", "blurb": "A little pink, a lot sweaty and a beach towel round his neck. Hydrate, folks.",
+    "weather": ["hot"], "unlock_badges": ["paddle-ready"],
+    "art": {
+      "shirt": {"main":"#ffe08a","dark":"#e0b84a","sleeve":"#ffd76a"},
+      "body": "<path d=\"M84 186 Q66 230 70 280 L94 280 Q90 236 104 190 Z\" fill=\"#fffaf0\"/><path d=\"M156 186 Q174 230 170 280 L146 280 Q150 236 136 190 Z\" fill=\"#fffaf0\"/><g fill=\"#00b3a4\"><path d=\"M76 222 L98 226 L96 236 L74 232 Z\"/><path d=\"M71 252 L93 254 L93 264 L70 262 Z\"/><path d=\"M142 226 L164 222 L166 232 L144 236 Z\"/><path d=\"M147 254 L169 252 L170 262 L147 264 Z\"/></g>",
+      "hat": "<path d=\"M76 92 Q78 58 120 56 Q162 58 164 92 Q150 72 132 76 Q140 66 124 66 Q114 76 100 70 Q96 80 76 92 Z\" fill=\"#4a3020\"/><g fill=\"#7fc8ff\"><path d=\"M84 96 q4 8 0 10 q-4 -2 0 -10Z\"/><path d=\"M160 102 q4 8 0 10 q-4 -2 0 -10Z\"/></g>",
+      "face": "<ellipse cx=\"120\" cy=\"84\" rx=\"30\" ry=\"8\" fill=\"#ff4d4d\" opacity=\"0.35\"/><circle cx=\"93\" cy=\"136\" r=\"12\" fill=\"#ff3b3b\" opacity=\"0.5\"/><circle cx=\"147\" cy=\"136\" r=\"12\" fill=\"#ff3b3b\" opacity=\"0.5\"/><ellipse cx=\"119\" cy=\"128\" rx=\"7\" ry=\"6\" fill=\"#ff3b3b\" opacity=\"0.55\"/><path d=\"M152 100 q5 9 0 12 q-5 -3 0 -12Z\" fill=\"#7fc8ff\"/>"
+    } },
+  { "slug": "lumberjack", "name": "Lumberjack", "blurb": "Red buffalo plaid, suspenders, a knit cap and a full beard. Timber!",
+    "weather": ["cold","mild"], "unlock_badges": ["ten-parks"],
+    "art": {
+      "shirt": {"main":"#c0392b","dark":"#1b1b1f","sleeve":"#b03224"},
+      "body": "<g fill=\"#1b1b1f\" opacity=\"0.55\"><rect x=\"38\" y=\"230\" width=\"164\" height=\"14\"/><rect x=\"34\" y=\"262\" width=\"172\" height=\"14\"/><rect x=\"52\" y=\"200\" width=\"14\" height=\"80\"/><rect x=\"172\" y=\"200\" width=\"14\" height=\"80\"/></g><path d=\"M92 190 L84 280 M148 190 L156 280\" stroke=\"#3d2414\" stroke-width=\"7\"/>",
+      "hat": "<path d=\"M72 98 C70 50 170 50 168 98 Z\" fill=\"#1b1b1f\"/><rect x=\"68\" y=\"86\" width=\"104\" height=\"18\" rx=\"8\" fill=\"#3d3d44\"/><g stroke=\"#55555c\" stroke-width=\"2\"><path d=\"M80 88 v14 M96 88 v14 M112 88 v14 M128 88 v14 M144 88 v14 M160 88 v14\"/></g>",
+      "face": "<path d=\"M76 118 Q74 178 120 192 Q166 178 164 118 Q160 150 140 152 Q120 140 100 152 Q80 150 76 118 Z\" fill=\"#5c3616\"/><path d=\"M98 146 Q110 136 120 142 Q130 136 142 146 Q132 152 120 148 Q108 152 98 146 Z\" fill=\"#5c3616\"/>"
+    } },
+  { "slug": "santa", "name": "Santa suit", "blurb": "The full suit: red coat, fluffy trim, a big black belt and a snowy beard. Ho ho ho!",
+    "weather": [], "unlock_badges": ["four-week-streak"],
+    "art": {
+      "shirt": {"main":"#d42a2a","dark":"#9e1b1b","sleeve":"#c42424"},
+      "body": "<rect x=\"110\" y=\"196\" width=\"20\" height=\"84\" fill=\"#fffaf0\"/><rect x=\"32\" y=\"244\" width=\"176\" height=\"16\" fill=\"#1b1b1f\"/><rect x=\"108\" y=\"240\" width=\"24\" height=\"24\" rx=\"3\" fill=\"none\" stroke=\"#ffc83d\" stroke-width=\"4\"/><path d=\"M34 274 Q120 266 206 274 L208 280 L32 280 Z\" fill=\"#fffaf0\"/>",
+      "hat": "<path d=\"M72 98 C72 40 160 30 182 66 Q188 82 176 96 Z\" fill=\"#d42a2a\"/><circle cx=\"182\" cy=\"96\" r=\"11\" fill=\"#fffaf0\"/><rect x=\"64\" y=\"86\" width=\"112\" height=\"20\" rx=\"10\" fill=\"#fffaf0\"/>",
+      "face": "<path d=\"M76 118 Q74 178 120 192 Q166 178 164 118 Q160 150 140 152 Q120 140 100 152 Q80 150 76 118 Z\" fill=\"#fffaf0\"/><path d=\"M98 146 Q110 136 120 142 Q130 136 142 146 Q132 152 120 148 Q108 152 98 146 Z\" fill=\"#fffaf0\"/><path d=\"M92 103 Q101 96 111 101 M129 101 Q139 96 148 103\" stroke=\"#fffaf0\" stroke-width=\"5\" stroke-linecap=\"round\" fill=\"none\"/>"
+    } },
+  { "slug": "elf", "name": "Santa’s helper", "blurb": "A pointy green elf hat with a bell, a striped collar and pointy ears. Toy duty.",
+    "weather": [], "unlock_badges": ["better-together"],
+    "art": {
+      "shirt": {"main":"#2e9e4f","dark":"#1d6b35","sleeve":"#28904a"},
+      "body": "<path d=\"M84 186 L96 204 L108 188 L120 206 L132 188 L144 204 L156 186 Z\" fill=\"#d42a2a\"/><path d=\"M90 190 l6 10 M114 192 l6 10 M138 192 l6 10\" stroke=\"#fffaf0\" stroke-width=\"3\"/><rect x=\"32\" y=\"248\" width=\"176\" height=\"12\" fill=\"#3d2414\"/><rect x=\"112\" y=\"245\" width=\"16\" height=\"18\" rx=\"2\" fill=\"none\" stroke=\"#ffc83d\" stroke-width=\"3\"/>",
+      "hat": "<path d=\"M72 98 Q90 40 150 20 Q190 10 206 32 Q170 30 168 98 Z\" fill=\"#2e9e4f\"/><circle cx=\"206\" cy=\"34\" r=\"8\" fill=\"#ffc83d\"/><path d=\"M68 92 L80 104 L92 92 L104 104 L116 92 L128 104 L140 92 L152 104 L164 92 L172 100 L172 106 L68 106 Z\" fill=\"#d42a2a\"/>",
+      "face": "<path d=\"M66 110 L48 92 L74 124 Z\" fill=\"#e0a878\"/><path d=\"M174 110 L192 92 L166 124 Z\" fill=\"#e0a878\"/><circle cx=\"93\" cy=\"138\" r=\"9\" fill=\"#ff4d88\" opacity=\"0.4\"/><circle cx=\"147\" cy=\"138\" r=\"9\" fill=\"#ff4d88\" opacity=\"0.4\"/>"
+    } },
+  { "slug": "tuxedo", "name": "New Year’s tux", "blurb": "A sharp tux, a bow tie and a top hat to ring in the new year. Cheers!",
+    "weather": [], "unlock_badges": ["golden-hour"],
+    "art": {
+      "shirt": {"main":"#1b1b1f","dark":"#0b0b0d","sleeve":"#26262b"},
+      "body": "<path d=\"M106 186 L120 194 L134 186 L134 200 L120 194 L106 200 Z\" fill=\"#0b0b0d\"/><circle cx=\"120\" cy=\"194\" r=\"3\" fill=\"#26262b\"/><g fill=\"#fffaf0\"><circle cx=\"120\" cy=\"210\" r=\"1.8\"/><circle cx=\"120\" cy=\"218\" r=\"1.8\"/></g><path d=\"M76 222 L88 214 L100 222 Z\" fill=\"#fffaf0\"/><rect x=\"74\" y=\"210\" width=\"28\" height=\"14\" fill=\"#1b1b1f\"/><path d=\"M78 222 L86 212 L92 220 L98 212 L100 222 Z\" fill=\"#fffaf0\"/><circle cx=\"156\" cy=\"226\" r=\"11\" fill=\"#1b1b1f\"/><g fill=\"#ffc83d\"><circle cx=\"20\" cy=\"180\" r=\"3\"/><rect x=\"214\" y=\"200\" width=\"5\" height=\"5\" transform=\"rotate(30 216 202)\"/><circle cx=\"12\" cy=\"236\" r=\"2.5\"/></g><g fill=\"#ff4d88\"><rect x=\"26\" y=\"208\" width=\"5\" height=\"5\" transform=\"rotate(20 28 210)\"/><circle cx=\"222\" cy=\"250\" r=\"3\"/></g>",
+      "hat": "<ellipse cx=\"120\" cy=\"97\" rx=\"58\" ry=\"10\" fill=\"#0b0b0d\"/><rect x=\"88\" y=\"30\" width=\"64\" height=\"66\" rx=\"4\" fill=\"#1b1b1f\"/><rect x=\"88\" y=\"78\" width=\"64\" height=\"12\" fill=\"#ffc83d\"/>"
+    } },
+  { "slug": "chef", "name": "Chef Gary", "blurb": "A tall chef’s toque and a red apron. Picnic’s on him.",
+    "weather": [], "unlock_badges": ["first-stamp"],
+    "art": {
+      "shirt": {"main":"#f4f1ea","dark":"#d8d2c4","sleeve":"#ebe6dc"},
+      "body": "<path d=\"M92 190 L92 204 M148 190 L148 204\" stroke=\"#d42a2a\" stroke-width=\"4\"/><path d=\"M90 204 L150 204 L156 280 L84 280 Z\" fill=\"#d42a2a\"/><rect x=\"102\" y=\"234\" width=\"36\" height=\"20\" rx=\"3\" fill=\"#9e1b1b\"/><path d=\"M110 228 L114 252 M124 226 L122 252\" stroke=\"#c9ced6\" stroke-width=\"3\" stroke-linecap=\"round\"/>",
+      "hat": "<rect x=\"78\" y=\"78\" width=\"84\" height=\"22\" rx=\"4\" fill=\"#fffaf0\" stroke=\"#d8d2c4\" stroke-width=\"2\"/><path d=\"M80 80 Q60 54 82 40 Q90 20 112 30 Q124 12 142 28 Q166 22 166 46 Q182 62 160 80 Z\" fill=\"#fffaf0\" stroke=\"#d8d2c4\" stroke-width=\"2\"/><path d=\"M104 48 v26 M120 44 v30 M136 48 v26\" stroke=\"#d8d2c4\" stroke-width=\"2\"/>"
     } }
 ]
