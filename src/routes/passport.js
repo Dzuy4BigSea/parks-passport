@@ -12,6 +12,8 @@ import { weekSummary } from '../domain/activities.js';
 import { urlCity, queryOf } from './city-params.js';
 import { wantToGo } from '../domain/saved.js';
 import { palNudge } from '../domain/pals.js';
+import { adForPassport, recordAdView } from '../domain/ads.js';
+import { isBot } from '../domain/nonprofits.js';
 
 export default async function passportRoutes(app) {
   const { db } = app;
@@ -26,7 +28,11 @@ export default async function passportRoutes(app) {
     const user = req.user;
     const points = totalPoints(db, user.id);
     const badges = badgeBoard(db, user.id, { cityId: city.id });
+    // A nonprofit ad at the bottom (SPEC Flow 25); own passport only, never /u/:handle.
+    const ad = adForPassport(db, city, { now: app.now(), random: app.random });
+    if (ad && !isBot(req.headers['user-agent'])) recordAdView(db, ad.id, 0, { now: app.now() });
     return reply.page(passportPage({
+      ad,
       ...passportData(db, user.id, { cityId: city.id }), user, csrf: req.csrfToken(), points, level: levelFor(points),
       badges, theme: city, cities: cityProgress(db, user.id, listCities(db)),
       next: { ...nextUp(db, user.id, badges, { now: app.now(), timeZone: city.time_zone, cityId: city.id }), pals: palNudge(db, user.id) },

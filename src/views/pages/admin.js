@@ -49,6 +49,7 @@ export function adminHome({ counts }) {
   <li><a href="/admin/badges"><strong>Badges</strong><span>${counts.badges} badges</span></a></li>
   <li><a href="/admin/mission"><strong>Our mission</strong><span>Draft for review</span></a></li>
   <li><a href="/admin/nonprofits"><strong>Nonprofits</strong><span>${counts.nonprofitsActive ?? 0} active · ${counts.nonprofitsSuggested ?? 0} suggested</span></a></li>
+  <li><a href="/admin/ads"><strong>Nonprofit ads</strong><span>${counts.adsOn ?? 0} on · ${counts.ads ?? 0} in all · ads and activity tips</span></a></li>
   <li><a href="/admin/sunshine"><strong>Drops of Sunshine</strong><span>${counts.newSunshine ?? 0} new thank-you notes</span></a></li>
   <li><a href="/admin/gary"><strong>Gary’s outfits</strong><span>Review outfit drafts and unlocks</span></a></li>
   <li><a href="/admin/messages"><strong>Messages</strong><span>${counts.liveMessages ?? 0} live · notes, greetings and giveaways</span></a></li>

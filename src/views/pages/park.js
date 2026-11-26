@@ -11,6 +11,7 @@ import { ICONS } from '../icons.js';
 import { motifIcon } from '../motif.js';
 import { nextLine } from '../nextup.js';
 import { activitiesPanel } from '../activities.js';
+import { adCard } from '../ads.js';
 import { cityPath, parkPath } from '../urls.js';
 import { saveButton } from '../save-button.js';
 
@@ -117,13 +118,14 @@ function spotlightCard(n, park) {
 
 export function parkPage({ park, user = null, csrf = '', today = '', myVisits = [], problem = null, stamped = null,
   photos = [], summary = { count: 0, average: null }, reviews = [], mine = null, flash = null, theme = { motifs: [], areas: [] }, area = null, palsHere = [],
-  celebrate = null, activities = null, saved = false, spotlight = null }) {
+  celebrate = null, activities = null, saved = false, spotlight = null, ad = null }) {
   const hasPin = park.lat != null && park.lng != null;
   const scripts = [];
   if (hasPin) scripts.push('/js/park-map.js');
   if (user && hasPin) scripts.push('/js/checkin.js');
   if (user) scripts.push('/js/upload-check.js', '/js/want-to-go.js');
   if (stamped) scripts.push('/js/celebrate.js');
+  if (ad || activities?.tips?.size) scripts.push('/js/ads.js');
   return {
     title: park.name,
     description: `Visit ${park.name}${park.address ? ` (${park.address})` : ''} and stamp it in your Parks Passport. Map, photos, ratings and badges for ${theme.copy?.short || 'local'} parks.`,
@@ -186,6 +188,8 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
     : html`<p class="spotlight-suggest"><a href="/nonprofits/suggest?city=${park.city_key}">Know a nonprofit that cares for this park?</a></p>`}
 
   ${park.city_url ? html`<p><a href="${park.city_url}" rel="noopener">More about <span class="park-name">${park.name}</span> on the City's website</a></p>` : ''}
+
+  ${ad ? adCard(ad, park.id) : ''}
   </div>
   </div>
 </article>`,

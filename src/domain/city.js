@@ -13,9 +13,9 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // A city's key is the first segment of its URLs (/westminster/parks), so it can't be a top-level
 // path the app already uses (routes, public/ folders, nginx's /stats).
-export const RESERVED_CITY_KEYS = new Set(['account', 'activities', 'admin', 'auth', 'avatars', 'ideas', 'notifications', 'badge-art', 'brand', 'city', 'consent',
-  'credits', 'css', 'default', 'fonts', 'forgot', 'groups', 'healthz', 'icons', 'join', 'js', 'login', 'logout', 'og', 'pals', 'parks',
-  'passport', 'photos', 'privacy', 'reset', 'signup', 'stamp', 'stats', 'u', 'vendor', 'visits']);
+export const RESERVED_CITY_KEYS = new Set(['account', 'activities', 'ad-art', 'admin', 'auth', 'avatars', 'ideas', 'notifications', 'badge-art', 'brand', 'city', 'consent',
+  'credits', 'css', 'default', 'fonts', 'forgot', 'go', 'groups', 'healthz', 'icons', 'join', 'js', 'login', 'logout', 'og', 'pals', 'parks',
+  'passport', 'photos', 'privacy', 'reset', 'signup', 'stamp', 'stats', 'tips', 'u', 'vendor', 'visits']);
 const TIME_ZONES = new Set(Intl.supportedValuesOf('timeZone'));
 
 // Used when no city exists (never after migration 016, which adds St. Pete): neutral, no motifs.

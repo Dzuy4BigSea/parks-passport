@@ -1899,3 +1899,51 @@ svg.gary-art { height: auto; }
 .photo-drawer > summary::after { content: ""; width: 7px; height: 7px; border: solid currentColor; border-width: 0 2px 2px 0; transform: translateY(-2px) rotate(45deg); transition: transform 0.2s var(--ease-out); }
 .photo-drawer[open] > summary::after { transform: translateY(2px) rotate(-135deg); }
 .photo-drawer[open] > summary { margin-bottom: 0.75rem; }
+
+/* ---------- Nonprofit ads and activity tips (SPEC Flow 25) ---------- */
+.np-ad { max-width: 300px; margin: 2rem auto 1rem; }
+.np-ad-label { margin: 0 0 0.35rem; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ad-slider { position: relative; width: 100%; max-width: 300px; border-radius: 12px; overflow: hidden; background: var(--sand-2, #efe6d6); box-shadow: var(--shadow); }
+.ad-slides { list-style: none; margin: 0; padding: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.ad-slides > li { flex: 0 0 100%; scroll-snap-align: start; }
+.ad-slides a { display: block; }
+.ad-slides img { display: block; width: 100%; height: auto; aspect-ratio: 6 / 5; object-fit: cover; }
+.ad-slider.is-js .ad-slides { display: grid; overflow: hidden; }
+.ad-slider.is-js .ad-slides > li { grid-area: 1 / 1; opacity: 0; visibility: hidden; transition: opacity 0.6s ease, visibility 0s linear 0.6s; }
+.ad-slider.is-js .ad-slides > li.is-current { opacity: 1; visibility: visible; transition: opacity 0.6s ease; }
+.ad-controls { position: absolute; right: 6px; bottom: 6px; display: flex; gap: 4px; }
+.ad-controls button { width: 32px; height: 32px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.88); color: var(--ink); font: 800 1rem/1 var(--sans); cursor: pointer; box-shadow: 0 1px 3px rgba(14, 42, 51, 0.3); }
+.ad-controls .ad-pause { font-size: 0.7rem; letter-spacing: -0.1em; }
+@media (prefers-reduced-motion: reduce) { .ad-slider.is-js .ad-slides > li { transition: none; } }
+
+.act-tip { display: inline-flex; align-items: center; gap: 0.3rem; margin-top: 0.3rem; font-size: 0.9rem; font-weight: 700; color: var(--violet); }
+.fx-tip { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; }
+.tip-backdrop { position: fixed; inset: 0; background: rgba(14, 42, 51, 0.55); }
+.tip-box { position: relative; width: min(100%, 360px); max-height: calc(100dvh - 2rem); overflow-y: auto; background: var(--surface); border-radius: var(--radius); padding: 0.75rem 1rem 1rem; box-shadow: var(--shadow-lift); }
+.tip-close { position: sticky; top: 0; float: right; z-index: 1; margin: 0 -0.25rem 0 0.5rem; background: var(--surface); }
+.tip-card .ad-slider { margin: 0 auto 0.75rem; }
+.tip-card h1, .tip-card h2 { margin: 0 0 0.4rem; font-size: 1.25rem; }
+.tip-card p { margin: 0 0 0.6rem; }
+.tip-page .tip-card { max-width: 360px; }
+
+/* Admin › Ads */
+.ad-row { display: flex; gap: 0.6rem; align-items: center; }
+.ad-row img { border-radius: 6px; object-fit: cover; flex: none; }
+.flag.is-running { background: #dff5e8; color: #126b3a; }
+.flag.is-scheduled { background: var(--sun-tint); color: #7a5200; }
+.flag.is-ended, .flag.is-off { background: #ece7dd; color: var(--muted); }
+.ad-slide-admin { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 0.75rem; }
+.ad-slide-admin li { display: flex; gap: 0.75rem; align-items: flex-start; }
+.ad-slide-admin img { border-radius: 8px; object-fit: cover; flex: none; }
+.ad-slide-admin p { margin: 0 0 0.4rem; }
+.inline-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.inline-actions form { margin: 0; }
+.ad-form fieldset { margin: 0 0 1.25rem; }
+.ad-form .scope { margin: 0.5rem 0 0 1.6rem; }
+/* Only the parts that matter for the choices made (everything shows where :has isn't supported). */
+.ad-form:has([name="placement"][value="activity"]:not(:checked)) .for-activity,
+.ad-form:has([name="placement"][value="passport"]:checked) .for-parks,
+.ad-form:has([name="all_cities"][value="1"]:checked) .ad-cities,
+.ad-form:has([name="park_scope"][value="categories"]:not(:checked)) .scope-categories,
+.ad-form:has([name="park_scope"][value="areas"]:not(:checked)) .scope-areas,
+.ad-form:has([name="park_scope"][value="parks"]:not(:checked)) .scope-parks { display: none; }
