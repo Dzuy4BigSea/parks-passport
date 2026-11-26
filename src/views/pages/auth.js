@@ -136,7 +136,7 @@ ${errorSummary(errors, { password: 'New password' })}
   };
 }
 
-// Profile photo: upload, replace or remove. Seen by whoever can see the passport.
+// Profile photo: upload, replace or remove, folded into an "Update pic" drawer. Seen by whoever can see the passport.
 const PHOTO_WHO = { private: 'only you', pals: 'you and your Park Pals', public: 'anyone with your passport link' };
 function profilePhoto({ csrf, user, error }) {
   return html`<section id="photo" class="profile-photo" aria-labelledby="photo-h">
@@ -145,6 +145,8 @@ function profilePhoto({ csrf, user, error }) {
   <h2 id="photo-h">Profile photo</h2>
   <p class="muted">Seen by ${PHOTO_WHO[user.default_visibility] || 'only you'}, like your passport (<a href="#visibility">change who</a>).${user.kids ? ' Kids edition is on: use a photo of yourself, not your kids.' : ''}</p>
   ${error ? html`<p class="error-text" id="photo-error" role="alert">${error}</p>` : ''}
+  <details class="photo-drawer"${error ? html` open` : ''}>
+  <summary class="btn btn-small">Update pic</summary>
   <form method="post" action="/account/avatar" class="inline-form photo-form" enctype="multipart/form-data">
     ${csrfField(csrf)}
     <label for="avatar-file" class="visually-hidden">Choose a profile photo</label>
@@ -152,6 +154,7 @@ function profilePhoto({ csrf, user, error }) {
     <button type="submit" class="btn btn-small">${user.avatar_key ? 'Replace photo' : 'Upload photo'}</button>
   </form>
   ${user.avatar_key ? html`<form method="post" action="/account/avatar/delete" class="inline-form">${csrfField(csrf)}<button type="submit" class="btn btn-quiet btn-small">Remove photo</button></form>` : ''}
+  </details>
   </div>
 </section>`;
 }

@@ -55,6 +55,7 @@ test('profile photo upload and pal faces: axe clean at 375 px', async ({ page, b
   const photo = await sharp({ create: { width: 400, height: 300, channels: 3, background: '#e4572e' } }).jpeg().toBuffer();
   await signUp(page, { name: 'Ana Pal' });
   await page.goto('/account');
+  await page.getByText('Update pic', { exact: true }).click();
   await page.getByLabel('Choose a profile photo').setInputFiles({ name: 'me.jpg', mimeType: 'image/jpeg', buffer: photo });
   await page.getByRole('button', { name: 'Upload photo' }).click();
   await expect(page.locator('p.notice[role=status]')).toHaveText('Profile photo saved.');
