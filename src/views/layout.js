@@ -9,6 +9,7 @@ import { cityPath } from './urls.js';
 import { teamMessagesBlock } from './pages/messages.js';
 import { garyTipFor } from './gary-help.js';
 import { garySvg } from './gary-art.js';
+import { asset, importMap } from './assets.js';
 
 /**
  * Page shell. `head` adds per-page tags (e.g. Leaflet CSS); `scripts` are module URLs loaded with defer.
@@ -44,8 +45,8 @@ ${gtm ? raw("dataLayer.push({'gtm.start': new Date().getTime(), event: 'gtm.js'}
 </script>
 ${gtm ? html`<script async src="${a.gtmScriptOrigin}/gtm.js?id=${a.gtmId}"></script>` : ''}
 ${umami ? html`<script defer src="${a.umamiScriptUrl}" data-website-id="${a.umamiWebsiteId}" data-host-url="${a.umamiHostUrl}"></script>` : ''}
-<script type="module" src="/js/analytics.js"></script>
-${gtm ? html`<script type="module" src="/js/consent.js"></script>` : ''}`;
+<script type="module" src="${asset('/js/analytics.js')}"></script>
+${gtm ? html`<script type="module" src="${asset('/js/consent.js')}"></script>` : ''}`;
 }
 
 // First-party consent banner, in the page flow (never covering content). Accept and Reject are
@@ -187,16 +188,17 @@ ${shareMeta({ title: fullTitle, description, baseUrl, canonicalPath, theme, shar
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
 <link rel="preload" href="/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
 <script>document.documentElement.classList.add('js')</script>
-<link rel="stylesheet" href="/css/app.css">
+<script type="importmap">${raw(importMap())}</script>
+<link rel="stylesheet" href="${asset('/css/app.css')}">
 ${accents}
 ${analyticsHead(analytics, consent, events)}
 ${head}
-${scripts.map((src) => html`<script type="module" src="${src}"></script>`)}
-<script type="module" src="/js/announce.js"></script>
-${messages?.length ? html`<script type="module" src="/js/message.js"></script>` : ''}
-${announcements ? html`<script type="module" src="/js/reveal.js"></script>` : ''}
-<script type="module" src="/js/gary.js"></script>
-<script type="module" src="/js/critters.js"></script>
+${scripts.map((src) => html`<script type="module" src="${asset(src)}"></script>`)}
+<script type="module" src="${asset('/js/announce.js')}"></script>
+${messages?.length ? html`<script type="module" src="${asset('/js/message.js')}"></script>` : ''}
+${announcements ? html`<script type="module" src="${asset('/js/reveal.js')}"></script>` : ''}
+<script type="module" src="${asset('/js/gary.js')}"></script>
+<script type="module" src="${asset('/js/critters.js')}"></script>
 </head>
 <body${user ? html` class="has-tabbar"` : ''}>
 <a class="skip-link" href="#main">Skip to content</a>
