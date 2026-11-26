@@ -187,7 +187,7 @@ ${showWantToGo ? html`<section aria-labelledby="want-h" id="want-to-go">
     ${saveButton({ park: p, saved: true, csrf, back: `${cityPath(theme, '/passport')}#want-to-go` })}
   </li>`)}</ul>` : html`<p>Nothing here yet. Tap the heart on a <a href="${cityPath(theme, '/parks')}">park</a> to save it for later.</p>`}
 </section>` : ''}
-${readOnly ? '' : html`<p class="sunshine-nudge"><a href="/sunshine?city=${theme.key}"><span aria-hidden="true">☀️</span> Send a drop of sunshine</a> to the crews who keep our parks beautiful.</p>`}
+${readOnly ? '' : html`<p class="sunshine-nudge"><a class="pill pill-sunshine" href="/sunshine?city=${theme.key}"><span aria-hidden="true">☀️</span> Drops of Sunshine</a></p>`}
 
 <section aria-labelledby="history-h">
   <h2 id="history-h">Visit history</h2>
