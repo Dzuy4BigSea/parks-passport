@@ -1,4 +1,5 @@
 import { weekCard } from '../activities.js';
+import { tierOf } from '../../domain/group-goals.js';
 import { avatar } from '../avatar.js';
 import { WEEKLY_GOALS } from '../../domain/activities.js';
 import { html } from '../html.js';
@@ -84,7 +85,7 @@ function cityTabs(cities, theme, href) {
 </ul></nav>`;
 }
 
-export function passportPage({ user, csrf, parks, history, points, level, badges, readOnly = false, theme = { motifs: [], areas: [] }, next = null, week = null,
+export function passportPage({ teamBadges = [], user, csrf, parks, history, points, level, badges, readOnly = false, theme = { motifs: [], areas: [] }, next = null, week = null,
   cities = null, cityHref = (city) => cityPath(city, '/passport'), welcome = false, wantToGo = null }) {
   // Saved parks are private: only the owner's own passport passes wantToGo (never /u/:handle).
   const showWantToGo = !readOnly && Array.isArray(wantToGo);
@@ -158,6 +159,16 @@ ${next ? nextUpCards(next, { city: theme }) : ''}
   ${rest.length ? html`<details class="more-badges"${earned.length || closest.length ? '' : html` open`}><summary>See all ${badges.length} badges</summary>
     <ul class="badge-grid">${rest.map(badgeCard)}</ul></details>` : ''}
 </section>
+${teamBadges.length ? html`<section aria-labelledby="team-h" id="team-badges" class="team-badges">
+  <h2 id="team-h">Team badges <span class="count">(${teamBadges.length})</span></h2>
+  <p class="muted">Earned together by reaching a group goal. They're yours to keep.</p>
+  <ul class="badge-grid">${teamBadges.map((b) => html`<li class="badge earned">
+    ${badgeArt(b.art)}
+    <span class="badge-name">${b.name} <span class="tier"><span class="visually-hidden">level </span>${tierOf(b.times)}</span></span>
+    <span class="badge-meta">${b.times > 1 ? `Earned ${b.times} times · ${b.group_name ? `last with ${b.group_name} · ` : ''}` : b.group_name ? `With ${b.group_name} · ` : ''}${formatDate(localDate(new Date(b.awarded_at)))}</span>
+    ${b.description ? html`<span class="badge-desc">${b.description}</span>` : ''}
+  </li>`)}</ul>
+</section>` : ''}
 
 <section aria-labelledby="map-h">
   <h2 id="map-h">Map</h2>

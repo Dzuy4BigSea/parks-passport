@@ -1,4 +1,5 @@
 import { html, raw } from './html.js';
+import { tierOf } from '../domain/group-goals.js';
 import { inlineJson } from '../lib/analytics.js';
 import { badgeArt } from './badge-art.js';
 import { ICONS, BRAND_MARK } from './icons.js';
@@ -18,8 +19,8 @@ function announcementsBlock(a, base) {
   return html`<div class="announcements" role="status" tabindex="-1" data-announce>
   ${a.levelUp ? html`<div class="announce announce-level" data-kind="level"><span class="announce-art" aria-hidden="true">🚀</span>
     <p><strong>Level up! You're now ${/^[AEIOU]/.test(a.levelUp.name) ? 'an' : 'a'} ${a.levelUp.name}.</strong></p></div>` : ''}
-  ${a.badges.map((b) => html`<div class="announce${b.serial ? ' is-holo' : ''}" data-kind="${b.given_by ? 'gift' : b.kind}">${badgeArt(b.art, 'announce-art')}
-    <p><strong>New badge: ${b.name}</strong>${b.serial ? html`<br><span class="limited-no">${b.limited_count ? `Limited edition #${b.serial} of ${b.limited_count}` : `No. ${b.serial}`}</span>` : ''}${b.description ? html`<br><span class="announce-desc">${b.description}</span>` : ''}${b.given_by ? html`<br><span class="gift-note">From ${b.given_by}${b.award_note ? `: “${b.award_note}”` : ''}</span>` : ''}</p></div>`)}
+  ${a.badges.map((b) => html`<div class="announce${b.serial ? ' is-holo' : ''}" data-kind="${b.team ? 'team' : b.given_by ? 'gift' : b.kind}">${badgeArt(b.art, 'announce-art')}
+    <p><strong>New badge: ${b.name}${b.is_group ? html` <span class="visually-hidden">level </span>${tierOf(b.times)}` : ''}</strong>${b.serial ? html`<br><span class="limited-no">${b.limited_count ? `Limited edition #${b.serial} of ${b.limited_count}` : `No. ${b.serial}`}</span>` : ''}${b.description ? html`<br><span class="announce-desc">${b.description}</span>` : ''}${b.team ? html`<br><span class="gift-note">Earned together with ${b.team}</span>` : ''}${b.given_by ? html`<br><span class="gift-note">From ${b.given_by}${b.award_note ? `: “${b.award_note}”` : ''}</span>` : ''}</p></div>`)}
   <p class="announce-more"><a href="${base}/passport#badges">See your badges</a></p>
 </div>`;
 }
@@ -94,7 +95,7 @@ const aria = (on) => (on ? html` aria-current="page"` : '');
 // <details> works without JS; public/js/gary.js adds Escape, a tap outside and the talk-back chat.
 // Founding explorers (Flow 16) can talk back: their message is feedback for the team, and Gary
 // replies with a thank-you (from the server, so it works without JS too).
-function garyButton({ csrf, path, canTalk, random, gary }) {
+function garyButton({ csrf, path, canTalk, random, gary, signedIn = false }) {
   const page = String(path || '/').split(/[?#]/)[0];
   const { tip, signOff } = garyTipFor(page, random);
   return html`<details class="gary-help" data-gary>
@@ -103,6 +104,7 @@ function garyButton({ csrf, path, canTalk, random, gary }) {
     <ol class="gary-chat" data-gary-chat>
       <li class="gary-msg is-gary"><span class="gary-name">Gary</span><p>${tip} <strong>${signOff}</strong></p></li>
     </ol>
+    ${signedIn ? html`<p class="gary-dress-link"><a href="/account/gary"><span aria-hidden="true">🧢</span> Change Gary’s outfit</a></p>` : ''}
     ${canTalk ? html`<button type="button" class="btn btn-small gary-talk-open" data-gary-talk-open hidden>Talk to Gary</button>
     <form method="post" action="/feedback" class="gary-talk feedback-form" data-gary-talk>
       <input type="hidden" name="_csrf" value="${csrf}"><input type="hidden" name="page" value="${page}">
@@ -233,7 +235,7 @@ ${showConsentBanner ? consentBanner(csrf, path) : ''}
     </div>
   </div>
 </footer>
-${garyButton({ csrf, path, random, gary, canTalk: feedback && current !== 'feedback' })}
+${garyButton({ csrf, path, random, gary, signedIn: Boolean(user), canTalk: feedback && current !== 'feedback' })}
 ${user ? tabBar(current, base) : ''}
 </body>
 </html>`;

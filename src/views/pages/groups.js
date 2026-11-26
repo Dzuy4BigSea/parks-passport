@@ -4,6 +4,71 @@ import { csrfField, errorSummary, field } from '../forms.js';
 import { avatar } from '../avatar.js';
 import { formatCode } from '../../domain/pals.js';
 import { TROOP_LEADER_GPS, JOIN_UNLOCK_GPS, NAME_MAX, DESCRIPTION_MAX } from '../../domain/groups.js';
+import { METRICS } from '../../domain/group-goals.js';
+import { badgeArt } from '../badge-art.js';
+
+const shortDate = (isoStr) => new Date(isoStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+/** A goal's progress bar (shared by the group page and the home card). */
+export function goalBar(goal, total) {
+  const pct = Math.min(100, Math.round((total / goal.target) * 100));
+  return html`<span class="bar" role="progressbar" aria-label="${goal.title}" aria-valuemin="0" aria-valuemax="${goal.target}" aria-valuenow="${Math.min(total, goal.target)}"><span style="width:${pct}%"></span></span>`;
+}
+
+/** The group goal: under way (with each member's share), reached, or over; owners set the next one. */
+function goalSection({ csrf, group, goal, progress, templates, teamBadges, errors = {}, values = {} }) {
+  const picked = values.template || templates[0]?.key || 'custom';
+  const owner = group.is_owner;
+  const unit = goal ? METRICS[goal.metric] : '';
+  const card = goal ? html`<div class="goal-card${goal.reached_at ? ' is-reached' : ''}">
+  <h3>${goal.badge_art ? html`${badgeArt(goal.badge_art, 'table-art')} ` : ''}${goal.title}</h3>
+  <p><strong>${progress.total}</strong> of ${goal.target} ${unit}.
+    ${goal.reached_at ? html`<strong>Reached ${shortDate(goal.reached_at)}!</strong> Everyone in the group got the ${goal.badge_name || 'team'} badge.`
+      : goal.active ? `Until ${shortDate(goal.ends_at)}. Reach it and everyone gets the ${goal.badge_name || 'team'} badge.`
+        : `Ended ${shortDate(goal.ends_at)}.`}</p>
+  ${goalBar(goal, progress.total)}
+  <ul class="goal-shares" aria-label="Each member's share">${progress.shares.map((s) => html`<li><span>${s.display_name}</span><span>${s.amount}</span></li>`)}</ul>
+  ${owner && goal.active ? html`<form method="post" action="/groups/${group.id}/goal/stop" class="inline-form">${csrfField(csrf)}<button type="submit" class="btn btn-quiet btn-small">Stop this goal</button></form>` : ''}
+</div>` : html`<p>${owner ? 'No goal yet. Pick one below.' : 'No goal yet. The owner picks one.'}</p>`;
+  const form = owner && !goal?.active ? html`<form method="post" action="/groups/${group.id}/goal" class="card-form" novalidate>
+  ${csrfField(csrf)}
+  ${errorSummary(errors, { template: 'Next goal', metric: 'Count', target: 'How many', days: 'Days', badge_id: 'Team badge' })}
+  <fieldset class="radio-group"><legend>Next goal</legend>
+    ${templates.map((t) => html`<label class="check"><input type="radio" name="template" value="${t.key}"${picked === t.key ? html` checked` : ''}> ${t.title}</label>`)}
+    <label class="check"><input type="radio" name="template" value="custom"${picked === 'custom' ? html` checked` : ''}> Our own goal (pick this to use the fields below):</label>
+  </fieldset>
+  <div class="inline-fields">
+    <div class="field"><label for="metric">Count</label><select id="metric" name="metric">${Object.entries(METRICS).map(([k, label]) => html`<option value="${k}"${values.metric === k ? html` selected` : ''}>${label}</option>`)}</select></div>
+    ${field({ name: 'target', label: 'How many', type: 'number', value: values.target ?? '', error: errors.target, required: false })}
+    ${field({ name: 'days', label: 'Days', type: 'number', value: values.days ?? '30', error: errors.days, required: false })}
+    <div class="field"><label for="badge_id">Team badge</label><select id="badge_id" name="badge_id">${teamBadges.map((b) => html`<option value="${b.id}"${(values.badge_id ? String(values.badge_id) === String(b.id) : b.slug === 'team-effort') ? html` selected` : ''}>${b.name}</option>`)}</select></div>
+  </div>
+  <button type="submit" class="btn btn-pop">Start the goal</button>
+</form>` : '';
+  return html`<section aria-labelledby="goal-h" id="goal">
+<h2 id="goal-h">Group goal</h2>
+${card}
+${form}
+</section>`;
+}
+
+function suggestSection({ csrf, group }) {
+  if (!group.is_owner) return '';
+  return html`<section aria-labelledby="suggest-h">
+<h2 id="suggest-h">Suggest a goal or team badge</h2>
+<p>Ideas go to the Parks Passport team, who may add them for every group.</p>
+<form method="post" action="/groups/${group.id}/suggest" class="card-form" novalidate>
+  ${csrfField(csrf)}
+  <fieldset class="radio-group"><legend>It's a</legend>
+    <label class="check"><input type="radio" name="kind" value="group_goal" checked> Group goal</label>
+    <label class="check"><input type="radio" name="kind" value="group_badge"> Team badge</label>
+  </fieldset>
+  ${field({ name: 'idea_name', label: 'Name (optional)', value: '', required: false, maxlength: 60 })}
+  ${field({ name: 'pitch', label: 'What would the group do?', value: '', maxlength: 160, hint: 'e.g. visit every dog park in town together.' })}
+  <button type="submit" class="btn">Send the idea</button>
+</form>
+</section>`;
+}
 
 const PRIVACY = 'Group members see your display name and your counts: parks stamped, check-ins, badges and level. Never your locations, photos, reviews or visits.';
 const notice = (text) => (text ? html`<p class="notice" role="status" tabindex="-1" data-announce>${text}</p>` : '');
@@ -82,7 +147,8 @@ ${a.canCreate ? html`${errorSummary(errors, { name: 'Group name', emoji: 'Emoji'
   };
 }
 
-export function groupPage({ csrf, group, board, me, requests = [], pals = [], notice: note = null, errors = {}, values = null, baseUrl = '' }) {
+export function groupPage({ csrf, group, board, me, requests = [], pals = [], notice: note = null, errors = {}, values = null, baseUrl = '',
+  goal = null, progress = { total: 0, shares: [] }, templates = [], teamBadges = [], goalErrors = {}, goalValues = {} }) {
   const owner = group.is_owner;
   const v = values || group;
   return {
@@ -103,6 +169,8 @@ ${notice(note)}
     <span class="gb-stats">${plural(m.parks, 'park')} · ${plural(m.checkins, 'check-in')} · ${plural(m.badges, 'badge')} · ${m.level}</span></span>
 </li>`)}</ol>
 </section>
+
+${goalSection({ csrf, group, goal, progress, templates, teamBadges, errors: goalErrors, values: goalValues })}
 
 <section aria-labelledby="invite-h">
 <h2 id="invite-h">Invite people</h2>
@@ -144,6 +212,8 @@ ${board.length > 1 ? html`<form method="post" action="/groups/${group.id}/member
 <form method="post" action="/groups/${group.id}/end" class="inline-form">${csrfField(csrf)}<button type="submit" class="btn btn-danger btn-small">End the group</button> <span class="hint">Everyone is told; badges earned together stay with each member.</span></form>
 </section>` : ''}
 
+${suggestSection({ csrf, group })}
+
 <form method="post" action="/groups/${group.id}/leave" class="inline-form">${csrfField(csrf)}<button type="submit" class="btn btn-quiet">Leave the group</button>${owner ? html` <span class="hint">${board.length > 1 ? 'The member who has been in it longest becomes the owner.' : 'You are the only member, so this ends the group.'}</span>` : ''}</form>
 </div>`,
   };
@@ -176,7 +246,8 @@ export function groupsCard({ groups, allowance }) {
   return html`<section class="home-card groups-mini" aria-labelledby="groupsmini-h">
   <h2 id="groupsmini-h">Your groups</h2>
   ${groups.length ? html`<ul class="group-list">${groups.slice(0, 4).map((g) => html`<li class="group-row"><span class="group-emoji" aria-hidden="true">${g.emoji}</span>
-    <span><a href="/groups/${g.id}">${g.name}</a><br><span class="muted">${plural(g.members, 'member')}</span></span></li>`)}</ul>
+    <span><a href="/groups/${g.id}">${g.name}</a><br><span class="muted">${g.goal ? html`${g.goal.title}: ${g.goal.total} of ${g.goal.target}` : plural(g.members, 'member')}</span>
+    ${g.goal ? goalBar(g.goal, g.goal.total) : ''}</span></li>`)}</ul>
   <p><a href="/groups">All your groups</a></p>`
   : html`<p>Explore as a team: your gym, your run club, your class. Have a group code? <a href="/groups#join-h">Join a group</a>.</p>
   ${a.canCreate ? html`<p><a class="btn btn-small" href="/groups#start-h">Start a group</a></p>`

@@ -1,0 +1,7 @@
+[
+  { "key": "kickoff", "title": "10 check-ins together this week", "metric": "checkins", "target": 10, "days": 7, "badge": "kickoff-crew" },
+  { "key": "fifty", "title": "50 check-ins together in 30 days", "metric": "checkins", "target": 50, "days": 30, "badge": "fifty-strong" },
+  { "key": "park-crawl", "title": "Stamp 25 different parks together this month", "metric": "parks", "target": 25, "days": 30, "badge": "park-crawl-crew" },
+  { "key": "move-500", "title": "500 active minutes together in 30 days", "metric": "minutes", "target": 500, "days": 30, "badge": "move-together" },
+  { "key": "every-corner", "title": "Stamp 100 different parks together in 90 days", "metric": "parks", "target": 100, "days": 90, "badge": "every-corner" }
+]

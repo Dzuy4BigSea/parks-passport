@@ -161,7 +161,7 @@ function dashboard({ user, total, theme, dash, suggest, gary, csrf }) {
   return html`<div class="home">
 ${citySuggestion(suggest, csrf)}
 <section class="gary-brief" aria-labelledby="hello-h">
-  ${garySvg(gary?.art || {}, { id: 'home', width: 240, height: 280, className: 'gary-art' })}
+  <a class="gary-dress" href="/account/gary" title="Change Gary’s outfit">${garySvg(gary?.art || {}, { id: 'home', width: 240, height: 280, className: 'gary-art' })}<span class="gary-dress-chip" aria-hidden="true">🧢</span><span class="visually-hidden">Change Gary’s outfit</span></a>
   <div class="gary-bubble">
     <p class="eyebrow">${theme.tagline || 'Welcome back'}</p>
     <h1 id="hello-h">Hi, ${first}</h1>

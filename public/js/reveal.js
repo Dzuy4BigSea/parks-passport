@@ -4,7 +4,7 @@
 import { celebrationsOn, reducedMotion, burst, buzz, openDialog, el, holoTilt } from './fx.js';
 
 const box = document.querySelector('.announcements');
-const KICKERS = { known: 'Badge unlocked!', hidden: 'Surprise badge!', lucky: 'Lucky find!', level: 'Level up!', gift: 'A gift for you!', limited: 'Limited edition!' };
+const KICKERS = { known: 'Badge unlocked!', hidden: 'Surprise badge!', lucky: 'Lucky find!', level: 'Level up!', gift: 'A gift for you!', limited: 'Limited edition!', team: 'Team goal reached!' };
 
 if (box && celebrationsOn()) {
   const items = [...box.querySelectorAll('.announce')].map((a) => {
