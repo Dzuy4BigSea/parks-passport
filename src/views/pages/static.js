@@ -83,7 +83,8 @@ ${citySwitcher(cities, theme)}`;
 // ---- Signed-in home: Gary's briefing, the passport spread, what's close, and progress ----
 
 
-// "Your St. Pete": every park in the city as a dot on a hand-drawn plane (no map tiles), stamped ones as seals.
+// "Your St. Pete": every park in the city, stamped ones as seals. Drawn as dots first (no JS, or while
+// the map loads), then a real street map (public/js/home-map.js).
 function constellation(dots, areas, theme) {
   const pins = dots.filter((p) => p.lat != null);
   if (!pins.length) return '';
@@ -97,14 +98,16 @@ function constellation(dots, areas, theme) {
   const x = (lng) => (P + ((lng - minLng) / (maxLng - minLng)) * (W - 2 * P)).toFixed(1);
   const y = (lat) => (P + ((maxLat - lat) / (maxLat - minLat)) * (H - 2 * P)).toFixed(1);
   const stampedCount = pins.filter((p) => p.stamped).length;
-  return html`<a class="constellation" href="${cityPath(theme, '/parks')}">
+  // public/js/home-map.js swaps the drawing for a real street map once the card scrolls into view.
+  const mapData = pins.map((p) => ({ lat: p.lat, lng: p.lng, name: p.name, stamped: p.stamped, next: p.next, url: parkPath({ city_key: theme.key, slug: p.slug }) }));
+  return html`<div class="home-map" data-parks="${JSON.stringify(mapData)}"><a class="constellation" href="${cityPath(theme, '/parks')}">
   <span class="visually-hidden">Map of ${theme.copy.short} parks: ${stampedCount} of ${pins.length} stamped. Open the parks map.</span>
   <svg viewBox="0 0 ${W} ${H}" aria-hidden="true">
     ${areas.map((a) => html`<text class="c-area" x="${x(a.lng)}" y="${y(a.lat)}" text-anchor="middle">${a.name.split(' & ')[0]}</text>`)}
     ${pins.filter((p) => !p.stamped).map((p) => html`<circle class="c-dot${p.next ? ' is-next' : ''}" cx="${x(p.lng)}" cy="${y(p.lat)}" r="${p.next ? 4.5 : 2.6}"/>`)}
     ${pins.filter((p) => p.stamped).map((p) => html`<g class="c-stamp" transform="translate(${x(p.lng)} ${y(p.lat)})"><circle r="6.5"/><path d="M-2.6 0.2l1.8 1.9 3.6-4"/></g>`)}
   </svg>
-</a>`;
+</a></div>`;
 }
 
 function punchCard(punches, streak) {
@@ -146,7 +149,7 @@ function palsCard(items, total) {
   return html`<section class="home-card pals-mini" aria-labelledby="palsmini-h">
   <h2 id="palsmini-h">Park Pals</h2>
   ${items.length ? html`<ul class="feed">${items.map((i) => html`<li class="feed-item"><span class="feed-icon" aria-hidden="true">${i.type === 'badge' ? (i.badge_art || '🏅') : i.type === 'photo' ? '📷' : '📍'}</span>
-    <p>${avatar(i.user, { size: 24, visible: sharesWithPals(i.user) })} <strong>${i.user.display_name}</strong> ${i.type === 'stamp' ? html`stamped <a href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : i.type === 'photo' ? html`added a photo at <a href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : html`earned ${i.badge_name}`}</p></li>`)}</ul>
+    <p>${avatar(i.user, { size: 24, visible: sharesWithPals(i.user) })} <strong>${i.user.display_name}</strong> ${i.type === 'stamp' ? html`stamped <a class="park-name" href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : i.type === 'photo' ? html`added a photo at <a class="park-name" href="${parkPath({ city_key: i.city_key, slug: i.park_slug })}">${i.park_name}</a>` : html`earned ${i.badge_name}`}</p></li>`)}</ul>
     <p><a href="/pals">See all</a></p>`
     : html`<p>Exploring is better with friends. Share your invite link and race each other to ${total}.</p><p><a class="btn btn-small" href="/pals">Invite a Park Pal</a></p>`}
 </section>`;
@@ -224,7 +227,7 @@ export function homePage({ total, theme, user = null, dash = null, today = '', c
   return {
     title: null,
     description: theme.copy?.description,
-    scripts: user && dash ? ['/js/home.js'] : [],
+    scripts: user && dash ? ['/js/home.js', '/js/home-map.js'] : [],
     body: user && dash ? dashboard({ user, total, theme, dash, today, suggest, gary, csrf }) : landing({ total, theme, cities, suggest }),
   };
 }

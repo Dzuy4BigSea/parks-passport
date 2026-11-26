@@ -31,7 +31,7 @@ test('the park is chosen for you: the park page, else your latest stamp, else th
   const { people } = await world();
   const { c } = people.ana;
   assert.equal(selected((await c.get('/sunshine?city=st-pete')).body), 'department');
-  assert.match((await c.get('/sunshine?city=st-pete')).body, /To: <strong data-sunshine-to>the St. Pete parks department<\/strong>/);
+  assert.match((await c.get('/sunshine?city=st-pete')).body, /To: <strong class="park-name" data-sunshine-to>the St. Pete parks department<\/strong>/);
   await c.post('/st-pete/parks/b-park/stamp', {});
   assert.equal(selected((await c.get('/sunshine?city=st-pete')).body), 'b-park');
   // From a park page: that park, and no GPS pins (it's already the right park).
@@ -52,7 +52,7 @@ test('send: one box; park or department; other cities and unknown parks refused;
   assert.equal(sent.headers.location, '/sunshine?sent=1&city=st-pete&to=a-park');
   const thanks = (await c.get(sent.headers.location)).body;
   assert.match(thanks, /Your drop of sunshine is on its way\./);
-  assert.match(thanks, /Thank you for thanking A Park\./);
+  assert.match(thanks, /Thank you for thanking <span class="park-name">A Park<\/span>\./);
   assert.match(thanks, /class="sunshine-burst" aria-hidden="true"/);
   // The name comes from the database, never from the URL.
   assert.doesNotMatch((await c.get('/sunshine?sent=1&to=Evil%20Corp')).body, /Evil Corp/);

@@ -196,6 +196,7 @@ ${scripts.map((src) => html`<script type="module" src="${src}"></script>`)}
 ${messages?.length ? html`<script type="module" src="/js/message.js"></script>` : ''}
 ${announcements ? html`<script type="module" src="/js/reveal.js"></script>` : ''}
 <script type="module" src="/js/gary.js"></script>
+<script type="module" src="/js/critters.js"></script>
 </head>
 <body${user ? html` class="has-tabbar"` : ''}>
 <a class="skip-link" href="#main">Skip to content</a>

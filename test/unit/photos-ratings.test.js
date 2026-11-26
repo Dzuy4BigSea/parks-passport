@@ -205,7 +205,9 @@ test('pals feed shows a pal\'s shared photos but not private ones', async () => 
   await upload(people.ana.c, { visibility: 'private' });
   assert.ok(!(await people.ben.c.get('/pals')).body.includes('added a photo'));
   db.prepare("UPDATE photos SET visibility = 'pals'").run();
-  assert.match((await people.ben.c.get('/pals')).body, /ana<\/a> added a photo of <a href="\/st-pete\/parks\/a-park">A Park/);
+  const feed = (await people.ben.c.get('/pals')).body;
+  assert.match(feed, /ana<\/a> added a photo of <a class="park-name" href="\/st-pete\/parks\/a-park">A Park/);
+  assert.match(feed, /<a class="toned" href="\/photos\/\d+\/full">/, 'the photo gets the warm site tone');
 });
 
 test('deleting an account removes its photos (files too) and ratings', async () => {

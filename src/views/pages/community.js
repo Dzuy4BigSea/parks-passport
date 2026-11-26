@@ -72,14 +72,14 @@ export function sunshinePage({ csrf, city, parks, chosen, fromParkPage = false, 
     body: html`<div class="narrow sunshine">
 ${sent ? html`${SUN}
 <h1 tabindex="-1" data-announce>Your drop of sunshine is on its way.</h1>
-<p>Thank you for thanking ${sentTo || `the people who look after ${city.copy?.short || city.name}'s parks`}. Notes like yours remind park crews why the work matters.</p>
+<p>Thank you for thanking ${sentTo ? html`<span class="park-name">${sentTo}</span>` : `the people who look after ${city.copy?.short || city.name}'s parks`}. Notes like yours remind park crews why the work matters.</p>
 <p class="sunshine-again"><a class="btn" href="/sunshine">Send another</a> <a class="btn btn-quiet" href="/">Done</a></p>`
     : html`<p class="sunshine-eyebrow"><span aria-hidden="true">☀️</span> Drops of Sunshine</p>
 <h1>Thank the people who look after our parks</h1>
 <form method="post" action="/sunshine" class="card-form sunshine-form" novalidate data-pins="${JSON.stringify(pins)}"${values.park ? html` data-chosen` : ''}>
   ${csrfField(csrf)}<input type="hidden" name="city" value="${city.key}">
   ${error ? html`<p class="error-text" role="alert" tabindex="-1" data-announce>${error}</p>` : ''}
-  <p class="sunshine-to">To: <strong data-sunshine-to>${selectedName}</strong></p>
+  <p class="sunshine-to">To: <strong class="park-name" data-sunshine-to>${selectedName}</strong></p>
   <label for="sunshine-text" class="visually-hidden">Your note</label>
   <textarea id="sunshine-text" name="text" rows="4" maxlength="${SUNSHINE_MAX}" required placeholder="Thank you for keeping the trails so clean!">${values.text || ''}</textarea>
   <details class="sunshine-change"${error && /park/i.test(error) ? html` open` : ''}>

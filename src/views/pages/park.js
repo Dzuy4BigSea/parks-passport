@@ -185,7 +185,7 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
   ${spotlight ? spotlightCard(spotlight, park)
     : html`<p class="spotlight-suggest"><a href="/nonprofits/suggest?city=${park.city_key}">Know a nonprofit that cares for this park?</a></p>`}
 
-  ${park.city_url ? html`<p><a href="${park.city_url}" rel="noopener">More about ${park.name} on the City's website</a></p>` : ''}
+  ${park.city_url ? html`<p><a href="${park.city_url}" rel="noopener">More about <span class="park-name">${park.name}</span> on the City's website</a></p>` : ''}
   </div>
   </div>
 </article>`,
@@ -234,7 +234,7 @@ function photosSection({ park, user, csrf, photos, problem }) {
   return html`<section aria-labelledby="photos-h" id="photos">
   <h2 id="photos-h">Photos</h2>
   ${photos.length ? html`<ul class="photo-grid">${photos.map((ph) => html`<li class="photo">
-    <a href="/photos/${ph.id}/full"><img src="/photos/${ph.id}/thumb" alt="${ph.caption || `Photo of ${park.name} by ${ph.display_name}`}" width="400" height="400" loading="lazy"></a>
+    <a class="toned" href="/photos/${ph.id}/full"><img src="/photos/${ph.id}/thumb" alt="${ph.caption || `Photo of ${park.name} by ${ph.display_name}`}" width="400" height="400" loading="lazy"></a>
     <p class="photo-meta">${ph.caption ? html`${ph.caption}<br>` : ''}<span class="muted photo-by">${avatar({ id: ph.user_id, display_name: ph.display_name, avatar_key: ph.avatar_key }, { size: 20, visible: ph.face })} by ${ph.display_name}</span></p>
     ${ph.hidden ? html`<p class="moderated">Hidden by moderator</p>` : ''}
     ${user && user.id === ph.user_id ? html`<details class="photo-edit"><summary>Edit</summary>

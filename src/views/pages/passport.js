@@ -186,7 +186,7 @@ ${showWantToGo ? html`<section aria-labelledby="want-h" id="want-to-go">
   <h2 id="want-h">Want to go</h2>
   <p class="muted">Parks you saved and haven't stamped yet. Only you can see this list.</p>
   ${wantToGo.length ? html`<ul class="want-list">${wantToGo.map((p) => html`<li>
-    <span><a href="${parkPath(p)}">${p.name}</a>${p.address ? html`<br><span class="muted">${p.address}</span>` : ''}</span>
+    <span><a class="park-name" href="${parkPath(p)}">${p.name}</a>${p.address ? html`<br><span class="muted">${p.address}</span>` : ''}</span>
     ${saveButton({ park: p, saved: true, csrf, back: `${cityPath(theme, '/passport')}#want-to-go` })}
   </li>`)}</ul>` : html`<p>Nothing here yet. Tap the heart on a <a href="${cityPath(theme, '/parks')}">park</a> to save it for later.</p>`}
 </section>` : ''}
@@ -196,7 +196,7 @@ ${readOnly ? '' : html`<p class="sunshine-nudge"><a class="pill pill-sunshine" h
   <h2 id="history-h">Visit history</h2>
   ${history.length ? html`<ul class="history">
     ${history.map((v) => html`<li>
-      <span><a href="${parkPath({ city_key: v.city_key, slug: v.park_slug })}">${v.park_name}</a><br>
+      <span><a class="park-name" href="${parkPath({ city_key: v.city_key, slug: v.park_slug })}">${v.park_name}</a><br>
         <span class="muted">${manyCities ? `${v.city_name} · ` : ''}${formatDate(v.visited_on)} · ${METHOD_LABELS[v.method]} · ${v.points} pts</span></span>
       ${readOnly ? '' : html`<form method="post" action="/visits/${v.id}/delete">
         ${csrfField(csrf)}<input type="hidden" name="back" value="${here}">

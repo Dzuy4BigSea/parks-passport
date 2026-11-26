@@ -58,5 +58,5 @@ export function nextUpCards({ nextPark, nextBadge, streak, pals }, { heading = '
 export function nextLine({ nextPark, nextBadge }) {
   if (!nextPark && !nextBadge) return '';
   return html`<p class="next-line">${nextBadge ? html`<strong>${more(nextBadge)}</strong> to earn ${nextBadge.name}. ` : ''}${nextPark
-    ? html`${nextPark.saved ? 'Next on your Want to go list' : 'Closest new park'}: <a href="${parkPath(nextPark)}">${nextPark.name}</a> (${formatMiles(nextPark.distance_m)}).` : ''}</p>`;
+    ? html`${nextPark.saved ? 'Next on your Want to go list' : 'Closest new park'}: <a class="park-name" href="${parkPath(nextPark)}">${nextPark.name}</a> (${formatMiles(nextPark.distance_m)}).` : ''}</p>`;
 }

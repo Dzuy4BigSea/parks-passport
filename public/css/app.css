@@ -696,9 +696,22 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; 
 .photo-grid { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); }
 .photo img {
   display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-sm);
-  background: var(--sand-2); transition: transform 0.3s var(--ease-spring);
+  background: var(--sand-2);
 }
-.photo a:hover img { transform: scale(1.03) rotate(-1deg); }
+.photo a { display: block; border-radius: var(--radius-sm); transition: transform 0.3s var(--ease-spring); }
+.photo a:hover { transform: scale(1.03) rotate(-1deg); }
+/* Members' photos, warmed into the site's palette: a sunny grade on the image, then a soft-light wash
+   of sun (top), pink (lower right) and aqua (lower left). The file itself is untouched. */
+.toned { position: relative; display: block; overflow: hidden; isolation: isolate; }
+.toned img { filter: sepia(0.18) saturate(1.12) contrast(1.04) brightness(1.03) hue-rotate(-6deg); }
+.toned::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; mix-blend-mode: soft-light; opacity: 0.55;
+  background:
+    radial-gradient(120% 80% at 20% 0%, rgba(255, 200, 61, 0.9), transparent 60%),
+    radial-gradient(90% 70% at 100% 100%, rgba(255, 77, 136, 0.75), transparent 65%),
+    radial-gradient(80% 60% at 0% 100%, rgba(0, 179, 164, 0.55), transparent 70%);
+}
+.feed-photo .toned { border-radius: 12px; }
 .photo-meta { margin: 0.25rem 0 0; font-size: 0.9rem; overflow-wrap: anywhere; }
 .photo-by { display: inline-flex; align-items: center; gap: 0.3rem; }
 .photo-edit summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; font-size: 0.9rem; }
@@ -1096,6 +1109,15 @@ html:not(.js) .js-only { display: none !important; }
 .gary-brief h1 { margin: 0.15rem 0 0.35rem; font-size: clamp(1.8rem, 5vw, 2.6rem); }
 .gary-says { margin: 0 0 0.85rem; font-size: 1.08rem; line-height: 1.5; }
 .gary-says::before { content: "“"; font: italic 700 1.6rem/0 var(--serif-accent); color: var(--pink); vertical-align: -0.35em; margin-right: 0.15rem; }
+/* Phones: the bubble runs (nearly) the full width over the dots, and Gary steps over its lower-right
+   corner, so there's no empty strip above him. The buttons keep clear of him. */
+@media (max-width: 767.98px) {
+  .gary-brief { display: block; padding: 0.85rem 0.85rem 0.85rem; }
+  .gary-brief .gary-bubble { position: relative; z-index: 1; margin: 0 2.25rem 0 0; max-width: none; }
+  .gary-brief .gary-bubble::before { display: none; }
+  .gary-brief .actions { padding-right: 3.75rem; }
+  .gary-brief .gary-dress { position: absolute; z-index: 2; right: 0.25rem; bottom: 0; width: 112px; }
+}
 @media (min-width: 768px) {
   .gary-brief { grid-template-columns: 170px 1fr; gap: 1.5rem; padding: 1.5rem 2rem 0; }
   .gary-brief .gary-dress { order: 0; }
@@ -1806,3 +1828,54 @@ svg.gary-art { height: auto; }
 .team-badges .badge-meta { color: #186a4f; }
 .groups-mini .bar { margin-top: 0.25rem; }
 .tier { display: inline-block; font-size: 0.75em; font-weight: 800; letter-spacing: 0.04em; color: #fff; background: #1f7a5c; border-radius: 0.35rem; padding: 0.05rem 0.4rem; vertical-align: 0.1em; }
+
+/* ---------- Nearest park first (Flow 2): a tag and a slow shimmer around its border ---------- */
+@property --nearest-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.postcard.is-nearest { border-color: transparent; box-shadow: 0 1px 0 #e4d9c3, 0 16px 30px -18px rgba(200, 21, 90, 0.45); }
+/* A 3px ring just outside the card (the inside is masked away), so the card itself stays paper. */
+.postcard.is-nearest::before {
+  content: ""; position: absolute; inset: -3px; z-index: 1; border-radius: 9px; padding: 3px; pointer-events: none;
+  background: conic-gradient(from var(--nearest-angle), var(--pink), var(--sun), var(--aqua), var(--violet), var(--pink));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.nearest-tag {
+  position: absolute; top: -0.8rem; left: 0.9rem; z-index: 2; margin: 0; display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.2rem 0.65rem; border-radius: 999px; background: var(--ink); color: #fff; font: 800 0.78rem var(--sans); letter-spacing: 0.02em;
+}
+.nearest-tag svg { width: 14px; height: 14px; color: var(--pink); }
+@media (prefers-reduced-motion: no-preference) {
+  .postcard.is-nearest::before { animation: nearest-spin 6s linear infinite; }
+}
+@keyframes nearest-spin { to { --nearest-angle: 360deg; } }
+
+/* A park's name in running text: the same face as the park cards' titles. */
+.park-name { font-family: var(--display); font-weight: 800; letter-spacing: -0.01em; }
+
+/* ---------- Critters: a rare butterfly, bee or ladybug crossing a corner (public/js/critters.js) ---------- */
+.critter { position: fixed; z-index: 900; pointer-events: none; will-change: transform; }
+.critter-art { transform-origin: center; }
+.critter svg { display: block; overflow: visible; }
+.critter .c-flap { transform-box: fill-box; transform-origin: center; animation: c-flap 0.22s ease-in-out infinite alternate; }
+.critter .c-buzz { transform-box: fill-box; transform-origin: bottom; animation: c-buzz 0.06s linear infinite alternate; }
+.critter .c-wing { transform-box: fill-box; transform-origin: 20% 100%; animation: c-wing 0.18s ease-in-out infinite alternate; }
+.critter .c-seg { animation: c-inch 0.9s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.critter .c-legs { animation: c-legs 0.25s steps(2) infinite; }
+.critter .c-glow { animation: c-glow 1.6s ease-in-out infinite; }
+.critter-firefly .critter-art { filter: drop-shadow(0 0 6px rgba(255, 200, 61, 0.8)); }
+@keyframes c-flap { to { transform: scaleX(0.25); } }
+@keyframes c-buzz { to { transform: scaleY(0.6); opacity: 0.5; } }
+@keyframes c-wing { to { transform: scaleY(-0.7); } }
+@keyframes c-inch { 50% { transform: translateY(-3px); } }
+@keyframes c-legs { 50% { transform: translateX(1.5px); } }
+@keyframes c-glow { 50% { opacity: 0.1; } }
+@media (prefers-reduced-motion: reduce) { .critter { display: none; } }
+
+/* ---------- Home: "Your St. Pete" street map (public/js/home-map.js) ---------- */
+.home-map { position: relative; }
+.home-street-map { position: absolute; inset: 0.25rem 0 0.5rem; height: auto; min-height: 240px; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+.home-map.is-live .home-street-map { position: relative; inset: auto; margin: 0.25rem 0 0.5rem; opacity: 1; pointer-events: auto; }
+.hpin { border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.7rem; line-height: 1; }
+.hpin-todo { background: #9fb1ae; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(14, 42, 51, 0.25); }
+.hpin-next { background: var(--aqua-ink); border: 3px solid #fff; box-shadow: 0 0 0 1px var(--aqua-ink), 0 2px 5px rgba(0, 117, 108, 0.4); }
+.hpin-stamped { background: var(--pink); color: var(--ink); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--pink-ink), 0 2px 5px rgba(200, 21, 90, 0.35); }

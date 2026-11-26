@@ -33,8 +33,9 @@ test.describe('at the park', () => {
     await expect(page.locator('.my-visits')).toContainText('GPS verified · 15 pts');
     await expectNoAxeViolations(page);
 
-    // The list marks the park as stamped, and "Not visited yet" hides it.
-    await page.goto('/st-pete/parks');
+    // The list marks the park as stamped, and "Not visited yet" hides it (A–Z: with location
+    // allowed, the plain list would sort itself by distance).
+    await page.goto('/st-pete/parks?sort=az');
     const card = page.locator('.park-card', { hasText: 'Abercrombie Park' });
     await expect(card.locator('.stamp-badge')).toHaveText('✓ Stamped');
     await page.getByLabel('Not visited yet').check();

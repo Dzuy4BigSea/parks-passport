@@ -52,7 +52,7 @@ export function homeData(db, user, theme, { now = new Date(), near = null } = {}
     nearby, anchor, nearFromYou: Boolean(near), extras: parkCardExtras(db, nearby.map((p) => p.id)),
     palsHere: palsWhoStamped(db, user.id, nearby.map((p) => p.id)),
     almost,
-    dots: parks.map((p) => ({ lat: p.lat, lng: p.lng, stamped: stampedSet.has(p.id), next: nearestSet.has(p.slug) })),
+    dots: parks.map((p) => ({ lat: p.lat, lng: p.lng, name: p.name, slug: p.slug, stamped: stampedSet.has(p.id), next: nearestSet.has(p.slug) })),
     pals: palsFeed(db, user.id).items.slice(0, 3),
     // What Gary needs to pick his tip (views/gary.js).
     tipInput: {

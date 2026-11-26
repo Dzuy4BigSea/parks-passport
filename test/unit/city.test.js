@@ -349,14 +349,14 @@ test('Gary picks the most useful tip, in order, and is honest about distances', 
   const { garyTip } = await import('../../src/views/gary.js');
   const nearest = { slug: 'pioneer-park', city_key: 'st-pete', name: 'Pioneer Park', where: 'right downtown' };
   const streak = { weeks: 0, activeThisWeek: false, atRisk: false };
-  assert.match(garyTip({ stamped: 2, stampedToday: { slug: 'x', name: 'Vinoy Park' }, streak, nearest }).text, /Nice work at Vinoy Park today/);
+  assert.match(garyTip({ stamped: 2, stampedToday: { slug: 'x', name: 'Vinoy Park' }, streak, nearest }).text.toString().replace(/<[^>]+>/g, ''), /Nice work at Vinoy Park today/);
   const first = garyTip({ stamped: 0, streak, nearest });
-  assert.match(first.text, /first stamp\. Pioneer Park is right downtown/);
+  assert.match(first.text.toString().replace(/<[^>]+>/g, ''), /first stamp\. Pioneer Park is right downtown/);
   assert.equal(first.action.href, '/st-pete/parks/pioneer-park');
-  assert.match(garyTip({ stamped: 3, streak: { weeks: 3, activeThisWeek: false, atRisk: true }, nearest }).text, /3 weeks streak going/);
-  assert.match(garyTip({ stamped: 5, streak, almost: { name: 'Downtown', stamped: 22, total: 24 }, nearest }).text, /Only 2 parks left to finish Downtown/);
-  assert.match(garyTip({ stamped: 4, streak, nextBadge: { name: 'Five Parks', remaining: 1 }, nearest }).text, /One more and Five Parks is yours/);
-  assert.match(garyTip({ stamped: 4, streak, lore: { blurb: 'Pelicans dive.' }, nearest }).text, /Here's one I love: Pelicans dive\./);
+  assert.match(garyTip({ stamped: 3, streak: { weeks: 3, activeThisWeek: false, atRisk: true }, nearest }).text.toString().replace(/<[^>]+>/g, ''), /3 weeks streak going/);
+  assert.match(garyTip({ stamped: 5, streak, almost: { name: 'Downtown', stamped: 22, total: 24 }, nearest }).text.toString().replace(/<[^>]+>/g, ''), /Only 2 parks left to finish Downtown/);
+  assert.match(garyTip({ stamped: 4, streak, nextBadge: { name: 'Five Parks', remaining: 1 }, nearest }).text.toString().replace(/<[^>]+>/g, ''), /One more and Five Parks is yours/);
+  assert.match(garyTip({ stamped: 4, streak, lore: { blurb: 'Pelicans dive.' }, nearest }).text.toString().replace(/<[^>]+>/g, ''), /Here's one I love: Pelicans dive\./);
 });
 
 test('home: "Use my location" measures closest parks from you, with walk times; punch card shows 8 weeks', async () => {

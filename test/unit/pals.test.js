@@ -70,7 +70,7 @@ test('permissions matrix over HTTP: passport, visits and badges for owner / pal 
       assert.equal(res.body.includes('First Stamp'), allowed, `badge ${visibility}/${who}`);
       if (who === 'pal') {
         const feed = (await c.get('/pals')).body;
-        assert.equal(feed.includes('stamped <a href="/st-pete/parks/a-park">'), visibility !== 'private', `feed visit ${visibility}`);
+        assert.equal(feed.includes('stamped <a class="park-name" href="/st-pete/parks/a-park">'), visibility !== 'private', `feed visit ${visibility}`);
         assert.equal(feed.includes('First Stamp'), visibility !== 'private', `feed badge ${visibility}`);
       }
     }

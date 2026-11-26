@@ -64,7 +64,8 @@ test('amenity filters show only parks that have all of them', async ({ page }) =
 test.describe('near me', () => {
   test.use({ geolocation: { latitude: 27.8065, longitude: -82.75531 }, permissions: ['geolocation'] });
   test('sorts by distance and shows miles to one decimal', async ({ page }) => {
-    await page.goto('/st-pete/parks');
+    // From the A–Z list (the plain list sorts itself on load: test/e2e/nearest.spec.js).
+    await page.goto('/st-pete/parks?sort=az');
     await page.getByRole('button', { name: 'Sort by nearest' }).click();
     await expect(page).toHaveURL(/lat=27\.80650&lng=-82\.75531/);
     await expect(page.locator('.park-card h2').first()).toHaveText('Abercrombie Park');
