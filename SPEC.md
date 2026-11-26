@@ -79,6 +79,11 @@ Done when:
 - [ ] "Near me" (when I allow location) sorts by distance and shows each park's distance in
       miles to one decimal place. If I deny location, the list stays alphabetical and a
       message explains why.
+- [ ] **Nearest first on load:** the plain park list (no search or filter) sorts by distance on
+      load when the site may use my location; if I've never been asked, the browser asks once (remembered
+      on this device); if I say no, the list stays A–Z, quietly, and I'm not asked again. The closest
+      park is marked "Closest to you" with a slowly shimmering border (still with reduced motion).
+      "Clear" after a distance sort means A–Z and doesn't re-sort.
 - [ ] Signed in, each park shows a stamped/not-stamped mark, and a "Not visited yet" filter
       works.
 - [ ] `/parks/:slug` shows name, address, a small map pin, amenities, a link to the City's

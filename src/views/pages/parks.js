@@ -39,12 +39,13 @@ function tags(categories, selected) {
   return html`<ul class="chips tags" aria-label="Amenities">${sorted.map((c, i) => html`<li${i >= 3 ? html` class="visually-hidden"` : ''}>${categoryLabel(c)}</li>`)}${extra > 0 ? html`<li class="more" aria-hidden="true">+${extra}</li>` : ''}</ul>`;
 }
 
-export function postcard(p, i, { theme, stamped, stampDates, near, selected, extras, palsHere = null, saved = null, csrf = '', back = '' }) {
+export function postcard(p, i, { theme, stamped, stampDates, near, selected, extras, palsHere = null, saved = null, csrf = '', back = '', nearest = false }) {
   const isStamped = stamped?.has(p.id);
   const area = areaForPark(theme, p);
   const motif = motifForPark(theme, p.slug);
   const ex = extras.get(p.id) || {};
-  return html`<li class="park-card postcard ink-${inkFor(p.slug)}${isStamped ? ' is-stamped' : ''}" data-slug="${p.slug}" style="--i:${i}">
+  return html`<li class="park-card postcard ink-${inkFor(p.slug)}${isStamped ? ' is-stamped' : ''}${nearest ? ' is-nearest' : ''}" data-slug="${p.slug}" style="--i:${i}">
+  ${nearest ? html`<p class="nearest-tag">${ICONS.pin}Closest to you</p>` : ''}
   <div class="pc-art${ex.photoId ? ' has-photo' : ''}" aria-hidden="true">
     ${ex.photoId
       ? html`<img src="/photos/${ex.photoId}/thumb" alt="" width="400" height="400" loading="${i < 4 ? 'eager' : 'lazy'}" decoding="async">`
@@ -116,7 +117,7 @@ export function parksPage({ parks, total, q, selected, categories, near, unvisit
       ${hasPals ? html`<label class="check chip-check toggle-chip"><input type="checkbox" name="pals" value="1"${palsOnly ? html` checked` : ''}> Stamped by a pal</label>` : ''}
       ${near ? html`<input type="hidden" name="lat" value="${near.lat}"><input type="hidden" name="lng" value="${near.lng}">` : ''}
       <button type="submit" class="btn btn-primary">Search</button>
-      ${filtered || near ? html`<a class="btn btn-quiet" href="${listPath}">Clear</a>` : ''}
+      ${filtered || near ? html`<a class="btn btn-quiet" href="${listPath}${near ? '?sort=az' : ''}">Clear</a>` : ''}
     </div>
     <p id="near-me-status" class="notice" role="status" aria-live="polite"></p>
   </form>
@@ -126,7 +127,7 @@ export function parksPage({ parks, total, q, selected, categories, near, unvisit
   <section class="explore-list" aria-labelledby="results-h">
     <p id="results-h" class="result-count" role="status">${countText}${near ? ', nearest first' : ''}</p>
     ${parks.length ? html`<ul class="park-list">
-      ${parks.map((p, i) => postcard(p, i, { theme, stamped, stampDates, near, selected, extras, palsHere, saved, csrf, back }))}
+      ${parks.map((p, i) => postcard(p, i, { theme, stamped, stampDates, near, selected, extras, palsHere, saved, csrf, back, nearest: Boolean(near) && i === 0 && p.distance_m != null }))}
     </ul>` : html`<p class="empty">${onlySaved && !q && !selected.length && !unvisited && !palsOnly
       ? 'Nothing saved in this city yet. Tap the heart on a park to add it to Want to go.'
       : 'No parks match. Try fewer amenities or a shorter name.'}</p>`}

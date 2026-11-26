@@ -1806,3 +1806,23 @@ svg.gary-art { height: auto; }
 .team-badges .badge-meta { color: #186a4f; }
 .groups-mini .bar { margin-top: 0.25rem; }
 .tier { display: inline-block; font-size: 0.75em; font-weight: 800; letter-spacing: 0.04em; color: #fff; background: #1f7a5c; border-radius: 0.35rem; padding: 0.05rem 0.4rem; vertical-align: 0.1em; }
+
+/* ---------- Nearest park first (Flow 2): a tag and a slow shimmer around its border ---------- */
+@property --nearest-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.postcard.is-nearest { border-color: transparent; box-shadow: 0 1px 0 #e4d9c3, 0 16px 30px -18px rgba(200, 21, 90, 0.45); }
+/* A 3px ring just outside the card (the inside is masked away), so the card itself stays paper. */
+.postcard.is-nearest::before {
+  content: ""; position: absolute; inset: -3px; z-index: 1; border-radius: 9px; padding: 3px; pointer-events: none;
+  background: conic-gradient(from var(--nearest-angle), var(--pink), var(--sun), var(--aqua), var(--violet), var(--pink));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.nearest-tag {
+  position: absolute; top: -0.8rem; left: 0.9rem; z-index: 2; margin: 0; display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.2rem 0.65rem; border-radius: 999px; background: var(--ink); color: #fff; font: 800 0.78rem var(--sans); letter-spacing: 0.02em;
+}
+.nearest-tag svg { width: 14px; height: 14px; color: var(--pink); }
+@media (prefers-reduced-motion: no-preference) {
+  .postcard.is-nearest::before { animation: nearest-spin 6s linear infinite; }
+}
+@keyframes nearest-spin { to { --nearest-angle: 360deg; } }
