@@ -148,6 +148,13 @@ Done when:
 - [ ] My visit history lists every visit, newest first, with date, park and method.
 - [ ] Earned badges show with name, art and date. Known unearned badges show progress
       (e.g. "7 / 10 parks"). Hidden unearned badges show as "?" with a hint only.
+- [ ] **Look (redesign):** the passport uses the signed-in home's paper "spread": a cream cover
+      with my name, count, streak, level and progress ring, and my 3 latest stamps as dated
+      postmarks. A sticky bar jumps to Stamps, Badges (with the earned count), Map and History.
+      Each neighborhood is a ruled page that folds: pages I've started are open (the first one
+      when I've none), with stamped parks first as dated postmarks and the rest as faint outlines
+      (their names stay; "Not yet" is for screen readers). Badges show earned ones and the 3
+      closest to earning; the rest are behind "See all N badges".
 
 ### Flow 7: Gamification engine
 As a member, I'm rewarded as I explore so that I keep visiting new parks.

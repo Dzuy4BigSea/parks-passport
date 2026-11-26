@@ -7,7 +7,7 @@ import { streakText } from '../nextup.js';
 import { groupsCard } from './groups.js';
 import { badgeArt } from '../badge-art.js';
 import { postcard } from './parks.js';
-import { motifForPark } from '../../domain/city.js';
+import { spreadStamp } from '../postmark.js';
 import { cityPath, parkPath } from '../urls.js';
 
 const tiles = (motifs) => motifs.map((m, i) => html`<span class="tile" style="--i:${i}">${motifIcon(m)}</span>`);
@@ -82,15 +82,6 @@ ${citySwitcher(cities, theme)}`;
 
 // ---- Signed-in home: Gary's briefing, the passport spread, what's close, and progress ----
 
-const monthDay = (ymd) => {
-  const [y, m, d] = ymd.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }).toUpperCase();
-};
-
-// A postmark for the passport spread: ring with the park's motif, its name and the date.
-const spreadStamp = (s, theme, i) => html`<li class="spread-stamp" style="--i:${i}">
-  <a href="${parkPath(s)}"><span class="spread-seal" aria-hidden="true">${motifIcon(motifForPark(theme, s.slug))}<span class="spread-date">${monthDay(s.visited_on)}</span></span>
-  <span class="spread-name">${s.name}</span></a></li>`;
 
 // "Your St. Pete": every park in the city as a dot on a hand-drawn plane (no map tiles), stamped ones as seals.
 function constellation(dots, areas, theme) {
