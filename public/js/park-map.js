@@ -47,3 +47,19 @@ if (el) whenLoaded(() => {
     io.observe(el);
   } else start();
 });
+
+// "Open in Maps": the phone's own map app. Android hands a geo: link to whichever map app is the
+// default; iPhones and iPads open Apple Maps. Elsewhere (and without JS) it stays OpenStreetMap.
+export function mapsLink({ lat, lng, name }, ua = navigator.userAgent, touch = navigator.maxTouchPoints) {
+  if (/Android/i.test(ua)) return `geo:${lat},${lng}?q=${lat},${lng}(${encodeURIComponent(name)})`;
+  if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && touch > 1)) { // iPadOS says "Macintosh"
+    return `https://maps.apple.com/?ll=${lat},${lng}&q=${encodeURIComponent(name)}`;
+  }
+  return null;
+}
+const open = document.querySelector('a.open-maps');
+const pin = document.getElementById('park-map');
+if (open && pin) {
+  const href = mapsLink({ lat: pin.dataset.lat, lng: pin.dataset.lng, name: pin.dataset.name });
+  if (href) open.href = href;
+}

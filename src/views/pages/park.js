@@ -168,7 +168,7 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
     <h2 id="map-h">Location</h2>
     ${hasPin
       ? html`<div id="park-map" class="park-map" data-lat="${park.lat}" data-lng="${park.lng}" data-name="${park.name}"></div>
-<p><a href="https://www.openstreetmap.org/?mlat=${park.lat}&amp;mlon=${park.lng}#map=17/${park.lat}/${park.lng}">Open in OpenStreetMap</a></p>`
+<p><a class="open-maps" href="https://www.openstreetmap.org/?mlat=${park.lat}&amp;mlon=${park.lng}#map=17/${park.lat}/${park.lng}">Open in Maps</a></p>`
       : html`<p>We don't have this park's location yet.</p>`}
   </section>
 
