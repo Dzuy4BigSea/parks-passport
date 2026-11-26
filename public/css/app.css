@@ -696,9 +696,22 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; 
 .photo-grid { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); }
 .photo img {
   display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-sm);
-  background: var(--sand-2); transition: transform 0.3s var(--ease-spring);
+  background: var(--sand-2);
 }
-.photo a:hover img { transform: scale(1.03) rotate(-1deg); }
+.photo a { display: block; border-radius: var(--radius-sm); transition: transform 0.3s var(--ease-spring); }
+.photo a:hover { transform: scale(1.03) rotate(-1deg); }
+/* Members' photos, warmed into the site's palette: a sunny grade on the image, then a soft-light wash
+   of sun (top), pink (lower right) and aqua (lower left). The file itself is untouched. */
+.toned { position: relative; display: block; overflow: hidden; isolation: isolate; }
+.toned img { filter: sepia(0.18) saturate(1.12) contrast(1.04) brightness(1.03) hue-rotate(-6deg); }
+.toned::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; mix-blend-mode: soft-light; opacity: 0.55;
+  background:
+    radial-gradient(120% 80% at 20% 0%, rgba(255, 200, 61, 0.9), transparent 60%),
+    radial-gradient(90% 70% at 100% 100%, rgba(255, 77, 136, 0.75), transparent 65%),
+    radial-gradient(80% 60% at 0% 100%, rgba(0, 179, 164, 0.55), transparent 70%);
+}
+.feed-photo .toned { border-radius: 12px; }
 .photo-meta { margin: 0.25rem 0 0; font-size: 0.9rem; overflow-wrap: anywhere; }
 .photo-by { display: inline-flex; align-items: center; gap: 0.3rem; }
 .photo-edit summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; font-size: 0.9rem; }
@@ -1838,3 +1851,22 @@ svg.gary-art { height: auto; }
 
 /* A park's name in running text: the same face as the park cards' titles. */
 .park-name { font-family: var(--display); font-weight: 800; letter-spacing: -0.01em; }
+
+/* ---------- Critters: a rare butterfly, bee or ladybug crossing a corner (public/js/critters.js) ---------- */
+.critter { position: fixed; z-index: 900; pointer-events: none; will-change: transform; }
+.critter-art { transform-origin: center; }
+.critter svg { display: block; overflow: visible; }
+.critter .c-flap { transform-box: fill-box; transform-origin: center; animation: c-flap 0.22s ease-in-out infinite alternate; }
+.critter .c-buzz { transform-box: fill-box; transform-origin: bottom; animation: c-buzz 0.06s linear infinite alternate; }
+.critter .c-wing { transform-box: fill-box; transform-origin: 20% 100%; animation: c-wing 0.18s ease-in-out infinite alternate; }
+.critter .c-seg { animation: c-inch 0.9s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.critter .c-legs { animation: c-legs 0.25s steps(2) infinite; }
+.critter .c-glow { animation: c-glow 1.6s ease-in-out infinite; }
+.critter-firefly .critter-art { filter: drop-shadow(0 0 6px rgba(255, 200, 61, 0.8)); }
+@keyframes c-flap { to { transform: scaleX(0.25); } }
+@keyframes c-buzz { to { transform: scaleY(0.6); opacity: 0.5; } }
+@keyframes c-wing { to { transform: scaleY(-0.7); } }
+@keyframes c-inch { 50% { transform: translateY(-3px); } }
+@keyframes c-legs { 50% { transform: translateX(1.5px); } }
+@keyframes c-glow { 50% { opacity: 0.1; } }
+@media (prefers-reduced-motion: reduce) { .critter { display: none; } }
