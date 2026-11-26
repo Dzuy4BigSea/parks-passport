@@ -87,7 +87,8 @@ export default async function parkRoutes(app) {
         stamped = { visit, parts };
       }
     }
-    const flash = { added: 'Photo added.' }[req.query.photo] || (req.query.rated ? 'Rating saved.' : null);
+    const photos = Math.min(Number.parseInt(req.query.count, 10) || 1, 10);
+    const flash = { added: photos > 1 ? `${photos} photos added.` : 'Photo added.' }[req.query.photo] || (req.query.rated ? 'Rating saved.' : null);
     // After an undo: no message, but the activity's group stays open.
     let activityFlash = /^[a-z0-9-]{1,60}$/.test(String(req.query.undone || '')) ? { slug: req.query.undone } : null;
     if (user && /^\d+$/.test(String(req.query.logged || ''))) {

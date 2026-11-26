@@ -86,3 +86,28 @@ test('park page with photos and ratings fits at 375px', async ({ page }, info) =
   await page.locator('#ratings').scrollIntoViewIfNeeded();
   await page.screenshot({ path: info.outputPath('park-photos-375.png'), fullPage: true });
 });
+
+test('several photos at once; the uploader\'s face stays small in the credit', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await signUp(page, { name: 'Multi' });
+  await page.goto('/account');
+  await page.getByLabel('Choose a profile photo').setInputFiles({ name: 'me.jpg', mimeType: 'image/jpeg', buffer: await jpeg() });
+  await page.getByRole('button', { name: 'Upload photo' }).click();
+  await expect(page.locator('p.notice[role=status]')).toHaveText('Profile photo saved.');
+
+  await page.goto('/st-pete/parks/crescent-lake-park');
+  const picker = page.getByLabel('Add a photo', { exact: true });
+  await expect(page.getByText('You can pick up to 10 at once.')).toBeVisible();
+  const files = ['a', 'b', 'c'].map(async (n) => ({ name: `${n}.jpg`, mimeType: 'image/jpeg', buffer: await jpeg() }));
+  await picker.setInputFiles(await Promise.all(files));
+  await expect(page.getByText('3 photos chosen.')).toBeVisible();
+  await page.getByLabel('Caption (optional)').fill('Lake day');
+  await page.getByRole('button', { name: 'Upload photo' }).click();
+  await expect(page.getByRole('status').filter({ hasText: '3 photos added.' })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Lake day' })).toHaveCount(3);
+  // The profile photo in "by Multi" is a 20 px face, not a photo-sized image.
+  const face = page.locator('.photo-by img.avatar').first();
+  await expect(face).toBeVisible();
+  expect((await face.boundingBox()).width).toBeLessThanOrEqual(24);
+  await expectNoAxeViolations(page);
+});
