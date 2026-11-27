@@ -16,7 +16,8 @@ HTML, SQLite at `/data/app.db`.
   Cookeville and Marple: `node scripts/seed-civicplus.js <cookeville|marple>`. Bend, Indianapolis,
   Trinidad: `node scripts/seed-bend.js`, `seed-indy.js`, `seed-trinidad.js`. Clearwater:
   `node scripts/seed-clearwater.js` (a real browser: the site blocks plain clients). Pinellas
-  County parks (into St. Pete, Clearwater and the Pinellas pack): `node scripts/seed-pinellas.js`.
+  County parks (into St. Pete, Clearwater and the Pinellas pack): `node scripts/seed-pinellas.js`. Florida State Parks
+  (from Florida DEP's open data; the parks site blocks bots): `node scripts/seed-florida-state-parks.js`.
   Behind a proxy, add `NODE_USE_ENV_PROXY=1`. Each city is a pack in `seed/cities/<key>/` (SPEC Flow 14); its share
   image is `node scripts/make-og-image.js <key>`.
 - Budgets (CI `budgets` job): `npm run lighthouse` (mobile Performance ≥ 90), `npm run check:memory`

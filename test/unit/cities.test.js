@@ -34,7 +34,7 @@ async function member(app, email = 'sam@example.com') {
 
 test('city packs: every pack is valid, keys are free, parks are inside the city, motifs pass the sanitizer', () => {
   const keys = cityPackKeys();
-  assert.ok(['st-pete', 'westminster', 'asheville', 'cookeville', 'marple', 'bend', 'indianapolis', 'trinidad', 'clearwater', 'pinellas'].every((k) => keys.includes(k)));
+  assert.ok(['st-pete', 'westminster', 'asheville', 'cookeville', 'marple', 'bend', 'indianapolis', 'trinidad', 'clearwater', 'pinellas', 'florida-state-parks'].every((k) => keys.includes(k)));
   for (const key of keys) {
     const pack = JSON.parse(fs.readFileSync(path.join(CITIES_DIR, key, 'city.json'), 'utf8'));
     assert.equal(pack.key, key);
@@ -58,11 +58,11 @@ test('seedCities loads both cities once; admin theme edits stay, the pack\'s cop
   const wm = cityByKey(db, 'westminster');
   assert.equal(wm.time_zone, 'America/Los_Angeles');
   assert.equal(count('SELECT COUNT(*) FROM parks WHERE city_id = ?', wm.id), 25);
-  assert.equal(count('SELECT COUNT(*) FROM parks WHERE city_id = ?', cityByKey(db, 'st-pete').id), 109); // 102 city parks + 7 Pinellas County parks inside St. Pete
+  assert.equal(count('SELECT COUNT(*) FROM parks WHERE city_id = ?', cityByKey(db, 'st-pete').id), 110); // 102 city parks + 7 Pinellas County parks + 1 state park inside St. Pete
   assert.deepEqual(listCities(db).map((c) => c.key), // by sort
-    ['st-pete', 'westminster', 'asheville', 'cookeville', 'marple', 'bend', 'indianapolis', 'trinidad', 'clearwater', 'pinellas']);
+    ['st-pete', 'westminster', 'asheville', 'cookeville', 'marple', 'bend', 'indianapolis', 'trinidad', 'clearwater', 'pinellas', 'florida-state-parks']);
   const parksIn = (key) => count('SELECT COUNT(*) FROM parks WHERE city_id = ?', cityByKey(db, key).id);
-  assert.deepEqual(['asheville', 'cookeville', 'marple', 'bend', 'indianapolis', 'trinidad', 'clearwater', 'pinellas'].map(parksIn), [68, 10, 10, 75, 166, 10, 86, 11]);
+  assert.deepEqual(['asheville', 'cookeville', 'marple', 'bend', 'indianapolis', 'trinidad', 'clearwater', 'pinellas', 'florida-state-parks'].map(parksIn), [68, 10, 10, 75, 166, 10, 88, 12, 169]);
   assert.equal(cityByKey(db, 'indianapolis').time_zone, 'America/Indianapolis');
   db.prepare("UPDATE city_themes SET tagline = 'Edited', copy = '{}' WHERE key = 'westminster'").run();
   const again = seedCities(db);
@@ -182,7 +182,7 @@ test('city badges count only their city; Two-City Explorer needs stamps in two c
   const sp = (await sam.get('/st-pete/passport')).body;
   assert.match(sp, /Half the City/);
   assert.match(sp, /Every Westminster Park/); // earned badges show everywhere
-  assert.match(sp, /1 of 109 parks stamped/);
+  assert.match(sp, /1 of 110 parks stamped/);
   assert.match(sp, /class="city-tabs"/);
   assert.match(sp, /href="\/westminster\/passport"/);
   // Tabs only for cities with stamps (plus the one being viewed): not Asheville, Bend, ...
@@ -399,7 +399,7 @@ test('M34 QA: signing in opens the home city; the logo keeps you in the city you
 test('a pack\'s extra park files (county parks inside a city) are imported once, even into a city with parks, never changing a park', () => {
   const { db } = citiesApp();
   const count = (key) => db.prepare('SELECT COUNT(*) FROM parks p JOIN city_themes c ON c.id = p.city_id WHERE c.key = ?').pluck().get(key);
-  assert.equal(count('st-pete'), 109);
+  assert.equal(count('st-pete'), 110);
   assert.ok(db.prepare("SELECT 1 FROM parks p JOIN city_themes c ON c.id = p.city_id WHERE c.key = 'st-pete' AND p.slug = 'fort-de-soto-park'").get());
   // An admin edits one county park and removes another; a restart changes neither.
   db.prepare("UPDATE parks SET name = 'Fort De Soto (edited)' WHERE slug = 'fort-de-soto-park'").run();
@@ -412,5 +412,20 @@ test('a pack\'s extra park files (county parks inside a city) are imported once,
   db.prepare("DELETE FROM parks WHERE slug IN ('philippe-park', 'eagle-lake-park')").run();
   const [cw] = seedCities(db).filter((c) => c.key === 'clearwater');
   assert.equal(cw.extraParks, 2);
-  assert.equal(count('clearwater'), 86);
+  assert.equal(count('clearwater'), 88);
+});
+
+test('every park in every pack (and its extra park files) imports: no rejected rows', () => {
+  const { db } = makeApp();
+  seedBadges(db);
+  const seeded = seedCities(db);
+  for (const c of seeded) {
+    assert.deepEqual(c.parks?.invalid || [], [], `${c.key}/parks.csv`);
+    assert.deepEqual(c.invalidExtraParks, [], `${c.key} extra park files`);
+  }
+  // Florida's state parks: the statewide pack, plus the few inside a city or county pack.
+  const inPack = (key) => db.prepare("SELECT p.slug FROM parks p JOIN city_themes c ON c.id = p.city_id WHERE c.key = ? AND p.slug LIKE '%state-park%'").pluck().all(key);
+  assert.deepEqual(inPack('clearwater').sort(), ['caladesi-island-state-park', 'honeymoon-island-state-park']);
+  assert.deepEqual(inPack('st-pete'), ['skyway-fishing-pier-state-park']);
+  assert.ok(inPack('florida-state-parks').includes('ichetucknee-springs-state-park'));
 });

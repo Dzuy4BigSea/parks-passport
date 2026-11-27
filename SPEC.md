@@ -474,7 +474,9 @@ Done when:
       the city's pack as an extra `<name>-parks.csv` (e.g. `pinellas-county-parks.csv`), which is
       imported once, even into a city that already has parks, adding only slugs the city doesn't
       have (it never changes or brings back a park an admin edited or removed). The county's other
-      parks are a pack of their own (e.g. Pinellas County). A member who earned a city's "every
+      parks are a pack of their own (e.g. Pinellas County). State parks work the same way: inside a
+      city pack's area they join the city (`florida-state-parks.csv`), else inside a county pack's
+      area the county, else the statewide pack (Florida State Parks). A city wins over a county. A member who earned a city's "every
       park" badge keeps it when the city gains parks (`all_parks` is never taken back).
 - [ ] **URLs:** a city's pages live under its key: `/<city>` (landing or dashboard),
       `/<city>/parks`, `/<city>/parks/:slug` (and its stamp, photo, rating and activity forms) and

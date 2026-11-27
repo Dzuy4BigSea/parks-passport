@@ -32,7 +32,7 @@ test('save and unsave parks with the heart, filter Want to go, and see it on the
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page).toHaveURL(/saved=1/);
   await expect(page.locator('.park-card h2')).toHaveText(['Crescent Lake Park', 'Lake Vista Park']);
-  await expect(page.locator('.result-count')).toHaveText('2 of 109 parks match');
+  await expect(page.locator('.result-count')).toHaveText('2 of 110 parks match');
   await expectNoAxeViolations(page);
 
   // Park page: a labeled toggle; unsave there.

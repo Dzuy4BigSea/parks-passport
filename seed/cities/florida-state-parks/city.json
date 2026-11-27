@@ -1,0 +1,111 @@
+{
+  "key": "florida-state-parks",
+  "name": "Florida State Parks",
+  "tagline": "Natural Florida",
+  "sort": 10,
+  "listed": true,
+  "time_zone": "America/New_York",
+  "bounds": {
+    "minLat": 24.3,
+    "maxLat": 31.1,
+    "minLng": -87.7,
+    "maxLng": -79.8,
+    "center": {
+      "lat": 28.6,
+      "lng": -82.4
+    }
+  },
+  "copy": {
+    "short": "Florida state",
+    "place": "Florida",
+    "official": "the Florida Department of Environmental Protection or Florida State Parks",
+    "gary": "I've been wandering Florida's state parks and I still find something new on most visits, like a cold, clear spring on a hot afternoon or a manatee drifting by in winter.",
+    "description": "Check in at every Florida state park you visit, from the springs to the Keys, collect stamps and badges, rate your favorites and explore with your Park Pals.",
+    "search_examples": "Ichetucknee, Blue Spring, Bahia Honda…",
+    "made_for": "Florida’s state parks, from the Panhandle to the Keys"
+  },
+  "accent": "#2D6A4F",
+  "accent_2": "#F4A261",
+  "areas": [
+    {
+      "slug": "northwest",
+      "name": "Northwest & the Panhandle",
+      "lat": 30.4,
+      "lng": -85.8
+    },
+    {
+      "slug": "north-central",
+      "name": "North Central & the springs",
+      "lat": 29.9,
+      "lng": -82.8
+    },
+    {
+      "slug": "northeast",
+      "name": "Northeast",
+      "lat": 29.8,
+      "lng": -81.4
+    },
+    {
+      "slug": "central",
+      "name": "Central",
+      "lat": 28.4,
+      "lng": -81.6
+    },
+    {
+      "slug": "southwest",
+      "name": "Southwest & the Gulf",
+      "lat": 27.2,
+      "lng": -82.2
+    },
+    {
+      "slug": "southeast",
+      "name": "Southeast & the Keys",
+      "lat": 25.9,
+      "lng": -80.6
+    }
+  ],
+  "motifs": [
+    {
+      "slug": "springs",
+      "name": "Springs",
+      "blurb": "Florida has more than a thousand springs, and many of the clearest bubble up in state parks, like Ichetucknee and Wakulla.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 36c4 0 4-2 8-2s4 2 8 2 4-2 8-2 4 2 8 2 4-2 8-2\"/><path d=\"M10 30c0-8 6-14 14-14s14 6 14 14\"/><circle cx=\"20\" cy=\"24\" r=\"1.5\"/><circle cx=\"26\" cy=\"20\" r=\"1.5\"/><circle cx=\"28\" cy=\"26\" r=\"1.5\"/><circle cx=\"23\" cy=\"14\" r=\"1\"/><circle cx=\"30\" cy=\"12\" r=\"1\"/></svg>"
+    },
+    {
+      "slug": "manatee",
+      "name": "Manatees",
+      "blurb": "In winter, manatees gather in the warm water of springs such as Blue Spring State Park, where you can watch them from the boardwalk.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M8 26c2-6 10-9 18-8 6 1 10 4 12 8-2 4-8 7-14 7-8 0-14-3-16-7z\"/><path d=\"M38 26l6-4v8z\"/><path d=\"M16 30l-3 5M24 32l-1 5\"/><circle cx=\"13\" cy=\"23\" r=\"1\"/><path d=\"M8 26c-2 0-3 1-3 2\"/></svg>"
+    },
+    {
+      "slug": "coral-reef",
+      "name": "The first undersea park",
+      "blurb": "John Pennekamp Coral Reef State Park in Key Largo was the first undersea park in the United States.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M10 42V30c-3-2-4-6-2-9M10 30c3-2 4-6 2-9\"/><path d=\"M24 42V24c-4-2-5-7-2-11M24 24c4-2 5-7 2-11\"/><path d=\"M38 42V32c3-2 3-6 1-8\"/><path d=\"M4 42h40\"/><path d=\"M30 14c2-2 6-2 7 1-1 3-5 3-7 1z\"/><path d=\"M37 15l3-2v4z\"/></svg>"
+    },
+    {
+      "slug": "lighthouse",
+      "name": "Lighthouses",
+      "blurb": "The Cape Florida Lighthouse in Bill Baggs Cape Florida State Park, built in 1825, is the oldest standing structure in Miami-Dade County.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M18 42l3-28h6l3 28z\"/><path d=\"M19 14h10\"/><path d=\"M20 14v-4h8v4\"/><path d=\"M24 10V6\"/><path d=\"M28 8l12-4M28 10l12 2\"/><path d=\"M14 42h20\"/><path d=\"M20 24h8M19 32h10\"/></svg>"
+    },
+    {
+      "slug": "gopher-tortoise",
+      "name": "Gopher tortoises",
+      "blurb": "Gopher tortoise burrows shelter hundreds of other species, from snakes to burrowing owls. Watch for them along sandy trails.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M8 30c0-8 7-13 16-13s16 5 16 13z\"/><path d=\"M40 28c3 0 5 1 5 3s-2 2-5 1\"/><path d=\"M12 30l-2 5M20 30v5M30 30v5M36 30l2 5\"/><path d=\"M16 22l4 4 4-4 4 4 4-4\"/><circle cx=\"43\" cy=\"30\" r=\"0.8\"/></svg>"
+    },
+    {
+      "slug": "paynes-prairie",
+      "name": "Paynes Prairie",
+      "blurb": "Wild horses and bison roam the wide grassland of Paynes Prairie Preserve State Park, just south of Gainesville.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 40h40\"/><path d=\"M10 34c0-4 3-7 8-7h10c4 0 6-3 8-3l2 4-2 2v4\"/><path d=\"M12 34v6M18 34v6M28 34v6M34 34v6\"/><path d=\"M36 24l2-4 2 4\"/><path d=\"M4 18c6-3 10-3 16 0\"/><path d=\"M30 12l6-3 6 3\"/></svg>"
+    },
+    {
+      "slug": "falling-waters",
+      "name": "Falling Waters",
+      "blurb": "Falling Waters State Park in the Panhandle has Florida’s highest waterfall, tumbling 73 feet into a sinkhole.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M6 8h14v6\"/><path d=\"M28 8h14\"/><path d=\"M20 14c0 10 2 18 4 26\"/><path d=\"M26 8c0 12 2 22 4 32\"/><path d=\"M32 8c0 12 1 22 2 32\"/><path d=\"M8 42c6-4 26-4 32 0\"/><path d=\"M6 8v34M42 8v34\"/></svg>"
+    }
+  ]
+}

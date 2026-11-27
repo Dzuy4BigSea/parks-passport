@@ -12,9 +12,9 @@ test('/parks lists every active park alphabetically and passes axe', async ({ pa
   await page.goto('/st-pete/parks');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('St. Pete parks');
   const names = await cardNames(page);
-  expect(names).toHaveLength(109);
+  expect(names).toHaveLength(110);
   expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' })));
-  await expect(page.locator('.result-count')).toHaveText('109 parks');
+  await expect(page.locator('.result-count')).toHaveText('110 parks');
   await expectNoAxeViolations(page);
 });
 
@@ -57,7 +57,7 @@ test('amenity filters show only parks that have all of them', async ({ page }) =
     await expect(card.locator('.chips')).toContainText('Dog park');
     await expect(card.locator('.chips')).toContainText('Lake');
   }
-  await expect(page.locator('.result-count')).toContainText('of 109 parks match');
+  await expect(page.locator('.result-count')).toContainText('of 110 parks match');
   await expectNoAxeViolations(page);
 });
 
@@ -74,7 +74,7 @@ test.describe('near me', () => {
     for (const d of distances) expect(d).toMatch(/^\d+\.\d mi away$/);
     const miles = distances.map((d) => parseFloat(d));
     expect(miles).toEqual([...miles].sort((a, b) => a - b));
-    await expect(page.locator('.result-count')).toHaveText('109 parks, nearest first');
+    await expect(page.locator('.result-count')).toHaveText('110 parks, nearest first');
   });
 });
 
