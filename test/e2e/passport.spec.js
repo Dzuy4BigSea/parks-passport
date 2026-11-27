@@ -17,10 +17,10 @@ async function honorStamp(page, slug, date) {
 test('empty passport: 0 stamped, every park an outline, badges to work towards', async ({ page }) => {
   await signUp(page, { name: 'Jo' });
   await expect(page.getByRole('heading', { level: 1 })).toHaveText("Jo's passport");
-  await expect(page.locator('.passport-count')).toHaveText('0 of 110 parks stamped');
+  await expect(page.locator('.passport-count')).toHaveText('0 of 111 parks stamped');
   await expect(page.locator('.level-name')).toHaveText('Day Tripper');
   await expect(page.locator('.level-next')).toHaveText('50 points to Trail Finder');
-  await expect(page.locator('.stamp')).toHaveCount(110);
+  await expect(page.locator('.stamp')).toHaveCount(111);
   await expect(page.locator('.stamp.is-stamped')).toHaveCount(0);
   await expect(page.getByText('No visits yet.')).toBeVisible();
   await expectNoAxeViolations(page);
@@ -39,7 +39,7 @@ test('stamping announces the badge once and fills in the passport', async ({ pag
   // Golden Hour), whenever the test runs. A Monday, so it doesn't pair with the Saturday above.
   await honorStamp(page, 'crescent-lake-park', '2026-03-16');
   await page.goto('/st-pete/passport');
-  await expect(page.locator('.passport-count')).toHaveText('2 of 110 parks stamped');
+  await expect(page.locator('.passport-count')).toHaveText('2 of 111 parks stamped');
   await expect(page.locator('.points')).toHaveText('20 points');
 
   // Stamp grid: stamped parks show their first-visit date.
@@ -49,7 +49,7 @@ test('stamping announces the badge once and fills in the passport', async ({ pag
   await expect(page.locator('.stamp', { hasText: 'Allendale Park' })).toContainText('Not yet');
 
   // Map: one marker per park with a location, labeled stamped / not yet.
-  await expect(page.locator('.leaflet-marker-icon')).toHaveCount(109);
+  await expect(page.locator('.leaflet-marker-icon')).toHaveCount(110);
   await expect(page.locator('.leaflet-marker-icon.pin-stamped')).toHaveCount(2);
   await expect(page.locator('.leaflet-marker-icon[title="Abercrombie Park: stamped"]')).toHaveText('✓');
   await expect(page.locator('.leaflet-marker-icon[title="Allendale Park: not yet"]')).toHaveText('○');
@@ -83,7 +83,7 @@ test('deleting from history revokes a badge that is no longer met', async ({ pag
   await expect(page.locator('.badge.earned', { hasText: 'First Stamp' })).toHaveCount(1);
   await page.getByRole('button', { name: /Delete visit to Abercrombie Park/ }).click();
   await expect(page).toHaveURL(/\/passport$/);
-  await expect(page.locator('.passport-count')).toHaveText('0 of 110 parks stamped');
+  await expect(page.locator('.passport-count')).toHaveText('0 of 111 parks stamped');
   await expect(page.locator('.badge.earned', { hasText: 'First Stamp' })).toHaveCount(0);
   await expect(page.locator('.badge.known', { hasText: 'First Stamp' })).toContainText('0 / 1 parks');
 });
@@ -110,7 +110,8 @@ test('park names are shown as text in map tooltips, never run as HTML', async ({
     await signUp(page);
     await page.goto('/st-pete/passport');
     const marker = page.getByTitle(`${evil}: not yet`, { exact: true });
-    await marker.hover();
+    // Markers can overlap at the city's zoom, so open the tooltip with the event a hover sends.
+    await marker.dispatchEvent('mouseover');
     await expect(page.locator('.leaflet-tooltip')).toHaveText(`${evil}: not yet`);
     expect(await page.evaluate(() => window.__xss)).toBeUndefined();
     await page.goto('/st-pete/parks/allendale-park');

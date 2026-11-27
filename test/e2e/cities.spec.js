@@ -23,6 +23,19 @@ test('Westminster pages: landing, parks and a park, axe clean and no sideways sc
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your passport to St. Pete parks');
 });
 
+test('Florida State Parks: 166 parks, the list and a park page are axe clean with no sideways scroll at 375 px', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  for (const [url, heading] of [['/florida-state-parks', 'Your passport to Florida state parks'], ['/florida-state-parks/parks', 'Florida state parks'],
+    ['/florida-state-parks/parks/ichetucknee-springs-state-park', 'Ichetucknee Springs State Park']]) {
+    await page.goto(url);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
+    await expectNoAxeViolations(page);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
+  await page.goto('/florida-state-parks/parks');
+  await expect(page.locator('.result-count')).toHaveText('166 parks');
+});
+
 test.describe('at Sigler Park', () => {
   test.use({ geolocation: AT_SIGLER, permissions: ['geolocation'] });
 
@@ -40,7 +53,7 @@ test.describe('at Sigler Park', () => {
     await expect(tabs).toHaveCount(0);
     // Looking at another city's passport: that city and the stamped one.
     await page.goto('/st-pete/passport');
-    await expect(page.locator('.passport-count')).toHaveText('0 of 110 parks stamped');
+    await expect(page.locator('.passport-count')).toHaveText('0 of 111 parks stamped');
     await expect(tabs.getByRole('link')).toHaveText([/St\. Pete/, /Westminster/]);
     await expect(tabs.getByRole('link', { name: /St\. Pete/ })).toHaveAttribute('aria-current', 'page');
     await tabs.getByRole('link', { name: /Westminster/ }).click();

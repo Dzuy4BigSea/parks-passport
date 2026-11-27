@@ -26,6 +26,22 @@ const FLORIDA = { minLat: 24.3, maxLat: 31.1, minLng: -87.7, maxLng: -79.8 };
 const PHONE = '(850) 245-2157'; // Florida State Parks information
 const DUPLICATE_M = 250;
 const OPEN = new Set(['Open-Fee Required', 'Open-No Fee Required']);
+// Units that aren't a place of their own: a river camp on the Suwannee River Wilderness Trail,
+// and a memorial next to Orman House (one stamp per place).
+const SKIP = new Set(['andersons-landing', 'three-servicemen-memorial']);
+// Where visitors actually go, when the data's pin is elsewhere in a big park (published coordinates
+// of the lighthouse or fort), or a pin from the address (the visitor center).
+const PINS = {
+  'egmont-key-state-park': { lat: 27.6003, lng: -82.7608 }, // the lighthouse and ferry landing
+  'bill-baggs-cape-florida-state-park': { lat: 25.6667, lng: -80.1561 }, // the Cape Florida Lighthouse
+  'fort-clinch-state-park': { lat: 30.7022, lng: -81.4397 }, // the fort
+};
+const PIN_FROM_ADDRESS = new Set(['paynes-prairie-preserve-state-park']); // the visitor center, not the north rim
+const RADIUS_M = { 'skyway-fishing-pier-state-park': 700, 'egmont-key-state-park': 900, 'bill-baggs-cape-florida-state-park': 1200 }; // long and thin
+const ADDRESSES = {
+  'fanning-springs-state-park': '18020 NW Highway 19, Fanning Springs, FL 32693', // the data repeats Manatee Springs' address
+  'big-shoals-state-park': '11330 SE County Road 135, White Springs, FL 32096',
+};
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const query = (layer, where, fields, extra = '') => get(`${DEP}/${layer}/query?where=${encodeURIComponent(where)}&outFields=${fields}&returnGeometry=false&f=json${extra}`, { json: true });
@@ -54,6 +70,7 @@ export function categoriesFor(f, name) {
   if (n('OUTDOOR_BASKETBALL_COURTS')) cats.add('basketball');
   if (any('BASEBALL_SOFTBALL_FIELDS', 'FOOTBALL_SOCCER_FIELDS', 'MULTIPLE_USE_FIELDS')) cats.add('ball-fields');
   if (/\bLake\b/.test(name)) cats.add('lake');
+  if (/\b(?:Trail|Greenways?|Trace|Preserve)\b/.test(name)) cats.add('trails');
   return [...cats].sort();
 }
 
@@ -98,11 +115,14 @@ async function main() {
   for (const u of open) {
     const name = decode(u.SITE_NAME).replace(/\s*\(Managed by [^)]*\)/i, '').trim();
     const slug = slugify(name);
+    if (SKIP.has(slug)) continue;
+    const address = ADDRESSES[slug] || u.ADDRESS;
     const f = byName.get(norm(u.SITE_NAME));
     let pin = f && Number(f.DECIMAL_DEGREES_LAT) ? { lat: Number(f.DECIMAL_DEGREES_LAT), lng: Number(f.DECIMAL_DEGREES_LONG) } : null;
     if (pin && pin.lng > 0) pin.lng = -pin.lng; // some rows store west longitude as positive
     let via = pin ? 'inventory' : '';
-    if (!pin && /^\d/.test(u.ADDRESS || '')) { pin = await censusPoint(u.ADDRESS, FLORIDA); via = 'address'; }
+    if (PIN_FROM_ADDRESS.has(slug)) { const p = await censusPoint(address, FLORIDA); if (p) { pin = p; via = 'address'; } }
+    if (!pin && /^\d/.test(address || '')) { pin = await censusPoint(address, FLORIDA); via = 'address'; }
     const r = rings.get(u.UNIT_ID) || [];
     if (r.length) {
       const pts = r.flat();
@@ -114,15 +134,18 @@ async function main() {
         via = 'boundary';
       }
     }
+    if (PINS[slug]) { pin = PINS[slug]; via = 'set by hand'; }
     if (!pin || !inBounds(FLORIDA, pin)) { console.warn(`  ! ${slug}: no pin`); pin = null; }
     const pack = pin ? packFor(pin, all) : null;
-    const dupe = pack?.parks.find((x) => x.slug === slug || distanceMeters(pin, x) <= DUPLICATE_M);
-    if (dupe) { console.log(`${slug.padEnd(52)} skip: ${pack.key} already has ${dupe.name}`); continue; }
+    // A duplicate of a park the pack already has, or of one this run already placed in the same pack.
+    const placed = (out.get(pack?.key || STATE_KEY) || []).map((r) => ({ slug: r.slug, name: r.name, lat: +r.lat, lng: +r.lng }));
+    const dupe = pin && [...(pack?.parks || []), ...placed].find((x) => x.slug === slug || distanceMeters(pin, x) <= DUPLICATE_M);
+    if (dupe) { console.log(`${slug.padEnd(52)} skip: ${pack?.key || STATE_KEY} already has ${dupe.name}`); continue; }
     const key = pack?.key || STATE_KEY;
     if (key !== STATE_KEY) console.log(`${slug.padEnd(52)} -> ${key} (${via})`);
     const row = {
-      slug, name, address: u.ADDRESS && /,\s*FL\b/.test(u.ADDRESS) ? decode(u.ADDRESS) : `${u.COUNTY} County, FL`, phone: PHONE,
-      lat: fixed(pin?.lat), lng: fixed(pin?.lng), checkin_radius_m: String(radiusFor(u.ACREAGE || 0, name)),
+      slug, name, address: address && /,\s*FL\b/.test(address) ? decode(address) : `${u.COUNTY} County, FL`, phone: PHONE,
+      lat: fixed(pin?.lat), lng: fixed(pin?.lng), checkin_radius_m: String(RADIUS_M[slug] || radiusFor(u.ACREAGE || 0, name)),
       categories: categoriesFor(f, name).join('|'), // Our parks need an https link: the park page, else the parks list (one unit links a private camp over http).
       city_url: /^https:\/\/www\.floridastateparks\.org\//.test(u.URL || '') ? u.URL : 'https://www.floridastateparks.org/parks-and-trails', needs_pin: pin ? '0' : '1',
     };

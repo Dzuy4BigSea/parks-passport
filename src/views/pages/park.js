@@ -185,7 +185,7 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
   ${spotlight ? spotlightCard(spotlight, park)
     : html`<p class="spotlight-suggest"><a href="/nonprofits/suggest?city=${park.city_key}">Know a nonprofit that cares for this park?</a></p>`}
 
-  ${park.city_url ? html`<p><a href="${park.city_url}" rel="noopener">More about <span class="park-name">${park.name}</span> on the City's website</a></p>` : ''}
+  ${park.city_url ? html`<p><a href="${park.city_url}" rel="noopener">More about <span class="park-name">${park.name}</span> on the official website</a></p>` : ''}
   </div>
   </div>
 </article>`,

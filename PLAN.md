@@ -518,8 +518,8 @@ edited and removed parks left alone), the e2e suite with St. Pete at 109 parks.
   addresses, acreage and access; the Outdoor Recreation Inventory for pins and amenities). Open
   parks only (173 of 179). Pins outside a park's boundary are replaced by a point inside it.
   Check-in radius from acreage (150–2000 m; trails 300 m).
-- Inside a city pack's area: that city's `florida-state-parks.csv` (Clearwater 2, St. Pete 1);
-  inside a county pack's: the county's (Pinellas 1); the other 169 make the Florida State Parks
+- Inside a city pack's area: that city's `florida-state-parks.csv` (Clearwater 2, St. Pete 2: the Skyway pier and Egmont Key);
+  inside a county pack's: the county's (Pinellas 1); the other 166 make the Florida State Parks
   pack (`seed/cities/florida-state-parks/`).
 
 Checks: `test/unit/cities.test.js` (every pack's parks import with no rejected rows, where the
