@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { importParksCsv } from '../domain/csv-import.js';
+import { importParksCsv, PARK_CSV_COLUMNS } from '../domain/csv-import.js';
+import { parseCsv, stringifyCsv } from '../lib/csv.js';
 import { seedBadgesIfEmpty, addMissingBadges } from '../domain/badges/index.js';
 import { seedActivities } from '../domain/activities.js';
 import { seedCityPack } from '../domain/city.js';
@@ -49,9 +50,30 @@ export function seedCities(db, { dir = CITIES_DIR, now = new Date(), travelBadge
     const hasParks = db.prepare('SELECT 1 FROM parks WHERE city_id = ? LIMIT 1').get(cityId);
     const parks = !hasParks && fs.existsSync(file('parks.csv'))
       ? importParksCsv(db, fs.readFileSync(file('parks.csv'), 'utf8'), { cityId, now: () => now }) : null;
+    const extraParks = addExtraParkFiles(db, path.join(dir, key), key, cityId, { now });
     const badges = fs.existsSync(file('badges.json')) ? addMissingBadges(db, readJson(file('badges.json')), { cityId, now }) : 0;
-    return { key, motifs, parks, badges };
+    return { key, motifs, parks, extraParks, badges };
   });
+}
+
+/**
+ * Extra park files in a pack (`<name>-parks.csv`, e.g. pinellas-county-parks.csv: county parks that
+ * fall inside this city). Each file is imported once, even into a city that already has parks, and
+ * only adds parks whose slug the city doesn't have: it never changes a park an admin may have edited.
+ * Returns the number of parks added.
+ */
+export function addExtraParkFiles(db, packDir, key, cityId, { now = new Date() } = {}) {
+  let added = 0;
+  const files = fs.readdirSync(packDir).filter((f) => /^[a-z0-9-]+-parks\.csv$/.test(f)).sort();
+  for (const f of files) {
+    const marker = `pack_parks:${key}/${f}`;
+    if (db.prepare('SELECT 1 FROM settings WHERE key = ?').get(marker)) continue;
+    const have = new Set(db.prepare('SELECT slug FROM parks WHERE city_id = ?').pluck().all(cityId));
+    const rows = parseCsv(fs.readFileSync(path.join(packDir, f), 'utf8')).filter((r) => !have.has(String(r.slug || '').toLowerCase()));
+    if (rows.length) added += importParksCsv(db, stringifyCsv(PARK_CSV_COLUMNS, rows), { cityId, now: () => now }).added;
+    db.prepare('INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)').run(marker, 'imported', now.toISOString());
+  }
+  return added;
 }
 
 // St. Pete's theme only (unit tests). Later edits happen in the admin.

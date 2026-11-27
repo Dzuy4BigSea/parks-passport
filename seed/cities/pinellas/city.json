@@ -1,0 +1,99 @@
+{
+  "key": "pinellas",
+  "name": "Pinellas County",
+  "tagline": "Gulf Coast parks",
+  "sort": 9,
+  "listed": true,
+  "time_zone": "America/New_York",
+  "bounds": {
+    "minLat": 27.6,
+    "maxLat": 28.18,
+    "minLng": -82.86,
+    "maxLng": -82.54,
+    "center": {
+      "lat": 27.9,
+      "lng": -82.76
+    }
+  },
+  "copy": {
+    "short": "Pinellas",
+    "place": "Pinellas County, Florida",
+    "official": "Pinellas County",
+    "gary": "I've been wandering Pinellas County parks and I still find something new on most visits, like the causeway out to the beach at Fred Howard Park or a quiet trail through Brooker Creek Preserve.",
+    "description": "Check in at every Pinellas County, Florida park you visit, collect stamps and badges, rate your favorites and explore with your Park Pals.",
+    "search_examples": "Fred Howard, Walsingham, Heritage…",
+    "made_for": "Pinellas County"
+  },
+  "accent": "#2A9D8F",
+  "accent_2": "#E9C46A",
+  "areas": [
+    {
+      "slug": "north",
+      "name": "North County",
+      "lat": 28.12,
+      "lng": -82.75
+    },
+    {
+      "slug": "east-lake",
+      "name": "East Lake & Oldsmar",
+      "lat": 28.09,
+      "lng": -82.68
+    },
+    {
+      "slug": "mid",
+      "name": "Mid County",
+      "lat": 27.885,
+      "lng": -82.81
+    },
+    {
+      "slug": "south",
+      "name": "South County",
+      "lat": 27.75,
+      "lng": -82.7
+    }
+  ],
+  "motifs": [
+    {
+      "slug": "heritage-village",
+      "name": "Heritage Village",
+      "blurb": "Heritage Village in Largo is a 21-acre living history museum, with historic homes and buildings moved there from around the county.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M6 42h36\"/><path d=\"M10 42V24h28v18\"/><path d=\"M7 25l17-13 17 13\"/><path d=\"M20 42v-9h8v9\"/><rect x=\"14\" y=\"28\" width=\"4\" height=\"5\"/><rect x=\"30\" y=\"28\" width=\"4\" height=\"5\"/><path d=\"M32 16v-6h4v9\"/></svg>"
+    },
+    {
+      "slug": "botanical-gardens",
+      "name": "Florida Botanical Gardens",
+      "blurb": "The Florida Botanical Gardens, next door to Heritage Village, are free to wander, with themed gardens, a wedding garden and native plants.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><circle cx=\"24\" cy=\"18\" r=\"4\"/><path d=\"M24 14c0-5 3-8 6-8 0 4-2 7-6 8z\"/><path d=\"M28 18c5 0 8 3 8 6-4 0-7-2-8-6z\"/><path d=\"M24 22c0 5-3 8-6 8 0-4 2-7 6-8z\"/><path d=\"M20 18c-5 0-8-3-8-6 4 0 7 2 8 6z\"/><path d=\"M24 22v20M24 34c-4-4-9-4-12-2M24 30c4-4 9-4 12-2\"/></svg>"
+    },
+    {
+      "slug": "brooker-creek",
+      "name": "Brooker Creek Preserve",
+      "blurb": "Brooker Creek Preserve, in the county’s northeast corner, protects about 8,700 acres of forest and wetlands, the largest natural area in Pinellas.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M12 6l-7 11h4l-6 9h18l-6-9h4z\"/><path d=\"M12 26v6\"/><path d=\"M34 10l-7 11h4l-6 9h18l-6-9h4z\"/><path d=\"M34 30v4\"/><path d=\"M4 40c4 0 4-2 8-2s4 2 8 2 4-2 8-2 4 2 8 2 4-2 8-2\"/></svg>"
+    },
+    {
+      "slug": "fred-howard",
+      "name": "Fred Howard Park",
+      "blurb": "At Fred Howard Park in Tarpon Springs, a causeway about a mile long leads out to a small beach island in the Gulf.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M4 32c4 0 4-2 8-2s4 2 8 2 4-2 8-2 4 2 8 2 4-2 8-2\"/><path d=\"M4 38c4 0 4-2 8-2s4 2 8 2 4-2 8-2 4 2 8 2 4-2 8-2\"/><path d=\"M6 26h22\"/><path d=\"M28 26c2-4 6-6 10-6s6 2 6 6z\"/><path d=\"M38 20V10M38 10c3 1 5 3 6 6M38 10c-3 1-5 3-6 6\"/></svg>"
+    },
+    {
+      "slug": "wall-springs",
+      "name": "Wall Springs",
+      "blurb": "The spring at Wall Springs Park in Palm Harbor was a bathing spot and health resort in the early 1900s. Today you can see it from an overlook.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M8 34c0-8 7-14 16-14s16 6 16 14\"/><path d=\"M6 34h36\"/><path d=\"M14 40h20\"/><path d=\"M24 20v-8\"/><path d=\"M20 10c0-3 2-5 4-5s4 2 4 5\"/><circle cx=\"18\" cy=\"28\" r=\"1.5\"/><circle cx=\"30\" cy=\"27\" r=\"1.5\"/><circle cx=\"24\" cy=\"30\" r=\"1.5\"/></svg>"
+    },
+    {
+      "slug": "pinellas-trail",
+      "name": "The Pinellas Trail",
+      "blurb": "The Fred Marquis Pinellas Trail runs the length of the county, from St. Petersburg to Tarpon Springs, for walkers, runners and cyclists.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><circle cx=\"12\" cy=\"34\" r=\"7\"/><circle cx=\"36\" cy=\"34\" r=\"7\"/><path d=\"M12 34l7-11h11l6 11\"/><path d=\"M19 23l5 11h-12\"/><path d=\"M17 19h5M30 23l-2-5h5\"/><path d=\"M4 44h40\"/></svg>"
+    },
+    {
+      "slug": "sponge-docks",
+      "name": "The sponge docks",
+      "blurb": "Greek sponge divers made Tarpon Springs famous. The historic sponge docks are still lined with boats, bakeries and shops.",
+      "svg": "<svg viewBox=\"0 0 48 48\"><path d=\"M6 30h36l-5 8H11z\"/><path d=\"M24 30V8\"/><path d=\"M24 10l12 16H24\"/><path d=\"M12 42c3 0 3-1.5 6-1.5s3 1.5 6 1.5 3-1.5 6-1.5 3 1.5 6 1.5\"/><circle cx=\"14\" cy=\"20\" r=\"4\"/></svg>"
+    }
+  ]
+}

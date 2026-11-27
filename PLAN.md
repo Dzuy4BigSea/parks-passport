@@ -501,3 +501,14 @@ reach it with a GPS check-in, Team badges; axe and no sideways scroll at 375 px)
 
 Checks: `test/unit/cities.test.js` (pack valid, parks inside its bounds, city order and park
 count), and the Clearwater pages at 375 px.
+
+### M38 — County parks, starting with Pinellas County (Flow 14)
+- `scripts/seed-pinellas.js`: the county's park finder (pins and addresses from its FacetWP map
+  data, amenities from its filters). A park inside a city pack's bounds goes to that city's
+  `pinellas-county-parks.csv` (St. Pete 7, Clearwater 5); the rest make the Pinellas County pack
+  (`seed/cities/pinellas/`, 11 parks). A park within 250 m of one the city already has is left out.
+- `addExtraParkFiles` in `src/db/seed.js`: a pack's `<name>-parks.csv` files are imported once
+  (recorded in **settings** as `pack_parks:<key>/<file>`), adding only missing slugs.
+
+Checks: `test/unit/cities.test.js` (pack counts, extra files imported once into a city with parks,
+edited and removed parks left alone), the e2e suite with St. Pete at 109 parks.

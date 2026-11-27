@@ -42,7 +42,7 @@ test('invite a pal, share, see each other in the feed and leaderboard, then go p
   await expect(ben.locator('.leaderboard')).toContainText('Ana');
   await ben.getByRole('link', { name: 'Ana' }).first().click();
   await expect(ben.getByRole('heading', { level: 1 })).toHaveText("Ana's passport");
-  await expect(ben.locator('.passport-count')).toHaveText('1 of 102 parks stamped');
+  await expect(ben.locator('.passport-count')).toHaveText('1 of 109 parks stamped');
   await expect(ben.getByRole('button', { name: /Delete visit/ })).toHaveCount(0);
   const anaUrl = new URL(ben.url()).pathname;
 
@@ -56,7 +56,7 @@ test('invite a pal, share, see each other in the feed and leaderboard, then go p
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByRole('status').first()).toContainText('visible to anyone with the link');
   expect((await anon.goto(anaUrl)).status()).toBe(200);
-  await expect(anon.locator('.passport-count')).toHaveText('1 of 102 parks stamped');
+  await expect(anon.locator('.passport-count')).toHaveText('1 of 109 parks stamped');
   await expectNoAxeViolations(anon);
 
   // Ana removes Ben; Ben no longer sees her in the feed.

@@ -40,7 +40,7 @@ test.describe('at Sigler Park', () => {
     await expect(tabs).toHaveCount(0);
     // Looking at another city's passport: that city and the stamped one.
     await page.goto('/st-pete/passport');
-    await expect(page.locator('.passport-count')).toHaveText('0 of 102 parks stamped');
+    await expect(page.locator('.passport-count')).toHaveText('0 of 109 parks stamped');
     await expect(tabs.getByRole('link')).toHaveText([/St\. Pete/, /Westminster/]);
     await expect(tabs.getByRole('link', { name: /St\. Pete/ })).toHaveAttribute('aria-current', 'page');
     await tabs.getByRole('link', { name: /Westminster/ }).click();
