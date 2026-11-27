@@ -1,0 +1,9 @@
+[
+  { "slug": "half-of-pinellas", "name": "Half of Pinellas", "art": "🌴", "kind": "known",
+    "description": "Stamped 6 different Pinellas County parks.", "rule_type": "parks_count", "rule_params": { "n": 6 } },
+  { "slug": "every-pinellas-park", "name": "Every Pinellas Park", "art": "🏆", "kind": "known",
+    "description": "Stamped every Pinellas County park.", "rule_type": "all_parks", "rule_params": {} },
+  { "slug": "county-trailblazer", "name": "County Trailblazer", "art": "🥾", "kind": "hidden",
+    "hint": "Head out on the county's trails.",
+    "description": "Stamped 3 Pinellas County parks with trails.", "rule_type": "category_count", "rule_params": { "category": "trails", "n": 3 } }
+]

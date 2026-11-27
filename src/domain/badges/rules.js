@@ -121,6 +121,9 @@ export const RULES = {
   all_parks: {
     label: 'Stamp every park',
     params: {},
+    // Once earned, kept: a city can gain parks later (new county parks), and deleting one stamp
+    // shouldn't take back "every park" from someone who stamped them all at the time.
+    permanent: true,
     evaluate: (_params, ctx) => {
       const stamped = distinctParks(ctx.visits);
       const done = [...ctx.activeParkIds].filter((id) => stamped.has(id)).length;

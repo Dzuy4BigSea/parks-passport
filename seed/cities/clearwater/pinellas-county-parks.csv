@@ -1,0 +1,6 @@
+slug,name,address,phone,lat,lng,checkin_radius_m,categories,city_url,needs_pin
+eagle-lake-park,Eagle Lake Park,"1800 Keene Road, Largo, FL 33771",(727) 582-2100,27.933257,-82.765682,,dog-park|history-nature|lake|picnic-shelter|playground|trails,https://pinellas.gov/parks/eagle-lake-park/,0
+john-s-taylor-park,John S. Taylor Park,"1100 8th Avenue Southwest, Largo, FL 33770",(727) 582-2100,27.905413,-82.803461,,ball-fields|picnic-shelter|playground|restrooms|trails|water-access,https://pinellas.gov/parks/john-s-taylor-park/,0
+mobbly-bayou-preserve,Mobbly Bayou Preserve,"423 Lafayette Boulevard, Oldsmar, FL 34677",(727) 582-2100,28.026894,-82.658679,,restrooms|scenic-view|trails|water-access,https://pinellas.gov/parks/mobbly-bayou-preserve/,0
+philippe-park,Philippe Park,"2525 Philippe Parkway, Safety Harbor, FL 34695",(727) 582-2100,28.012430,-82.682876,300,history-nature|picnic-shelter|playground|restrooms|water-access,https://pinellas.gov/parks/philippe-park/,0
+sand-key-park,Sand Key Park,"1060 Gulf Boulevard, Clearwater, FL 33767",(727) 582-2100,27.959113,-82.827708,,beach|dog-park|history-nature|picnic-shelter|playground|trails|water-access,https://pinellas.gov/parks/sand-key-park/,0
