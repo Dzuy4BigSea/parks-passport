@@ -86,6 +86,10 @@ test('pal_same_day reads the context flag', () => {
   assert.equal(run('pal_same_day', {}, ctx([], { palSameDay: true })).earned, true);
 });
 
+test('all_parks is kept once earned: a city can gain parks later', () => {
+  assert.equal(RULES.all_parks.permanent, true);
+});
+
 test('all_parks needs every active park', () => {
   assert.deepEqual(run('all_parks', {}, ctx([v(1, '2026-06-01'), v(2, '2026-06-01')])), { earned: false, progress: 2, target: 3, unit: 'parks' });
   assert.equal(run('all_parks', {}, ctx([v(1, '2026-06-01'), v(2, '2026-06-01'), v(3, '2026-06-01')])).earned, true);

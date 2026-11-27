@@ -105,7 +105,9 @@ async function main() {
     console.log(`${slug.padEnd(30)} -> ${key}`);
     const row = {
       slug, name: p.name, address: p.address, phone: PHONE, lat: fixed(p.lat), lng: fixed(p.lng),
-      checkin_radius_m: RADIUS_M[p.slug] ? String(RADIUS_M[p.slug]) : '', categories: [...cats.get(p.slug)].sort().join('|'),
+      checkin_radius_m: RADIUS_M[p.slug] ? String(RADIUS_M[p.slug]) : '',
+      // The county has no "lake" amenity: a park named for its lake has one.
+      categories: [...cats.get(p.slug), ...(/\bLake\b/.test(p.name) ? ['lake'] : [])].sort().join('|'),
       city_url: p.url, needs_pin: '0',
     };
     out.set(key, [...(out.get(key) || []), row]);

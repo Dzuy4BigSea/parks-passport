@@ -46,7 +46,7 @@ test.describe('without JavaScript', () => {
 test('amenity filters show only parks that have all of them', async ({ page }) => {
   await page.goto('/st-pete/parks?cat=dog-park');
   const dogParks = await cardNames(page);
-  expect(dogParks.length).toBe(6) // 5 city dog parks + Fort De Soto (county);
+  expect(dogParks.length).toBe(6); // 5 city dog parks + Fort De Soto (county)
   for (const card of await page.locator('.park-card').all()) {
     await expect(card.locator('.chips')).toContainText('Dog park');
   }

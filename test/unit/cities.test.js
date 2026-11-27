@@ -40,7 +40,9 @@ test('city packs: every pack is valid, keys are free, parks are inside the city,
     assert.equal(pack.key, key);
     assert.ok(!RESERVED_CITY_KEYS.has(key), key);
     for (const m of pack.motifs) assert.ok(sanitizeSvg(m.svg), `${key}/${m.slug}`);
-    const rows = parseCsv(fs.readFileSync(path.join(CITIES_DIR, key, 'parks.csv'), 'utf8'));
+    // parks.csv and any extra park files (county parks inside the city) must sit inside its bounds.
+    const files = fs.readdirSync(path.join(CITIES_DIR, key)).filter((f) => /^([a-z0-9-]+-)?parks\.csv$/.test(f));
+    const rows = files.flatMap((f) => parseCsv(fs.readFileSync(path.join(CITIES_DIR, key, f), 'utf8')));
     const b = pack.bounds;
     for (const r of rows.filter((x) => x.lat)) {
       assert.ok(+r.lat >= b.minLat && +r.lat <= b.maxLat && +r.lng >= b.minLng && +r.lng <= b.maxLng, `${key}/${r.slug}`);

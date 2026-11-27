@@ -47,6 +47,7 @@ if (badgeCount) app.log.info({ badges: badgeCount }, 'seeded badges from seed/ba
 const activityBadges = seedActivityData(db);
 if (activityBadges) app.log.info({ badges: activityBadges }, 'added activity badges from seed/activity-badges.json');
 for (const c of seedCities(db)) {
+  for (const bad of c.invalidExtraParks) app.log.warn({ city: c.key, ...bad }, 'skipped an invalid park in an extra park file');
   if (c.motifs || c.parks || c.extraParks || c.badges) {
     app.log.info({ city: c.key, motifs: c.motifs, parks: c.parks?.added ?? 0, invalidParks: c.parks?.invalid.length ?? 0, extraParks: c.extraParks, badges: c.badges },
       `seeded city pack seed/cities/${c.key}`);
