@@ -478,8 +478,13 @@ Done when:
       city pack's area they join the city (`florida-state-parks.csv`), else inside a county pack's
       area the county, else the statewide pack (Florida State Parks). A city wins over a county.
       A pack has one time zone: the western Panhandle's state parks (Central time) use Eastern for
-      "today" and time-of-day badges (known; per-park time zones would fix it if it matters). A member who earned a city's "every
-      park" badge keeps it when the city gains parks (`all_parks` is never taken back).
+      "today" and time-of-day badges (known; per-park time zones would fix it if it matters).
+      A member who earned a city's "every park" badge keeps it when the city gains parks
+      (`all_parks` is never taken back).
+- [ ] **Who runs a park:** a park page has a small "Managed by …" line: the park's own
+      `managed_by` (county and state parks inside another pack: "Pinellas County", "Florida State
+      Parks"), else the pack's `copy.manager`, else its `copy.official`. Only on the park page. In a park
+      CSV the column is optional: missing leaves the value alone, blank clears it.
 - [ ] **URLs:** a city's pages live under its key: `/<city>` (landing or dashboard),
       `/<city>/parks`, `/<city>/parks/:slug` (and its stamp, photo, rating and activity forms) and
       `/<city>/passport`. Park slugs are unique per city. An unknown city, or a slug that isn't in

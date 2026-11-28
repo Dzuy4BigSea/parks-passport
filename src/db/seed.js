@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { importParksCsv, PARK_CSV_COLUMNS } from '../domain/csv-import.js';
+import { importParksCsv, PARK_CSV_COLUMNS, OPTIONAL_PARK_CSV_COLUMNS } from '../domain/csv-import.js';
 import { parseCsv, stringifyCsv } from '../lib/csv.js';
 import { seedBadgesIfEmpty, addMissingBadges } from '../domain/badges/index.js';
 import { seedActivities } from '../domain/activities.js';
@@ -73,7 +73,7 @@ export function addExtraParkFiles(db, packDir, key, cityId, { now = new Date() }
     const have = new Set(db.prepare('SELECT slug FROM parks WHERE city_id = ?').pluck().all(cityId));
     const rows = parseCsv(fs.readFileSync(path.join(packDir, f), 'utf8')).filter((r) => !have.has(String(r.slug || '').toLowerCase()));
     if (rows.length) {
-      const r = importParksCsv(db, stringifyCsv(PARK_CSV_COLUMNS, rows), { cityId, now: () => now });
+      const r = importParksCsv(db, stringifyCsv([...PARK_CSV_COLUMNS, ...OPTIONAL_PARK_CSV_COLUMNS.filter((c) => c in rows[0])], rows), { cityId, now: () => now });
       added += r.added;
       invalid.push(...r.invalid.map((x) => ({ ...x, file: f })));
     }

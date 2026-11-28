@@ -132,7 +132,7 @@ ${result ? html`<div class="notice import-result" role="status" tabindex="-1" da
   ${csrfField(csrf)}
   <div class="field">
     <label for="csv">CSV file</label>
-    <p class="hint" id="csv-hint">Columns: slug, name, address, phone, lat, lng, checkin_radius_m, categories (separated by |), city_url, needs_pin. Up to 1 MB.</p>
+    <p class="hint" id="csv-hint">Columns: slug, name, address, phone, lat, lng, checkin_radius_m, categories (separated by |), city_url, needs_pin, and optionally managed_by (who runs the park when it isn’t the city, e.g. Pinellas County; blank clears it). Up to 1 MB.</p>
     <input type="file" id="csv" name="csv" accept=".csv,text/csv" required aria-describedby="csv-hint">
   </div>
   <button type="submit" class="btn btn-primary">Import CSV</button>

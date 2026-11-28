@@ -146,7 +146,7 @@ async function main() {
     const row = {
       slug, name, address: address && /,\s*FL\b/.test(address) ? decode(address) : `${u.COUNTY} County, FL`, phone: PHONE,
       lat: fixed(pin?.lat), lng: fixed(pin?.lng), checkin_radius_m: String(RADIUS_M[slug] || radiusFor(u.ACREAGE || 0, name)),
-      categories: categoriesFor(f, name).join('|'), // Our parks need an https link: the park page, else the parks list (one unit links a private camp over http).
+      categories: categoriesFor(f, name).join('|'), ...(key === STATE_KEY ? {} : { managed_by: 'Florida State Parks' }), // Our parks need an https link: the park page, else the parks list (one unit links a private camp over http).
       city_url: /^https:\/\/www\.floridastateparks\.org\//.test(u.URL || '') ? u.URL : 'https://www.floridastateparks.org/parks-and-trails', needs_pin: pin ? '0' : '1',
     };
     out.set(key, [...(out.get(key) || []), row]);
@@ -156,7 +156,7 @@ async function main() {
     fs.mkdirSync(path.dirname(file), { recursive: true });
     const seen = new Set();
     const unique = rows.filter((r) => !seen.has(r.slug) && seen.add(r.slug)).sort((a, b) => a.slug.localeCompare(b.slug));
-    fs.writeFileSync(file, stringifyCsv(PARK_CSV_COLUMNS, unique));
+    fs.writeFileSync(file, stringifyCsv(key === STATE_KEY ? PARK_CSV_COLUMNS : [...PARK_CSV_COLUMNS, 'managed_by'], unique));
     console.log(`Wrote ${unique.length} rows to ${path.relative(process.cwd(), file)}`);
   }
 }

@@ -140,6 +140,7 @@ export function parkPage({ park, user = null, csrf = '', today = '', myVisits = 
     <h1>${park.name}</h1>
     ${park.address ? html`<p class="address">${park.address}</p>` : ''}
     ${park.phone ? html`<p><a href="${telHref(park.phone)}">${park.phone}</a></p>` : ''}
+    ${park.managed_by || theme.copy?.manager ? html`<p class="park-manager">Managed by ${park.managed_by || theme.copy.manager}</p>` : ''}
     <div class="park-pills">
       ${user ? (myVisits.length
         ? html`<span class="pill pill-stamped">✓ Stamped ${myVisits.length === 1 ? 'once' : `${myVisits.length} times`}</span>`
