@@ -538,3 +538,14 @@ Checks: `test/unit/ads.test.js` (targeting by city, category, neighborhood and p
 city's time zone; switched off hides; slides; counts only where it can show; admin is 404 for
 members) and `test/e2e/ads.spec.js` (an admin makes an ad with two slides; it shows at the
 bottom of a park page and slides; a tip opens and closes; axe clean at 375 px).
+
+### M41 — Reactions between Park Pals (Flow 26)
+- Migration 034 (`reactions`, with triggers that remove them with their visit, photo, badge or pal
+  link; `notifications.ref` for the grouped notification).
+- `src/domain/reactions.js` (`toggleReaction`, `reactable`, `reactionsFor`); `POST /reactions` in
+  `src/routes/pals.js` (JSON or redirect); the bar in `src/views/pages/pals.js`; `public/js/reactions.js`.
+
+Checks: `test/unit/reactions.test.js` (toggle, counts and mine; pals only, what the feed shows, not
+your own; one grouped notification; removed with the item and the pal link; badges need their
+owner) and `test/e2e/reactions.spec.js` (react in place, take back, the owner's notification;
+axe clean at 375 px).
