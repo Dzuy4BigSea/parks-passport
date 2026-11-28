@@ -768,6 +768,22 @@ Done when:
       personal data, never for crawlers, and only where the ad can show. An ad's view is its page
       load; a tip's view is opening it.
 
+### Flow 26: Reactions between Park Pals
+As a member, I cheer on my Park Pals' accomplishments with a tap, so that exploring feels shared.
+Done when:
+- [ ] Each stamp, badge and photo in the Pals feed has five reactions: 🎉 Nice one, 🌳 Love this
+      park, 🔥 On fire, 👏 Bravo, ☀️ Sunshine. A tap adds mine and a second tap takes it back
+      (one of each per person per item). Each shows its count, and mine look pressed. It toggles
+      in place, or posts and comes back to the item without JS.
+- [ ] Only a pal who can see the item in their feed can react (404 otherwise): the pal's stamps
+      and badges while they share their passport, and photos shared with pals or anyone. Not on
+      your own.
+- [ ] The owner gets **one notification per item**, replaced (unread, on top) as reactions arrive:
+      "Ana and 2 others reacted 🎉🌳 to your stamp at Crescent Lake Park." Taking a reaction back
+      doesn't notify.
+- [ ] Reactions go with the item (a deleted stamp or photo, a revoked badge) and with the pal link
+      (unlinked pals' reactions on each other's things are removed).
+
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.
 - **users**: id, email (unique, lower-cased), password_hash (scrypt, nullable for magic-link-only

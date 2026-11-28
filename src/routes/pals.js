@@ -1,4 +1,5 @@
 import { requireUser, safeNext } from '../lib/auth.js';
+import { reactionsFor, toggleReaction } from '../domain/reactions.js';
 import { myGroups } from '../domain/groups.js';
 import {
   inviteTokenFor, regenerateInvite, inviterForToken, acceptInvite, removePal, palsOf, leaderboard, palsFeed,
@@ -35,18 +36,37 @@ export default async function palRoutes(app) {
   const showPals = (req, reply, extra = {}) => {
     const user = req.user;
     const page = Math.max(1, Math.min(1000, Number.parseInt(req.query?.page, 10) || 1));
+    const feed = palsFeed(db, user.id, { page });
+    // Reactions on each feed item (SPEC Flow 26): counts, and which ones are mine.
+    const reactions = reactionsFor(db, user.id, feed.items.map((i) => ({ type: i.type === 'stamp' ? 'visit' : i.type, id: i.target_id, ownerId: i.user_id })));
     return reply.page(palsPage({
+      reactions,
       user, csrf: req.csrfToken(), page, notice: NOTICES[req.query?.done],
       // The link opens in the inviter's current city (?city=), so a Westminster friend lands in Westminster.
       inviteUrl: `${app.config.baseUrl}/pals/invite/${inviteTokenFor(db, user.id, { now: now(), onCreate: () => app.track(user.id, 'pal_invite_created') })}?city=${req.city.key}`,
       friendCode: formatCode(friendCodeFor(db, user.id, { now: now() })), requests: requestsWithFaces(db, user.id),
-      pals: palsOf(db, user.id).map((p) => ({ ...p, visible: canViewOwner(db, user.id, p.id, p.default_visibility) })), board: leaderboard(db, user.id), feed: palsFeed(db, user.id, { page }),
+      pals: palsOf(db, user.id).map((p) => ({ ...p, visible: canViewOwner(db, user.id, p.id, p.default_visibility) })), board: leaderboard(db, user.id), feed,
       groups: myGroups(db, user.id),
       ...extra,
     }));
   };
 
   app.get('/pals', { preHandler: requireUser }, async (req, reply) => showPals(req, reply));
+
+  // Toggle a reaction on a pal's stamp, badge or photo (SPEC Flow 26). JSON for public/js/reactions.js,
+  // otherwise back to the feed item. 404 for anything this member can't see in their feed.
+  app.post('/reactions', { preHandler: requireUser }, async (req, reply) => {
+    const num = (v) => (/^\d+$/.test(String(v ?? '')) ? Number(v) : null);
+    const result = toggleReaction(db, req.user.id, {
+      type: String(req.body.type), id: num(req.body.id), reaction: String(req.body.reaction), owner: num(req.body.owner),
+    }, { now: now() });
+    if (!result) return reply.callNotFound();
+    if (String(req.headers.accept || '').includes('application/json')) {
+      return reply.header('Cache-Control', 'no-store').send({ on: result.on, counts: result.counts, mine: [...result.mine] });
+    }
+    const page = num(req.body.page);
+    return reply.redirect(`/pals${page > 1 ? `?page=${page}` : ''}#r-${String(req.body.type)}-${num(req.body.id)}-${result.ownerId}`, 303);
+  });
 
   // Friend codes: typing a code sends a request; the code's owner accepts or declines it.
   const CODE_ERRORS = {

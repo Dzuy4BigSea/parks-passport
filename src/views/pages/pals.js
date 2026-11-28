@@ -6,21 +6,40 @@ import { METHOD_LABELS } from '../../domain/visits.js';
 import { formatDate, localDate } from '../../domain/time.js';
 import { VISIBILITY_LABELS } from '../../domain/visibility.js';
 import { avatar, sharesWithPals } from '../avatar.js';
+import { REACTIONS, reactionRef } from '../../domain/reactions.js';
 
-function feedItem(item) {
+// The five reactions under a pal's stamp, badge or photo (SPEC Flow 26). Each is a small form, so it
+// works without JS; public/js/reactions.js toggles it in place.
+function reactionBar(item, { reactions, csrf, page }) {
+  const type = item.type === 'stamp' ? 'visit' : item.type;
+  const { counts = {}, mine = new Set() } = reactions?.get(reactionRef(type, item.target_id, item.user_id)) || {};
+  const what = item.type === 'stamp' ? 'stamp' : item.type === 'photo' ? 'photo' : 'badge';
+  return html`<div class="reactions" role="group" aria-label="React to ${item.user.display_name}'s ${what}">
+  ${Object.entries(REACTIONS).map(([key, r]) => html`<form method="post" action="/reactions" class="react-form">
+    ${csrfField(csrf)}<input type="hidden" name="type" value="${type}"><input type="hidden" name="id" value="${item.target_id}">
+    <input type="hidden" name="owner" value="${item.user_id}"><input type="hidden" name="reaction" value="${key}"><input type="hidden" name="page" value="${page}">
+    <button type="submit" class="react${mine.has(key) ? ' is-on' : ''}" aria-pressed="${mine.has(key) ? 'true' : 'false'}" title="${r.label}" data-reaction="${key}">
+      <span aria-hidden="true">${r.emoji}</span><span class="visually-hidden">${r.label}</span><span class="react-count">${counts[key] || ''}</span></button>
+  </form>`)}
+</div>`;
+}
+
+function feedItem(item, ctx) {
   const who = html`${avatar(item.user, { size: 28, visible: sharesWithPals(item.user) })} <a href="/u/${item.user.handle}">${item.user.display_name}</a>`;
+  const anchor = `r-${item.type === 'stamp' ? 'visit' : item.type}-${item.target_id}-${item.user_id}`;
+  const bar = ctx ? reactionBar(item, ctx) : '';
   const when = formatDate(localDate(new Date(item.at)));
   if (item.type === 'stamp') {
-    return html`<li class="feed-item"><span class="feed-icon" aria-hidden="true">✓</span>
+    return html`<li class="feed-item" id="${anchor}"><span class="feed-icon" aria-hidden="true">✓</span>
   <p>${who} stamped <a class="park-name" href="${parkPath({ city_key: item.city_key, slug: item.park_slug })}">${item.park_name}</a>
-  <span class="muted">${formatDate(item.visited_on)} · ${METHOD_LABELS[item.method]}</span></p></li>`;
+  <span class="muted">${formatDate(item.visited_on)} · ${METHOD_LABELS[item.method]}</span></p>${bar}</li>`;
   }
   if (item.type === 'photo') {
-    return html`<li class="feed-item feed-photo"><a class="toned" href="/photos/${item.photo_id}/full"><img src="/photos/${item.photo_id}/thumb" alt="${item.caption || `Photo of ${item.park_name}`}" width="72" height="72" loading="lazy"></a>
-  <p>${who} added a photo of <a class="park-name" href="${parkPath({ city_key: item.city_key, slug: item.park_slug })}">${item.park_name}</a> <span class="muted">${when}</span></p></li>`;
+    return html`<li class="feed-item feed-photo" id="${anchor}"><a class="toned" href="/photos/${item.photo_id}/full"><img src="/photos/${item.photo_id}/thumb" alt="${item.caption || `Photo of ${item.park_name}`}" width="72" height="72" loading="lazy"></a>
+  <p>${who} added a photo of <a class="park-name" href="${parkPath({ city_key: item.city_key, slug: item.park_slug })}">${item.park_name}</a> <span class="muted">${when}</span></p>${bar}</li>`;
   }
-  return html`<li class="feed-item">${badgeArt(item.badge_art, 'feed-icon')}
-  <p>${who} earned the <strong>${item.badge_name}</strong> badge <span class="muted">${when}</span></p></li>`;
+  return html`<li class="feed-item" id="${anchor}">${badgeArt(item.badge_art, 'feed-icon')}
+  <p>${who} earned the <strong>${item.badge_name}</strong> badge <span class="muted">${when}</span></p>${bar}</li>`;
 }
 
 function requestsSection({ requests, csrf }) {
@@ -83,11 +102,11 @@ function makePalsSection({ csrf, inviteUrl, friendCode, codeError, codeValue }) 
 </section>`;
 }
 
-export function palsPage({ user, csrf, inviteUrl, pals, board, feed, page, notice, friendCode, requests = { incoming: [], outgoing: [] }, codeError = null, codeValue = '', groups = [] }) {
+export function palsPage({ reactions = null, user, csrf, inviteUrl, pals, board, feed, page, notice, friendCode, requests = { incoming: [], outgoing: [] }, codeError = null, codeValue = '', groups = [] }) {
   return {
     title: 'Park Pals',
     current: 'pals',
-    scripts: ['/js/copy.js'],
+    scripts: ['/js/copy.js', '/js/reactions.js'],
     body: html`
 <h1>Park Pals</h1>
 <p><a href="/groups">Groups</a>: explore as a team with your gym, club or class.</p>
@@ -113,7 +132,7 @@ ${makePalsSection({ csrf, inviteUrl, friendCode, codeError, codeValue })}
 
 <section aria-labelledby="feed-h">
   <h2 id="feed-h">What your pals are up to</h2>
-  ${feed.items.length ? html`<ul class="feed">${feed.items.map(feedItem)}</ul>` : html`<p>Nothing yet. Pals' stamps and badges show up here when they share their passport with you.</p>`}
+  ${feed.items.length ? html`<ul class="feed">${feed.items.map((i) => feedItem(i, { reactions, csrf, page }))}</ul>` : html`<p>Nothing yet. Pals' stamps and badges show up here when they share their passport with you.</p>`}
   <nav class="pager" aria-label="Feed pages">
     ${page > 1 ? html`<a href="/pals?page=${page - 1}">Newer</a>` : ''}
     ${feed.hasMore ? html`<a href="/pals?page=${page + 1}">Older</a>` : ''}

@@ -31,7 +31,7 @@ function groupActions(n, csrf) {
     : html`<span class="request-actions">${button(`/groups/${g.id}/requests/${g.userId}/approve`, 'Approve', 'btn-primary')}${button(`/groups/${g.id}/requests/${g.userId}/decline`, 'Decline', 'btn-quiet')}</span>`;
 }
 
-const ICON = { badge: '🏅', gift: '🎁', level: '🚀', pal_request: '👋', pal_new: '🤝', group_invite: '👥', group_request: '🙋', group_joined: '🎉', group_ended: '🏁', goal_reached: '🏆', message: '💌' };
+const ICON = { badge: '🏅', gift: '🎁', level: '🚀', pal_request: '👋', pal_new: '🤝', group_invite: '👥', group_request: '🙋', group_joined: '🎉', group_ended: '🏁', goal_reached: '🏆', message: '💌', reaction: '🎉' };
 
 // Notification center (SPEC Flow 8). Items that were unread when the page opened are marked "New".
 export function notificationsPage({ items, page, hasMore, unreadIds, timeZone, csrf = '', notice = null }) {
