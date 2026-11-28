@@ -469,6 +469,17 @@ Done when:
       optional `badges.json`. On every start, a new pack adds its city, its parks (when the city has
       none) and its badges (by slug). A city's theme is loaded once, then admins own it; its time
       zone, bounds and copy always follow the pack. A key can't be a path the app already uses.
+- [ ] **County parks:** a county's parks that fall inside a city pack's map area (its bounds)
+      belong to that city, so members never sort out city, county and state lines. They ship in
+      the city's pack as an extra `<name>-parks.csv` (e.g. `pinellas-county-parks.csv`), which is
+      imported once, even into a city that already has parks, adding only slugs the city doesn't
+      have (it never changes or brings back a park an admin edited or removed). The county's other
+      parks are a pack of their own (e.g. Pinellas County). State parks work the same way: inside a
+      city pack's area they join the city (`florida-state-parks.csv`), else inside a county pack's
+      area the county, else the statewide pack (Florida State Parks). A city wins over a county.
+      A pack has one time zone: the western Panhandle's state parks (Central time) use Eastern for
+      "today" and time-of-day badges (known; per-park time zones would fix it if it matters). A member who earned a city's "every
+      park" badge keeps it when the city gains parks (`all_parks` is never taken back).
 - [ ] **URLs:** a city's pages live under its key: `/<city>` (landing or dashboard),
       `/<city>/parks`, `/<city>/parks/:slug` (and its stamp, photo, rating and activity forms) and
       `/<city>/passport`. Park slugs are unique per city. An unknown city, or a slug that isn't in

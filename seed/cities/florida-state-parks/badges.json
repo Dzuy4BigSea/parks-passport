@@ -1,0 +1,11 @@
+[
+  { "slug": "half-of-florida-state-parks", "name": "Half the State Parks", "art": "🐊", "kind": "known",
+    "description": "Stamped 83 different Florida state parks.", "rule_type": "parks_count", "rule_params": { "n": 83 } },
+  { "slug": "every-florida-state-park", "name": "Every Florida State Park", "art": "🏆", "kind": "known",
+    "description": "Stamped every Florida state park.", "rule_type": "all_parks", "rule_params": {} },
+  { "slug": "state-park-explorer", "name": "State Park Explorer", "art": "🧭", "kind": "known",
+    "description": "Stamped 10 different Florida state parks.", "rule_type": "parks_count", "rule_params": { "n": 10 } },
+  { "slug": "sand-and-sun", "name": "Sand and Sun", "art": "🏝️", "kind": "hidden",
+    "hint": "Florida has a lot of coastline.",
+    "description": "Stamped 5 Florida state parks with a beach.", "rule_type": "category_count", "rule_params": { "category": "beach", "n": 5 } }
+]

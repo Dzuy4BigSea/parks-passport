@@ -1,0 +1,12 @@
+slug,name,address,phone,lat,lng,checkin_radius_m,categories,city_url,needs_pin
+al-anderson-park,A.L. Anderson Park,"39699 U.S. 19, Tarpon Springs, FL 34689",(727) 582-2100,28.127860,-82.738131,,dog-park|history-nature|picnic-shelter|playground|trails|water-access,https://pinellas.gov/parks/a-l-anderson-park/,0
+boca-ciega-millennium-park,Boca Ciega Millennium Park,"12410 74th Avenue North, Seminole, FL 33772",(727) 582-2100,27.833980,-82.810896,300,dog-park|history-nature|picnic-shelter|playground|restrooms|scenic-view|trails,https://pinellas.gov/parks/boca-ciega-millennium-park/,0
+brooker-creek-preserve,Brooker Creek Preserve,"3940 Keystone Road, Tarpon Springs, FL 34688",(727) 582-2100,28.131802,-82.656635,2000,history-nature|restrooms,https://pinellas.gov/parks/brooker-creek-preserve/,0
+dansville-park,Dansville Park,"12701 Wilcox Road, Largo, FL 33774",(727) 582-2100,27.891212,-82.814801,,restrooms|trails,https://pinellas.gov/parks/dansville-park/,0
+florida-botanical-gardens,Florida Botanical Gardens,"12520 Ulmerton Road, Largo, FL 33774",(727) 582-2100,27.884407,-82.810955,,history-nature,https://pinellas.gov/parks/florida-botanical-gardens/,0
+fred-howard-park,Fred Howard Park,"1700 Sunset Drive, Tarpon Springs, FL 34689",(727) 582-2100,28.155883,-82.789781,400,ball-fields|dog-park|history-nature|picnic-shelter|playground|restrooms|trails|water-access,https://pinellas.gov/parks/fred-howard-park/,0
+heritage-village,Heritage Village,"11909 125th Street, Largo, FL 33774",(727) 582-2100,27.881254,-82.810745,,history-nature,https://pinellas.gov/parks/heritage-village/,0
+john-chesnut-sr-park,John Chesnut Sr. Park,"2200 East Lake Road South, Palm Harbor, FL 34685",(727) 582-2100,28.083319,-82.700987,500,ball-fields|dog-park|history-nature|picnic-shelter|playground|restrooms|trails|water-access,https://pinellas.gov/parks/john-chesnut-sr-park/,0
+ridgecrest-park,Ridgecrest Park,"12000 Ulmerton Road, Largo, FL 33774",(727) 582-2100,27.892511,-82.807287,,ball-fields|picnic-shelter|playground|restrooms,https://pinellas.gov/parks/ridgecrest-park/,0
+wall-springs-park,Wall Springs Park,"3725 Desoto Boulevard, Palm Harbor, FL 34683",(727) 582-2100,28.106850,-82.771425,300,history-nature|picnic-shelter|playground|restrooms|scenic-view|trails,https://pinellas.gov/parks/wall-springs-park/,0
+walsingham-park,Walsingham Park,"12615 102nd Avenue, Seminole, FL 33778",(727) 582-2100,27.868624,-82.813654,500,dog-park|picnic-shelter|playground|restrooms|trails|water-access,https://pinellas.gov/parks/walsingham-park/,0

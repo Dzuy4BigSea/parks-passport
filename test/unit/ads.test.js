@@ -1,4 +1,4 @@
-// M38: Nonprofit ads and activity tips (SPEC Flow 25).
+// M40: Nonprofit ads and activity tips (SPEC Flow 25).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

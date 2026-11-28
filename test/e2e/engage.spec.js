@@ -28,7 +28,7 @@ test.describe('on a phone at a park', () => {
 
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hi, Sam');
-    await expect(page.locator('.passport-count')).toHaveText('1 of 102 parks stamped');
+    await expect(page.locator('.passport-count')).toHaveText('1 of 111 parks stamped');
     await expect(page.getByText('1 week in a row').first()).toBeVisible();
     await expect(page.locator('.home-near')).toContainText('Closest new parks');
     await expect(page.locator('.gary-says')).toContainText('Crescent Lake Park'); // stamped today
@@ -52,7 +52,7 @@ test.describe('on a phone away from parks', () => {
     await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
     await expectNoAxeViolations(page);
     await page.goto('/st-pete/passport');
-    await expect(page.locator('.passport-count')).toHaveText('0 of 102 parks stamped');
+    await expect(page.locator('.passport-count')).toHaveText('0 of 111 parks stamped');
   });
 });
 

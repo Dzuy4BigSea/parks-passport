@@ -502,7 +502,30 @@ reach it with a GPS check-in, Team badges; axe and no sideways scroll at 375 px)
 Checks: `test/unit/cities.test.js` (pack valid, parks inside its bounds, city order and park
 count), and the Clearwater pages at 375 px.
 
-### M38 — Nonprofit ads and activity tips (Flow 25)
+### M38 — County parks, starting with Pinellas County (Flow 14)
+- `scripts/seed-pinellas.js`: the county's park finder (pins and addresses from its FacetWP map
+  data, amenities from its filters). A park inside a city pack's bounds goes to that city's
+  `pinellas-county-parks.csv` (St. Pete 7, Clearwater 5); the rest make the Pinellas County pack
+  (`seed/cities/pinellas/`, 11 parks). A park within 250 m of one the city already has is left out.
+- `addExtraParkFiles` in `src/db/seed.js`: a pack's `<name>-parks.csv` files are imported once
+  (recorded in **settings** as `pack_parks:<key>/<file>`), adding only missing slugs.
+
+Checks: `test/unit/cities.test.js` (pack counts, extra files imported once into a city with parks,
+edited and removed parks left alone), the e2e suite with St. Pete at 109 parks.
+
+### M39 — Florida State Parks (Flow 14)
+- `scripts/seed-florida-state-parks.js`: Florida DEP's open data (park boundaries for names,
+  addresses, acreage and access; the Outdoor Recreation Inventory for pins and amenities). Open
+  parks only (173 of 179). Pins outside a park's boundary are replaced by a point inside it.
+  Check-in radius from acreage (150–2000 m; trails 300 m).
+- Inside a city pack's area: that city's `florida-state-parks.csv` (Clearwater 2, St. Pete 2: the Skyway pier and Egmont Key);
+  inside a county pack's: the county's (Pinellas 1); the other 166 make the Florida State Parks
+  pack (`seed/cities/florida-state-parks/`).
+
+Checks: `test/unit/cities.test.js` (every pack's parks import with no rejected rows, where the
+state parks land, counts), the e2e suite with St. Pete at 110 parks.
+
+### M40 — Nonprofit ads and activity tips (Flow 25)
 - Migration 033 (`ads`, `ad_cities`, `ad_targets`, `ad_slides`, `ad_stats`).
 - `src/lib/images.js`: `storeAdImage` (6:5 crop to 600×500 WebP, animated kept with a still
   first frame; frames and size capped for the 512 MB container).
