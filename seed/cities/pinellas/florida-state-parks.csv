@@ -1,2 +1,2 @@
-slug,name,address,phone,lat,lng,checkin_radius_m,categories,city_url,needs_pin
-anclote-key-preserve-state-park,Anclote Key Preserve State Park,"Tarpon Springs, FL 34689",(850) 245-2157,28.173431,-82.847061,2000,beach|picnic-shelter|trails|water-access,https://www.floridastateparks.org/parks-and-trails/anclote-key-preserve-state-park,0
+slug,name,address,phone,lat,lng,checkin_radius_m,categories,city_url,needs_pin,managed_by
+anclote-key-preserve-state-park,Anclote Key Preserve State Park,"Tarpon Springs, FL 34689",(850) 245-2157,28.173431,-82.847061,2000,beach|picnic-shelter|trails|water-access,https://www.floridastateparks.org/parks-and-trails/anclote-key-preserve-state-park,0,Florida State Parks

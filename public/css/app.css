@@ -1899,3 +1899,6 @@ svg.gary-art { height: auto; }
 .photo-drawer > summary::after { content: ""; width: 7px; height: 7px; border: solid currentColor; border-width: 0 2px 2px 0; transform: translateY(-2px) rotate(45deg); transition: transform 0.2s var(--ease-out); }
 .photo-drawer[open] > summary::after { transform: translateY(2px) rotate(-135deg); }
 .photo-drawer[open] > summary { margin-bottom: 0.75rem; }
+
+/* Who runs a park (city, county or state): a quiet reference on the park page. */
+.park-manager { margin: 0.15rem 0 0; font-size: 0.85rem; color: var(--muted); }

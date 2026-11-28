@@ -22,7 +22,8 @@
     "gary": "I've been wandering Florida's state parks and I still find something new on most visits, like a cold, clear spring on a hot afternoon or a manatee drifting by in winter.",
     "description": "Check in at every Florida state park you visit, from the springs to the Keys, collect stamps and badges, rate your favorites and explore with your Park Pals.",
     "search_examples": "Ichetucknee, Blue Spring, Bahia Honda…",
-    "made_for": "Florida’s state parks, from the Panhandle to the Keys"
+    "made_for": "Florida’s state parks, from the Panhandle to the Keys",
+    "manager": "Florida State Parks"
   },
   "accent": "#2D6A4F",
   "accent_2": "#F4A261",

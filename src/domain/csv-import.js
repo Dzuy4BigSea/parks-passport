@@ -5,6 +5,9 @@ export const PARK_CSV_COLUMNS = [
   'slug', 'name', 'address', 'phone', 'lat', 'lng', 'checkin_radius_m',
   'categories', 'city_url', 'needs_pin',
 ];
+// Optional: who runs the park when it isn't the city's own agency ("Pinellas County"). A file
+// without this column leaves it as it is.
+export const OPTIONAL_PARK_CSV_COLUMNS = ['managed_by'];
 
 // Rough box around the City of St. Petersburg (also in seed/cities/st-pete/city.json). Each city's
 // own bounds reject coordinates outside it; the St. Pete scraper uses this copy.
@@ -48,10 +51,14 @@ export function validateParkRow(r, city = { name: 'St. Petersburg', bounds: ST_P
   const cityUrl = (r.city_url || '').trim();
   if (cityUrl && !/^https:\/\//.test(cityUrl)) return { error: 'city_url must start with https://' };
 
+  const managedBy = r.managed_by === undefined ? undefined : String(r.managed_by).replace(/\s+/g, ' ').trim() || null;
+  if (managedBy && managedBy.length > 80) return { error: 'managed_by is longer than 80 characters' };
+
   return {
     park: {
       slug, name, address: (r.address || '').trim(), phone: (r.phone || '').trim(),
       lat, lng, checkin_radius_m: radius, city_url: cityUrl, needs_pin: needsPin ? 1 : 0, categories,
+      ...(managedBy === undefined ? {} : { managed_by: managedBy }),
     },
   };
 }
@@ -80,8 +87,9 @@ export function importParksCsv(db, csvText, { now = () => new Date(), cityId = n
   const findBySlug = db.prepare('SELECT * FROM parks WHERE city_id = ? AND slug = ?');
   const catsFor = db.prepare('SELECT category FROM park_categories WHERE park_id = ? ORDER BY category').pluck();
   const insert = db.prepare(`INSERT INTO parks
-    (city_id, slug, name, address, phone, lat, lng, checkin_radius_m, city_url, needs_pin, active, created_at, updated_at)
-    VALUES (@city_id, @slug, @name, @address, @phone, @lat, @lng, @checkin_radius_m, @city_url, @needs_pin, 1, @ts, @ts)`);
+    (city_id, slug, name, address, phone, lat, lng, checkin_radius_m, city_url, needs_pin, managed_by, active, created_at, updated_at)
+    VALUES (@city_id, @slug, @name, @address, @phone, @lat, @lng, @checkin_radius_m, @city_url, @needs_pin, @managed_by, 1, @ts, @ts)`);
+  const setManager = db.prepare('UPDATE parks SET managed_by = ?, updated_at = ? WHERE id = ?');
   const update = db.prepare(`UPDATE parks SET name=@name, address=@address, phone=@phone, lat=@lat, lng=@lng,
     checkin_radius_m=@checkin_radius_m, city_url=@city_url, needs_pin=@needs_pin, updated_at=@ts WHERE id=@id`);
   const clearCats = db.prepare('DELETE FROM park_categories WHERE park_id = ?');
@@ -101,14 +109,18 @@ export function importParksCsv(db, csvText, { now = () => new Date(), cityId = n
       const existing = findBySlug.get(city.id, park.slug);
       const cats = [...park.categories].sort();
       if (!existing) {
-        const { lastInsertRowid } = insert.run({ ...park, city_id: city.id, ts });
+        const { lastInsertRowid } = insert.run({ managed_by: null, ...park, city_id: city.id, ts });
         for (const c of cats) addCat.run(lastInsertRowid, c);
         result.added++;
         return;
       }
+      // managed_by changes only when the file has the column.
+      const sameManager = park.managed_by === undefined || existing.managed_by === park.managed_by;
       const same = fields.every((f) => existing[f] === park[f]) &&
         JSON.stringify(catsFor.all(existing.id)) === JSON.stringify(cats);
-      if (same) { result.unchanged++; return; }
+      if (same && sameManager) { result.unchanged++; return; }
+      if (!sameManager) setManager.run(park.managed_by, ts, existing.id);
+      if (same) { result.updated++; return; }
       update.run({ ...park, id: existing.id, ts });
       clearCats.run(existing.id);
       for (const c of cats) addCat.run(existing.id, c);

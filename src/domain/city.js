@@ -30,7 +30,8 @@ const FALLBACK = Object.freeze({
  *   short: "St. Pete" (headings: "St. Pete parks"); place: "St. Petersburg, Florida" (eyebrow);
  *   official: "the City of St. Petersburg" (the "not affiliated" line); gary: Gary's hello;
  *   description: the meta description; search_examples: the park search placeholder;
- *   made_for: the footer's "Made for …" (default "the <tagline>").
+ *   made_for: the footer's "Made for …" (default "the <tagline>");
+ *   manager: who runs the pack's parks, for a park page's "Managed by …" (default: official).
  */
 function cityCopy(row, copy) {
   const s = (v, max = 400) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
@@ -39,6 +40,7 @@ function cityCopy(row, copy) {
     short,
     place: s(copy.place, 60) || row.name,
     official: s(copy.official, 80) || `the City of ${row.name}`,
+    manager: s(copy.manager, 80) || s(copy.official, 80) || `the City of ${row.name}`,
     gary: s(copy.gary, 600) || `I love wandering ${short} parks, and I still find something new on most visits.`,
     description: s(copy.description, 300)
       || `Check in at every ${short} park you visit, collect stamps and badges, rate your favorites and explore with your Park Pals.`,

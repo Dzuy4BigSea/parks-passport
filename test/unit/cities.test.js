@@ -429,3 +429,25 @@ test('every park in every pack (and its extra park files) imports: no rejected r
   assert.deepEqual(inPack('st-pete').sort(), ['egmont-key-state-park', 'skyway-fishing-pier-state-park']);
   assert.ok(inPack('florida-state-parks').includes('ichetucknee-springs-state-park'));
 });
+
+test('a park page says who runs the park: the city, the county or the state', async () => {
+  const { app, db } = citiesApp();
+  const c = client(app);
+  const manager = async (url) => ((await c.get(url)).body.match(/<p class="park-manager">Managed by ([^<]+)<\/p>/) || [])[1];
+  assert.equal(await manager('/st-pete/parks/abercrombie-park'), 'the City of St. Petersburg');
+  assert.equal(await manager('/st-pete/parks/fort-de-soto-park'), 'Pinellas County');
+  assert.equal(await manager('/clearwater/parks/honeymoon-island-state-park'), 'Florida State Parks');
+  assert.equal(await manager('/pinellas/parks/fred-howard-park'), 'Pinellas County');
+  assert.equal(await manager('/florida-state-parks/parks/ichetucknee-springs-state-park'), 'Florida State Parks');
+
+  // Production imported the county and state parks before the column existed: the migration fills it in.
+  db.prepare('UPDATE parks SET managed_by = NULL').run();
+  const sql = fs.readFileSync(path.join(import.meta.dirname, '../../src/db/migrations/033_park_managed_by.sql'), 'utf8');
+  db.exec(sql.split('\n').filter((l) => !/^ALTER TABLE/.test(l)).join('\n'));
+  const by = (slug) => db.prepare('SELECT managed_by FROM parks WHERE slug = ?').pluck().get(slug);
+  assert.equal(by('fort-de-soto-park'), 'Pinellas County');
+  assert.equal(by('honeymoon-island-state-park'), 'Florida State Parks');
+  assert.equal(by('anclote-key-preserve-state-park'), 'Florida State Parks');
+  assert.equal(by('fred-howard-park'), null); // the county pack's own parks: its manager
+  assert.equal(by('abercrombie-park'), null);
+});

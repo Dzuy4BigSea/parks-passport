@@ -1,3 +1,3 @@
-slug,name,address,phone,lat,lng,checkin_radius_m,categories,city_url,needs_pin
-caladesi-island-state-park,Caladesi Island State Park,"Dunedin, FL 34698",(850) 245-2157,28.032944,-82.818222,1750,beach|picnic-shelter|playground|trails|water-access,https://www.floridastateparks.org/parks-and-trails/caladesi-island-state-park,0
-honeymoon-island-state-park,Honeymoon Island State Park,"No. 1 Causeway Blvd., Dunedin, FL 34698",(850) 245-2157,28.060756,-82.818781,1900,beach|history-nature|picnic-shelter|playground|trails|water-access,https://www.floridastateparks.org/honeymoonisland,0
+slug,name,address,phone,lat,lng,checkin_radius_m,categories,city_url,needs_pin,managed_by
+caladesi-island-state-park,Caladesi Island State Park,"Dunedin, FL 34698",(850) 245-2157,28.032944,-82.818222,1750,beach|picnic-shelter|playground|trails|water-access,https://www.floridastateparks.org/parks-and-trails/caladesi-island-state-park,0,Florida State Parks
+honeymoon-island-state-park,Honeymoon Island State Park,"No. 1 Causeway Blvd., Dunedin, FL 34698",(850) 245-2157,28.060756,-82.818781,1900,beach|history-nature|picnic-shelter|playground|trails|water-access,https://www.floridastateparks.org/honeymoonisland,0,Florida State Parks

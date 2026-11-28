@@ -524,3 +524,11 @@ edited and removed parks left alone), the e2e suite with St. Pete at 109 parks.
 
 Checks: `test/unit/cities.test.js` (every pack's parks import with no rejected rows, where the
 state parks land, counts), the e2e suite with St. Pete at 110 parks.
+
+### M40 — "Managed by" on the park page (Flow 14)
+- Migration 033 (`parks.managed_by`, filled in for the county and state parks already imported),
+  an optional `managed_by` CSV column (extra park files carry it), `copy.manager` in a pack
+  (Florida State Parks), and a quiet "Managed by …" line under the address on the park page.
+
+Checks: `test/unit/cities.test.js` (city, county and state parks, and the migration's fill-in), the
+park page in the e2e suite.

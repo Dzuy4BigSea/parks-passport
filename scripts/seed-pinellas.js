@@ -109,6 +109,8 @@ async function main() {
       // The county has no "lake" amenity: a park named for its lake has one.
       categories: [...cats.get(p.slug), ...(/\bLake\b/.test(p.name) ? ['lake'] : [])].sort().join('|'),
       city_url: p.url, needs_pin: '0',
+      // Inside a city pack, say who runs it (the county pack's own parks are the county's anyway).
+      ...(key === COUNTY_KEY ? {} : { managed_by: 'Pinellas County' }),
     };
     out.set(key, [...(out.get(key) || []), row]);
   }
@@ -116,7 +118,7 @@ async function main() {
     const file = path.join(CITIES_DIR, key, key === COUNTY_KEY ? 'parks.csv' : 'pinellas-county-parks.csv');
     fs.mkdirSync(path.dirname(file), { recursive: true });
     rows.sort((a, b) => a.slug.localeCompare(b.slug));
-    fs.writeFileSync(file, stringifyCsv(PARK_CSV_COLUMNS, rows));
+    fs.writeFileSync(file, stringifyCsv(key === COUNTY_KEY ? PARK_CSV_COLUMNS : [...PARK_CSV_COLUMNS, 'managed_by'], rows));
     console.log(`Wrote ${rows.length} rows to ${path.relative(process.cwd(), file)}`);
   }
 }
