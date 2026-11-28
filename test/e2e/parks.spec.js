@@ -12,9 +12,9 @@ test('/parks lists every active park alphabetically and passes axe', async ({ pa
   await page.goto('/st-pete/parks');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('St. Pete parks');
   const names = await cardNames(page);
-  expect(names).toHaveLength(109);
+  expect(names).toHaveLength(111);
   expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' })));
-  await expect(page.locator('.result-count')).toHaveText('109 parks');
+  await expect(page.locator('.result-count')).toHaveText('111 parks');
   await expectNoAxeViolations(page);
 });
 
@@ -57,7 +57,7 @@ test('amenity filters show only parks that have all of them', async ({ page }) =
     await expect(card.locator('.chips')).toContainText('Dog park');
     await expect(card.locator('.chips')).toContainText('Lake');
   }
-  await expect(page.locator('.result-count')).toContainText('of 109 parks match');
+  await expect(page.locator('.result-count')).toContainText('of 111 parks match');
   await expectNoAxeViolations(page);
 });
 
@@ -74,7 +74,7 @@ test.describe('near me', () => {
     for (const d of distances) expect(d).toMatch(/^\d+\.\d mi away$/);
     const miles = distances.map((d) => parseFloat(d));
     expect(miles).toEqual([...miles].sort((a, b) => a - b));
-    await expect(page.locator('.result-count')).toHaveText('109 parks, nearest first');
+    await expect(page.locator('.result-count')).toHaveText('111 parks, nearest first');
   });
 });
 
@@ -99,7 +99,7 @@ test('park page shows details, map pin, amenities and City link', async ({ page 
   await expect(page.locator('.leaflet-interactive')).toHaveCount(1);
   await expect(page.getByRole('link', { name: 'Scenic view' })).toHaveAttribute('href', '/st-pete/parks?cat=scenic-view');
   await expect(page.getByText('No ratings yet.')).toBeVisible();
-  await expect(page.getByRole('link', { name: /on the City's website/ }))
+  await expect(page.getByRole('link', { name: /on the official website/ }))
     .toHaveAttribute('href', 'https://www.stpeteparksrec.org/parks___facilities/abercrombie_park.php');
   await expectNoAxeViolations(page);
 });

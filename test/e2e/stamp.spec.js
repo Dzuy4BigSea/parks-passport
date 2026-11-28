@@ -42,7 +42,7 @@ test.describe('at the park', () => {
     await page.getByRole('button', { name: 'Search' }).click();
     await expect(page).toHaveURL(/unvisited=1/);
     await expect(page.locator('.park-card', { hasText: 'Abercrombie Park' })).toHaveCount(0);
-    await expect(page.locator('.result-count')).toHaveText('108 of 109 parks match');
+    await expect(page.locator('.result-count')).toHaveText('110 of 111 parks match');
 
     // A second stamp the same day (honor form posted directly) is refused.
     await page.goto('/st-pete/parks/abercrombie-park');

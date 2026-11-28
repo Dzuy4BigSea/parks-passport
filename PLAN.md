@@ -512,3 +512,15 @@ count), and the Clearwater pages at 375 px.
 
 Checks: `test/unit/cities.test.js` (pack counts, extra files imported once into a city with parks,
 edited and removed parks left alone), the e2e suite with St. Pete at 109 parks.
+
+### M39 — Florida State Parks (Flow 14)
+- `scripts/seed-florida-state-parks.js`: Florida DEP's open data (park boundaries for names,
+  addresses, acreage and access; the Outdoor Recreation Inventory for pins and amenities). Open
+  parks only (173 of 179). Pins outside a park's boundary are replaced by a point inside it.
+  Check-in radius from acreage (150–2000 m; trails 300 m).
+- Inside a city pack's area: that city's `florida-state-parks.csv` (Clearwater 2, St. Pete 2: the Skyway pier and Egmont Key);
+  inside a county pack's: the county's (Pinellas 1); the other 166 make the Florida State Parks
+  pack (`seed/cities/florida-state-parks/`).
+
+Checks: `test/unit/cities.test.js` (every pack's parks import with no rejected rows, where the
+state parks land, counts), the e2e suite with St. Pete at 110 parks.
