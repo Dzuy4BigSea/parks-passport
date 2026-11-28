@@ -1,4 +1,5 @@
 import { weekCard } from '../activities.js';
+import { adCard } from '../ads.js';
 import { tierOf } from '../../domain/group-goals.js';
 import { avatar } from '../avatar.js';
 import { WEEKLY_GOALS } from '../../domain/activities.js';
@@ -89,7 +90,7 @@ function cityTabs(cities, theme, href) {
 }
 
 export function passportPage({ teamBadges = [], user, csrf, parks, history, points, level, badges, readOnly = false, theme = { motifs: [], areas: [] }, next = null, week = null,
-  cities = null, cityHref = (city) => cityPath(city, '/passport'), welcome = false, wantToGo = null }) {
+  cities = null, cityHref = (city) => cityPath(city, '/passport'), welcome = false, wantToGo = null, ad = null }) {
   // Saved parks are private: only the owner's own passport passes wantToGo (never /u/:handle).
   const showWantToGo = !readOnly && Array.isArray(wantToGo);
   const stamped = parks.filter((p) => p.first_visit);
@@ -119,7 +120,7 @@ export function passportPage({ teamBadges = [], user, csrf, parks, history, poin
     title: readOnly ? `${user.display_name}'s passport` : 'My passport',
     current: readOnly ? '' : 'passport',
     head: html`<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">`,
-    scripts: ['/js/passport-map.js', '/js/inspect.js', ...(welcome ? ['/js/welcome.js'] : []), ...(showWantToGo ? ['/js/want-to-go.js'] : [])],
+    scripts: ['/js/passport-map.js', '/js/inspect.js', ...(welcome ? ['/js/welcome.js'] : []), ...(showWantToGo ? ['/js/want-to-go.js'] : []), ...(ad ? ['/js/ads.js'] : [])],
     body: html`
 ${welcome ? html`<span id="welcome-data" hidden data-name="${user.display_name}" data-city="${theme.copy?.short || ''}"></span>` : ''}
 <header class="spread pp-cover">
@@ -204,6 +205,7 @@ ${readOnly ? '' : html`<p class="sunshine-nudge"><a class="pill pill-sunshine" h
       </form>`}
     </li>`)}
   </ul>` : html`<p>${readOnly ? 'No visits yet.' : html`No visits yet. <a href="${theme.key ? cityPath(theme, '/parks') : '/parks'}">Find a park</a> and stamp it.`}</p>`}
-</section>`,
+</section>
+${ad ? adCard(ad, `city-${theme.id}`) : ''}`,
   };
 }

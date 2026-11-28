@@ -45,6 +45,7 @@ import { canSendFeedback } from './domain/founding.js';
 import communityRoutes from './routes/community.js';
 import messageRoutes from './routes/messages.js';
 import outfitRoutes from './routes/outfits.js';
+import adRoutes from './routes/ads.js';
 import { outfitFor } from './domain/outfits.js';
 import { createWeather } from './lib/weather.js';
 import { takeMessages } from './domain/messages.js';
@@ -264,6 +265,7 @@ export function buildApp({
   app.register(communityRoutes);
   app.register(messageRoutes);
   app.register(outfitRoutes);
+  app.register(adRoutes);
   app.register(consentRoutes);
 
   // Friendly HTML errors instead of Fastify's JSON (e.g. an upload over the size limit).

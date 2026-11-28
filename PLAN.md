@@ -524,3 +524,17 @@ edited and removed parks left alone), the e2e suite with St. Pete at 109 parks.
 
 Checks: `test/unit/cities.test.js` (every pack's parks import with no rejected rows, where the
 state parks land, counts), the e2e suite with St. Pete at 110 parks.
+
+### M40 — Nonprofit ads and activity tips (Flow 25)
+- Migration 033 (`ads`, `ad_cities`, `ad_targets`, `ad_slides`, `ad_stats`).
+- `src/lib/images.js`: `storeAdImage` (6:5 crop to 600×500 WebP, animated kept with a still
+  first frame; frames and size capped for the 512 MB container).
+- `src/domain/ads.js`: validation and saving, slides, matching (`adFor`, `tipsFor`, `showsOn`),
+  counts, admin list. `src/routes/ads.js`: `/ad-art`, `/go/ad/:id`, `/tips/:id`, Admin › Ads.
+- Views: `src/views/ads.js` (card, slider, tip), `src/views/pages/ads-admin.js`;
+  `public/js/ads.js` (slider, tip pop-up).
+
+Checks: `test/unit/ads.test.js` (targeting by city, category, neighborhood and park; dates in the
+city's time zone; switched off hides; slides; counts only where it can show; admin is 404 for
+members) and `test/e2e/ads.spec.js` (an admin makes an ad with two slides; it shows at the
+bottom of a park page and slides; a tip opens and closes; axe clean at 375 px).

@@ -178,3 +178,58 @@ export async function removeBadgeArt(uploadsDir, art) {
   const m = /^upload:([a-f0-9]{24})$/.exec(String(art || ''));
   if (m) await fs.rm(badgeArtPath(uploadsDir, m[1]), { force: true });
 }
+
+// ---------- Nonprofit ads (SPEC Flow 25) ----------
+// One size, 300×250, stored at 2x (600×500) as WebP. Animated GIF/WebP stay animated (frames
+// capped) with a still first frame for reduced motion. Re-encoding drops all metadata.
+export const AD_W = 600;
+export const AD_H = 500;
+const AD_FORMATS = new Set(['jpeg', 'png', 'webp', 'gif']);
+const AD_MAX_FRAMES = 120;
+const NOT_AN_AD = 'Use a JPEG, PNG, WebP or GIF image.';
+
+export const adImagePath = (uploadsDir, key, still = false) => path.join(uploadsDir, 'ads', `${key}${still ? '.still' : ''}.webp`);
+
+export function storeAdImage(buffer, uploadsDir) {
+  const run = queue.then(() => storeAdImageNow(buffer, uploadsDir));
+  queue = run.catch(() => {});
+  return run;
+}
+
+async function storeAdImageNow(buffer, uploadsDir) {
+  if (!buffer?.length) return { error: 'Choose an image.' };
+  if (buffer.length > MAX_UPLOAD_BYTES) return { error: 'That image is over 10 MB. Try a smaller one.' };
+  let meta;
+  try {
+    meta = await sharp(buffer, { failOn: 'error', limitInputPixels: false, animated: true }).metadata();
+  } catch {
+    return { error: NOT_AN_AD };
+  }
+  if (!AD_FORMATS.has(meta.format)) return { error: NOT_AN_AD };
+  const pages = meta.pages || 1;
+  const frameH = meta.pageHeight || meta.height || 0;
+  if ((meta.width || 0) < 300 || frameH < 250) return { error: 'Use an image at least 300×250 pixels.' };
+  if (pages > AD_MAX_FRAMES) return { error: `That animation has too many frames (over ${AD_MAX_FRAMES}).` };
+  if ((meta.width || 0) * frameH * pages > MAX_INPUT_PIXELS) return { error: 'That image is too large.' };
+  const animated = pages > 1;
+  const key = crypto.randomBytes(12).toString('hex');
+  const file = adImagePath(uploadsDir, key);
+  const still = adImagePath(uploadsDir, key, true);
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  const opts = { ...SHARP_OPTS, limitInputPixels: false };
+  try {
+    await sharp(buffer, { ...opts, animated }).resize(AD_W, AD_H, { fit: 'cover' }).webp({ quality: 82 }).toFile(file);
+    if (animated) await sharp(buffer, { ...opts, pages: 1 }).resize(AD_W, AD_H, { fit: 'cover' }).webp({ quality: 82 }).toFile(still);
+  } catch {
+    await fs.rm(file, { force: true });
+    await fs.rm(still, { force: true });
+    return { error: NOT_AN_AD };
+  }
+  return { key, animated };
+}
+
+export async function removeAdImage(uploadsDir, key) {
+  if (!/^[a-f0-9]{24}$/.test(String(key))) return;
+  await fs.rm(adImagePath(uploadsDir, key), { force: true });
+  await fs.rm(adImagePath(uploadsDir, key, true), { force: true });
+}

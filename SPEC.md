@@ -738,6 +738,36 @@ Done when:
 - [ ] **Suggestions:** the owner can suggest a group goal or a team badge from the group page. It
       goes to the badge ideas queue (Flow 13), marked "Group goal" or "Team badge".
 
+### Flow 25: Nonprofit ads and activity tips
+As an admin, I put local nonprofits in front of the people using their parks: an ad at the bottom
+of park and passport pages, and an info pop-up on a park activity (e.g. free meditation tips from
+a Buddhist nonprofit on "Meditate"). It's awareness, not conversion: small, at the bottom, never in
+the way of stamping.
+Done when:
+- [ ] **Admin › Ads** lists every ad with its nonprofit, where it shows, its dates, its state (Off,
+      Scheduled, Running, Ended) and views · clicks (last 30 days and all time).
+- [ ] An ad **belongs to an active nonprofit** (Flow 18): its name and website come from there. A
+      click goes through `/go/ad/:id` (counted), then to the nonprofit's site.
+- [ ] **One size: 300×250.** An ad has 1 to 5 **slides** (JPEG, PNG, WebP or GIF, up to 10 MB,
+      at least 300×250; cropped to 6:5). Animated GIF and WebP stay animated, with a still
+      first frame for reduced motion. Each slide needs alt text. Two or more slides make a
+      **slider**: it advances every 6 seconds, with Previous, Next and Pause, and doesn't move with
+      reduced motion. Slides are added one upload at a time, and can be reordered or removed.
+- [ ] **Where:** the bottom of park pages, the bottom of your passport page, or an **activity tip**
+      (a pop-up on one activity). **Cities:** all, or chosen cities. **Parks** (park pages and
+      tips): all parks in those cities, parks with chosen categories, parks in chosen
+      neighborhoods (the city's areas), or hand-picked parks.
+- [ ] **Hidden by default:** an ad shows only when it's switched on and today (in the city's time
+      zone) is between its start and end dates, inclusive. New ads start switched off.
+- [ ] A page shows at most one ad, picked at random from those that match. It's labelled "Local
+      nonprofit" with the nonprofit's name, loads lazily, and the link is `rel="noopener sponsored"`.
+- [ ] **Activity tips:** a tip has a heading and text (plain text, up to 1,200 characters) shown
+      under its 300×250 image. Once today's stamp unlocks the activities, the activity shows
+      "Tips from <nonprofit>". It opens a pop-up (Escape or Close to shut it), or a page without JS.
+- [ ] Views and clicks are counted per ad, park and day (passport views have no park), with no
+      personal data, never for crawlers, and only where the ad can show. An ad's view is its page
+      load; a tip's view is opening it.
+
 ## Data model
 SQLite file at `/data/app.db` (the `parks-passport-data` volume). Uploads go in `/data/uploads/`.
 - **users**: id, email (unique, lower-cased), password_hash (scrypt, nullable for magic-link-only

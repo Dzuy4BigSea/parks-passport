@@ -3,6 +3,7 @@ import { html } from './html.js';
 import { csrfField } from './forms.js';
 import { PILLARS, LIMITS } from '../domain/activities.js';
 import { categoryLabel } from '../domain/categories.js';
+import { tipLink } from './ads.js';
 
 const AMOUNT = {
   minutes: { label: 'Minutes', step: '1', max: LIMITS.minutesPerLog, mode: 'numeric' },
@@ -14,7 +15,7 @@ const done = (a, log) => ({
   check: 'Done', minutes: `${log.amount} min`, miles: `${log.amount} mi`, count: `${log.amount}`,
 })[a.measure];
 
-function item(a, { park, csrf, log, problem }) {
+function item(a, { park, csrf, log, problem, tips }) {
   const err = problem?.activity === a.slug ? problem.text : null;
   const amt = AMOUNT[a.measure];
   const hint = a.measure === 'miles' && park.loop_mi ? ` One loop here is about ${park.loop_mi} mi.` : '';
@@ -22,6 +23,7 @@ function item(a, { park, csrf, log, problem }) {
   <div class="act-text">
     <p class="act-name"><strong>${a.name}</strong> <span class="act-pts">+${a.points}</span></p>
     <p class="act-desc">${a.description}${hint}</p>
+    ${tips?.get(a.id) ? tipLink(tips.get(a.id), park) : ''}
   </div>
   ${err ? html`<p class="error-text" role="alert" tabindex="-1" data-announce>${err}</p>` : ''}
   ${log
@@ -71,6 +73,7 @@ export function activitiesPanel({ park, csrf, activities, problem }) {
   const ctx = {
     park, csrf, problem: problem?.area === 'activities' ? problem : null, justLogged: activities.flash?.slug,
     logs: new Map(activities.logs.map((l) => [l.activity_id, l])),
+    tips: activities.tips, // nonprofit tips by activity id (SPEC Flow 25)
   };
   const core = list.filter((a) => !a.category && a.edition === 'core');
   const facilities = [...new Set(here.map((a) => a.category))].map(categoryLabel).join(', ');

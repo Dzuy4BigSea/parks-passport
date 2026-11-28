@@ -10,7 +10,7 @@ import {
   suggestNonprofit, saveNonprofit, nonprofitById, deleteNonprofit, nonprofitsForAdmin, nonprofitCounts, recordClick, showsOn, isBot, STATUSES as NP_STATUSES,
 } from '../domain/nonprofits.js';
 import { withUploads } from '../lib/uploads.js';
-import { storeBadgeArt, removeBadgeArt } from '../lib/images.js';
+import { storeBadgeArt, removeBadgeArt, removeAdImage } from '../lib/images.js';
 import {
   feedbackPage, adminFeedbackPage, sunshinePage, adminSunshinePage, suggestNonprofitPage, adminNonprofitsPage, adminNonprofitForm,
   adminMissionPage,
@@ -136,8 +136,11 @@ export default async function communityRoutes(app) {
     });
     admin.post('/nonprofits/:id/delete', async (req, reply) => {
       const n = idOf(req) ? nonprofitById(db, idOf(req)) : null;
+      // Its ads go with it (cascade): note their images first so the files go too.
+      const adImages = n ? db.prepare('SELECT s.image_key FROM ad_slides s JOIN ads a ON a.id = s.ad_id WHERE a.nonprofit_id = ?').pluck().all(n.id) : [];
       if (!n || !deleteNonprofit(db, n.id)) return reply.callNotFound();
       if (n.logo) await removeBadgeArt(app.config.uploadsDir, n.logo);
+      for (const key of adImages) await removeAdImage(app.config.uploadsDir, key);
       return reply.redirect('/admin/nonprofits', 303);
     });
     withUploads(admin, (r) => {
