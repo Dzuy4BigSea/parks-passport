@@ -24,6 +24,13 @@ const arePals = (db, x, y) => {
  * Returns { ownerId, what, link } for the notification.
  */
 export function reactable(db, userId, type, id, ownerIdForBadge = null) {
+  const item = itemOf(db, type, id, ownerIdForBadge);
+  if (!item || !item.shared || item.ownerId === userId || !arePals(db, userId, item.ownerId)) return null;
+  return { ownerId: item.ownerId, what: item.what, link: item.link };
+}
+
+// The item behind a reaction: its owner, whether it's shared with pals, and how to name it.
+function itemOf(db, type, id, ownerIdForBadge) {
   let item = null;
   if (type === 'visit') {
     item = db.prepare(`SELECT v.user_id AS ownerId, u.default_visibility AS vis, p.name AS park, p.slug, c.key AS city
@@ -38,8 +45,7 @@ export function reactable(db, userId, type, id, ownerIdForBadge = null) {
       FROM user_badges ub JOIN users u ON u.id = ub.user_id JOIN badges b ON b.id = ub.badge_id WHERE ub.badge_id = ? AND ub.user_id = ?`).get(id, ownerIdForBadge);
     if (item) item = { ...item, what: `your ${item.badge} badge`, link: '/passport#badges', shared: item.vis !== 'private' };
   }
-  if (!item || !item.shared || item.ownerId === userId || !arePals(db, userId, item.ownerId)) return null;
-  return { ownerId: item.ownerId, what: item.what, link: item.link };
+  return item;
 }
 
 /**
@@ -57,7 +63,7 @@ export function toggleReaction(db, userId, { type, id, reaction, owner = null },
       db.prepare('DELETE FROM reactions WHERE target_type = ? AND target_id = ? AND owner_id = ? AND user_id = ? AND reaction = ?').run(...key);
     } else {
       db.prepare('INSERT INTO reactions (target_type, target_id, owner_id, user_id, reaction, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(...key, now.toISOString());
-      groupedNotice(db, item, { type, id, actorId: userId }, now);
+      groupedNotice(db, item, { type, id }, now);
     }
   })();
   const summary = reactionsFor(db, userId, [{ type, id, ownerId: item.ownerId }]).get(refOf(type, id, item.ownerId));
@@ -67,16 +73,30 @@ export function toggleReaction(db, userId, { type, id, reaction, owner = null },
 const refOf = (type, id, ownerId) => `${type}:${id}:${ownerId}`;
 
 // One notification per item: replaced (so it moves to the top, unread) each time a reaction is added.
-function groupedNotice(db, item, { type, id, actorId }, now) {
+// It has no actor_id, so it outlives any one reactor's account; its text is rebuilt from the
+// reactions there now each time it's shown (reactionNoticeText), and a database trigger removes
+// it once none are left (migration 034).
+function groupedNotice(db, item, { type, id }, now) {
   const ref = `reaction:${refOf(type, id, item.ownerId)}`;
-  const people = db.prepare('SELECT COUNT(DISTINCT user_id) FROM reactions WHERE target_type = ? AND target_id = ? AND owner_id = ?').pluck().get(type, id, item.ownerId);
-  const emoji = db.prepare(`SELECT reaction FROM reactions WHERE target_type = ? AND target_id = ? AND owner_id = ?
-    GROUP BY reaction ORDER BY COUNT(*) DESC, MIN(created_at)`).pluck().all(type, id, item.ownerId).map((r) => REACTIONS[r].emoji).join('');
-  const others = people - 1;
-  const who = others > 0 ? `{actor} and ${others} other${others === 1 ? '' : 's'}` : '{actor}';
   db.prepare('DELETE FROM notifications WHERE user_id = ? AND ref = ?').run(item.ownerId, ref);
-  notify(db, item.ownerId, { kind: 'reaction', text: `${who} reacted ${emoji} to ${item.what}.`, link: item.link, actorId }, { now });
-  db.prepare('UPDATE notifications SET ref = ? WHERE id = (SELECT MAX(id) FROM notifications WHERE user_id = ?)').run(ref, item.ownerId);
+  notify(db, item.ownerId, { kind: 'reaction', text: reactionNoticeText(db, ref) || '', link: item.link, ref }, { now });
+}
+
+/** "Ana and 2 others reacted 🎉🌳 to your stamp at A Park." as things stand now; null if none are left. */
+export function reactionNoticeText(db, ref) {
+  const m = /^reaction:(visit|badge|photo):(\d+):(\d+)$/.exec(String(ref));
+  if (!m) return null;
+  const [type, id, ownerId] = [m[1], Number(m[2]), Number(m[3])];
+  const where = 'target_type = ? AND target_id = ? AND owner_id = ?';
+  const latest = db.prepare(`SELECT u.display_name FROM reactions r JOIN users u ON u.id = r.user_id WHERE ${where.replace(/(\w+) =/g, 'r.$1 =')}
+    ORDER BY r.created_at DESC, r.rowid DESC LIMIT 1`).pluck().get(type, id, ownerId);
+  const item = itemOf(db, type, id, ownerId);
+  if (!latest || !item) return null;
+  const people = db.prepare(`SELECT COUNT(DISTINCT user_id) FROM reactions WHERE ${where}`).pluck().get(type, id, ownerId);
+  const emoji = db.prepare(`SELECT reaction FROM reactions WHERE ${where} GROUP BY reaction ORDER BY COUNT(*) DESC, MIN(created_at)`)
+    .pluck().all(type, id, ownerId).map((r) => REACTIONS[r].emoji).join('');
+  const others = people - 1;
+  return `${latest}${others > 0 ? ` and ${others} other${others === 1 ? '' : 's'}` : ''} reacted ${emoji} to ${item.what}.`;
 }
 
 /**

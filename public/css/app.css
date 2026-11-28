@@ -1963,3 +1963,4 @@ svg.gary-art { height: auto; }
 /* The bar sits under the text, lined up with it (icon or photo on the left). */
 .feed-item:has(.reactions) { display: grid; grid-template-columns: auto 1fr; column-gap: 0.75rem; }
 .feed-item .reactions { grid-column: 2; }
+.feed-item:has(.reactions) > :first-child { grid-row: span 2; }

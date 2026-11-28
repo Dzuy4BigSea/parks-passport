@@ -5,6 +5,7 @@ import { makeApp, client, testClock } from './helpers.js';
 import { importParksCsv, PARK_CSV_COLUMNS } from '../../src/domain/csv-import.js';
 import { seedCities } from '../../src/db/seed.js';
 import { toggleReaction, reactionsFor } from '../../src/domain/reactions.js';
+import { markAllRead } from '../../src/domain/notifications.js';
 
 const PW = 'correct horse battery';
 
@@ -98,4 +99,46 @@ test('badges take reactions too (they need their owner); revoking one removes th
   // Revoking the badge removes its reactions.
   db.prepare('DELETE FROM user_badges WHERE user_id = ? AND badge_id = ?').run(people.ana.id, badge);
   assert.equal(db.prepare("SELECT COUNT(*) FROM reactions WHERE target_type = 'badge'").pluck().get(), 0);
+});
+
+test('the grouped notice: back on top and unread after it was read; names whoever still reacts; gone when no one does', async () => {
+  const { db, people, visit, now } = await world();
+  const t = (who, reaction) => toggleReaction(db, people[who].id, { type: 'visit', id: visit, reaction }, { now: now() });
+  const notice = () => db.prepare("SELECT * FROM notifications WHERE user_id = ? AND kind = 'reaction'").all(people.ana.id);
+  t('ben', 'party');
+  markAllRead(db, people.ana.id, { now: now() });
+  t('cat', 'tree');
+  const [n] = notice();
+  assert.equal(n.read_at, null);
+  assert.equal(n.id, db.prepare('SELECT MAX(id) FROM notifications WHERE user_id = ?').pluck().get(people.ana.id));
+  assert.match((await people.ana.c.get('/notifications')).body, /cat and 1 other reacted/);
+  // Cat takes hers back: the notice now names Ben alone (not bumped).
+  t('cat', 'tree');
+  assert.match((await people.ana.c.get('/notifications')).body, /ben reacted 🎉 to your stamp at A Park\./);
+  // Ben deletes his account: his reaction goes, and with no one left the notice goes too.
+  db.prepare('DELETE FROM users WHERE id = ?').run(people.ben.id);
+  assert.equal(notice().length, 0);
+});
+
+test('a reacted-to notice outlives the latest reactor\'s account while others still react', async () => {
+  const { db, people, visit, now } = await world();
+  toggleReaction(db, people.cat.id, { type: 'visit', id: visit, reaction: 'sun' }, { now: now() });
+  now.advanceMinutes(1);
+  toggleReaction(db, people.ben.id, { type: 'visit', id: visit, reaction: 'fire' }, { now: now() });
+  db.prepare('DELETE FROM users WHERE id = ?').run(people.ben.id);
+  assert.match((await people.ana.c.get('/notifications')).body, /cat reacted ☀️ to your stamp at A Park\./);
+});
+
+test('photos: shared ones take reactions; private or hidden ones are 404', async () => {
+  const { db, people, now } = await world();
+  const park = db.prepare("SELECT id FROM parks WHERE slug = 'a-park'").pluck().get();
+  const photo = Number(db.prepare(`INSERT INTO photos (user_id, park_id, file_key, width, height, caption, visibility, created_at)
+    VALUES (?, ?, 'x', 10, 10, '', 'pals', ?)`).run(people.ana.id, park, now().toISOString()).lastInsertRowid);
+  const t = () => toggleReaction(db, people.ben.id, { type: 'photo', id: photo, reaction: 'sun' }, { now: now() });
+  assert.equal(t().on, true);
+  assert.match(db.prepare("SELECT link FROM notifications WHERE kind = 'reaction'").pluck().get(), /#photos$/);
+  db.prepare("UPDATE photos SET visibility = 'private' WHERE id = ?").run(photo);
+  assert.equal(t(), null);
+  db.prepare("UPDATE photos SET visibility = 'public', hidden = 1 WHERE id = ?").run(photo);
+  assert.equal(t(), null);
 });

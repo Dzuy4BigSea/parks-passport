@@ -1,5 +1,7 @@
 -- Reactions between Park Pals (SPEC Flow 26): a pal taps one of five reactions on a stamp, badge
 -- or photo shown in the Pals feed. One of each reaction per person per item. Gone with the item.
+-- NOTE: SQLite drops a table's triggers with the table. A later migration that rebuilds visits,
+-- photos, user_badges, pal_links or reactions must recreate the triggers below.
 CREATE TABLE reactions (
   target_type TEXT NOT NULL CHECK (target_type IN ('visit', 'badge', 'photo')),
   target_id   INTEGER NOT NULL,              -- visits.id, badges.id (with owner_id) or photos.id
@@ -26,6 +28,13 @@ CREATE TRIGGER reactions_pal_gone AFTER DELETE ON pal_links BEGIN
   DELETE FROM reactions WHERE (owner_id = OLD.user_a AND user_id = OLD.user_b) OR (owner_id = OLD.user_b AND user_id = OLD.user_a);
 END;
 
--- One grouped notification per reacted-to item ("Ana and 2 others reacted…"): its key.
+-- One grouped notification per reacted-to item ("Ana and 2 others reacted…"): its key
+-- ('reaction:<type>:<id>:<owner>'). It goes once no reactions are left on the item, however they
+-- went (taken back, the item deleted, pals unlinked, an account deleted).
 ALTER TABLE notifications ADD COLUMN ref TEXT;
 CREATE INDEX notifications_ref ON notifications (user_id, ref);
+CREATE TRIGGER reactions_notice_gone AFTER DELETE ON reactions BEGIN
+  DELETE FROM notifications WHERE user_id = OLD.owner_id
+    AND ref = 'reaction:' || OLD.target_type || ':' || OLD.target_id || ':' || OLD.owner_id
+    AND NOT EXISTS (SELECT 1 FROM reactions r WHERE r.target_type = OLD.target_type AND r.target_id = OLD.target_id AND r.owner_id = OLD.owner_id);
+END;

@@ -7,13 +7,13 @@ for (const form of document.querySelectorAll('form.react-form')) {
     e.preventDefault();
     const bar = form.closest('.reactions');
     const button = form.querySelector('button');
-    if (button.dataset.busy) return;
-    button.dataset.busy = '1';
+    if (bar.dataset.busy) return; // one at a time, so the last answer is the current state
+    bar.dataset.busy = '1';
     let res = null;
     try {
       res = await fetch(form.action, { method: 'POST', body: new URLSearchParams(new FormData(form)), headers: { accept: 'application/json' }, credentials: 'same-origin' });
     } catch { /* offline: fall back below */ }
-    delete button.dataset.busy;
+    delete bar.dataset.busy;
     if (!res?.ok) { form.submit(); return; }
     const { on, counts, mine } = await res.json();
     for (const b of bar.querySelectorAll('button[data-reaction]')) {
