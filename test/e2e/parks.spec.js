@@ -99,6 +99,7 @@ test('park page shows details, map pin, amenities and City link', async ({ page 
   await expect(page.locator('.leaflet-interactive')).toHaveCount(1);
   await expect(page.getByRole('link', { name: 'Scenic view' })).toHaveAttribute('href', '/st-pete/parks?cat=scenic-view');
   await expect(page.getByText('No ratings yet.')).toBeVisible();
+  await expect(page.locator('.park-manager')).toHaveText('Managed by the City of St. Petersburg');
   await expect(page.getByRole('link', { name: /on the official website/ }))
     .toHaveAttribute('href', 'https://www.stpeteparksrec.org/parks___facilities/abercrombie_park.php');
   await expectNoAxeViolations(page);
